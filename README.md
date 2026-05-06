@@ -23,6 +23,7 @@ Inclui:
 - Recuperacao de senha por email.
 - Firebase Hosting, Firestore Rules e Storage Rules iniciais.
 - Relatorios basicos com exportacao de base mensal/fiscal.
+- Registro de deposito, saque, transferencia e ajuste em casas.
 
 ## Comandos
 
@@ -53,4 +54,5 @@ Copie `.env.example` para `.env.local` se quiser rodar analytics com as variavei
 - Usar Firestore como fonte principal quando autenticado.
 - Adicionar login Google.
 - Implementar upload de print/OCR.
+- Recalculo contabil completo por ledger.
 - Criar relatorios em PDF/HTML.

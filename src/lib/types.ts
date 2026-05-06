@@ -44,6 +44,7 @@ export interface Transaction {
   date: string;
   type: TransactionType;
   bookmakerId: string;
+  targetBookmakerId?: string;
   description: string;
   amount: number;
 }

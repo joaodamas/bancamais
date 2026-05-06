@@ -27,6 +27,10 @@ export function createBetId() {
   return `bet-${crypto.randomUUID()}`;
 }
 
+export function createTransactionId() {
+  return `tx-${crypto.randomUUID()}`;
+}
+
 export type NewBetInput = Omit<Bet, "id" | "placedAt" | "status" | "tags" | "mode"> & {
   tags: string;
   mode: Bet["mode"];

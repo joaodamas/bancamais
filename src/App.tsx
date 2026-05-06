@@ -13,8 +13,8 @@ import {
 } from "./lib/cloudRepository";
 import { betsToCsv, downloadTextFile, parseBetsCsv } from "./lib/csv";
 import { calculateMetrics, clvPercent, groupProfitByBookmaker, groupProfitBySport, money, percent, potentialReturn } from "./lib/metrics";
-import { createBetId, loadState, resetState, saveState } from "./lib/storage";
-import type { AppState, Bet } from "./lib/types";
+import { createBetId, createTransactionId, loadState, resetState, saveState } from "./lib/storage";
+import type { AppState, Bet, Transaction, TransactionType } from "./lib/types";
 
 type View = "dashboard" | "bets" | "new-bet" | "import" | "reports" | "books" | "settings";
 
@@ -213,6 +213,40 @@ export function App() {
     setView("bets");
   }
 
+  function addTransaction(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const type = String(data.get("type")) as TransactionType;
+    const bookmakerId = String(data.get("bookmakerId"));
+    const targetBookmakerId = String(data.get("targetBookmakerId"));
+    const rawAmount = Math.abs(Number(data.get("amount")));
+    const signedAmount = type === "withdrawal" || type === "transfer" ? -rawAmount : rawAmount;
+    const transaction: Transaction = {
+      id: createTransactionId(),
+      date: new Date().toISOString(),
+      type,
+      bookmakerId,
+      targetBookmakerId: type === "transfer" ? targetBookmakerId : undefined,
+      description: String(data.get("description")) || type,
+      amount: signedAmount,
+    };
+
+    const bookmakers = state.bookmakers.map((book) => {
+      if (book.id === bookmakerId) {
+        return { ...book, balance: book.balance + signedAmount };
+      }
+
+      if (type === "transfer" && book.id === targetBookmakerId) {
+        return { ...book, balance: book.balance + rawAmount };
+      }
+
+      return book;
+    });
+
+    updateState({ ...state, bookmakers, transactions: [transaction, ...state.transactions] });
+    event.currentTarget.reset();
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -246,7 +280,7 @@ export function App() {
         {view === "new-bet" && <NewBet state={state} addBet={addBet} />}
         {view === "import" && <Import state={state} importBets={importBets} />}
         {view === "reports" && <Reports state={state} metrics={metrics} />}
-        {view === "books" && <Books state={state} />}
+        {view === "books" && <Books state={state} addTransaction={addTransaction} />}
         {view === "settings" && (
           <Settings
             state={state}
@@ -513,17 +547,60 @@ function Import({ state, importBets }: { state: AppState; importBets: (bets: Bet
   );
 }
 
-function Books({ state }: { state: AppState }) {
+function Books({ state, addTransaction }: { state: AppState; addTransaction: (event: FormEvent<HTMLFormElement>) => void }) {
   return (
-    <section className="page cards">
-      {state.bookmakers.map((book) => (
-        <article className="panel book" key={book.id}>
-          <span>{book.status}</span>
-          <h2>{book.name}</h2>
-          <strong>{money.format(book.balance)}</strong>
-          <small>Sincronizacao: {book.lastSyncLabel}</small>
+    <section className="page">
+      <div className="cards">
+        {state.bookmakers.map((book) => (
+          <article className="panel book" key={book.id}>
+            <span>{book.status}</span>
+            <h2>{book.name}</h2>
+            <strong>{money.format(book.balance)}</strong>
+            <small>Sincronizacao: {book.lastSyncLabel}</small>
+          </article>
+        ))}
+      </div>
+
+      <div className="grid two report-section">
+        <form className="panel transaction-form" onSubmit={addTransaction}>
+          <h2>Registrar movimentacao</h2>
+          <label>Tipo
+            <select name="type">
+              <option value="deposit">Deposito</option>
+              <option value="withdrawal">Saque</option>
+              <option value="transfer">Transferencia</option>
+              <option value="adjustment">Ajuste</option>
+            </select>
+          </label>
+          <label>Casa origem
+            <select name="bookmakerId">
+              {state.bookmakers.map((book) => <option key={book.id} value={book.id}>{book.name}</option>)}
+            </select>
+          </label>
+          <label>Casa destino
+            <select name="targetBookmakerId">
+              {state.bookmakers.map((book) => <option key={book.id} value={book.id}>{book.name}</option>)}
+            </select>
+          </label>
+          <label>Valor<input name="amount" required min="0.01" step="0.01" type="number" placeholder="500" /></label>
+          <label className="full">Descricao<input name="description" placeholder="PIX, ajuste manual, transferencia" /></label>
+          <button className="primary" type="submit">Registrar</button>
+        </form>
+
+        <article className="panel">
+          <h2>Ultimas transacoes</h2>
+          <div className="transaction-list">
+            {state.transactions.map((transaction) => (
+              <div key={transaction.id}>
+                <span>
+                  {new Date(transaction.date).toLocaleDateString("pt-BR")} · {transaction.description}
+                </span>
+                <strong className={transaction.amount >= 0 ? "pos" : "neg"}>{money.format(transaction.amount)}</strong>
+              </div>
+            ))}
+          </div>
         </article>
-      ))}
+      </div>
     </section>
   );
 }

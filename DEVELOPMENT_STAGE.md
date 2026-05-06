@@ -28,6 +28,7 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Importacao CSV das apostas.
 - Primeiro sistema visual de marca: logo SVG, favicon e guia visual.
 - Relatorios basicos: mensal, fiscal e base de pagina publica tipster.
+- Registro de movimentacoes financeiras por casa: deposito, saque, transferencia e ajuste.
 
 ## Ainda nao entregue
 
@@ -39,6 +40,7 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Pagamentos.
 - Deploy com dominio customizado.
 - PDF real dos relatorios.
+- Ledger contabil completo com auditoria.
 
 ## Criterio de aceite desta etapa
 
@@ -50,4 +52,5 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Usuario deve conseguir importar CSV exportado pelo Banca+.
 - Usuario deve conseguir acessar relatorios e exportar bases mensal/fiscal.
 - Usuario deve conseguir criar conta, entrar e recuperar senha se Firebase Auth estiver habilitado.
+- Usuario deve conseguir registrar transacoes e ver saldos das casas atualizados.
 - Usuario deve conseguir conectar via Auth anonimo e salvar/carregar snapshot no Firestore, desde que Auth/Firestore estejam habilitados no Firebase.
