@@ -22,6 +22,6 @@ Projeto: `bancamais-12778`.
 
 - [ ] Confirmar Email/Password habilitado em Authentication.
 - [ ] Confirmar Anonymous habilitado se o modo demo cloud continuar ativo.
-- [ ] Publicar `firestore.rules`.
-- [ ] Publicar `storage.rules`.
+- [x] Publicar `firestore.rules` — feito via `firebase deploy --only firestore:rules`.
+- [x] Publicar `storage.rules` — feito via `firebase deploy --only storage`.
 - [ ] Ativar App Check antes de producao.
