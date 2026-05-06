@@ -20,6 +20,7 @@ Inclui:
 - Persistencia local em `localStorage` para validacao rapida.
 - Sincronizacao opcional com Firebase Auth anonimo + Firestore.
 - Firebase Hosting, Firestore Rules e Storage Rules iniciais.
+- Relatorios basicos com exportacao de base mensal/fiscal.
 
 ## Comandos
 
@@ -50,4 +51,4 @@ Copie `.env.example` para `.env.local` se quiser rodar analytics com as variavei
 - Trocar Auth anonimo por login real.
 - Usar Firestore como fonte principal quando autenticado.
 - Implementar upload de print/OCR.
-- Criar relatorios basicos em PDF/HTML.
+- Criar relatorios em PDF/HTML.
