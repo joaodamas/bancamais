@@ -102,10 +102,12 @@ export function riskAlerts(state: AppState) {
   const lastBets = [...state.bets].sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
   const recentLosses = lastBets.slice(0, 3).filter((bet) => bet.status === "lost").length;
   const largestPending = state.bets.filter((bet) => bet.status === "pending").sort((a, b) => b.stake - a.stake)[0];
-  const unit = metrics.totalBalance * 0.01;
+  const unit = metrics.totalBalance * (state.riskSettings.unitPercent / 100);
+  const maxStake = unit * state.riskSettings.maxStakeUnits;
+  const maxExposure = metrics.totalBalance * (state.riskSettings.maxOpenExposurePercent / 100);
   const alerts: Array<{ level: "warning" | "danger"; title: string; detail: string }> = [];
 
-  if (recentLosses >= 2) {
+  if (recentLosses >= state.riskSettings.lossStreakLimit) {
     alerts.push({
       level: "danger",
       title: "Sequencia negativa",
@@ -113,19 +115,19 @@ export function riskAlerts(state: AppState) {
     });
   }
 
-  if (largestPending && largestPending.stake > unit * 2) {
+  if (largestPending && largestPending.stake > maxStake) {
     alerts.push({
       level: "warning",
       title: "Stake acima da unidade",
-      detail: `${largestPending.eventName} tem stake de ${money.format(largestPending.stake)}, acima de 2u pela banca atual.`,
+      detail: `${largestPending.eventName} tem stake de ${money.format(largestPending.stake)}, acima de ${state.riskSettings.maxStakeUnits}u pela regra atual.`,
     });
   }
 
-  if (metrics.openExposure > metrics.totalBalance * 0.05) {
+  if (metrics.openExposure > maxExposure) {
     alerts.push({
       level: "warning",
       title: "Exposicao aberta elevada",
-      detail: `${money.format(metrics.openExposure)} em apostas pendentes, acima de 5% da banca total.`,
+      detail: `${money.format(metrics.openExposure)} em apostas pendentes, acima de ${state.riskSettings.maxOpenExposurePercent}% da banca total.`,
     });
   }
 

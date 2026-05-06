@@ -53,10 +53,18 @@ export interface AppState {
   bankrollName: string;
   currency: "BRL";
   startingBalance: number;
+  riskSettings: RiskSettings;
   bookmakers: BookmakerAccount[];
   strategies: Strategy[];
   bets: Bet[];
   transactions: Transaction[];
+}
+
+export interface RiskSettings {
+  unitPercent: number;
+  maxStakeUnits: number;
+  maxOpenExposurePercent: number;
+  lossStreakLimit: number;
 }
 
 export interface DashboardMetrics {

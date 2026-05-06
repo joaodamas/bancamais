@@ -4,6 +4,12 @@ export const initialState: AppState = {
   bankrollName: "Banca principal",
   currency: "BRL",
   startingBalance: 13264.2,
+  riskSettings: {
+    unitPercent: 1,
+    maxStakeUnits: 2,
+    maxOpenExposurePercent: 5,
+    lossStreakLimit: 2,
+  },
   bookmakers: [
     { id: "bet365", name: "Bet365", balance: 6420.8, status: "synced", lastSyncLabel: "ha 2 min" },
     { id: "betano", name: "Betano", balance: 4820, status: "synced", lastSyncLabel: "ha 5 min" },

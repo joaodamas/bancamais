@@ -26,6 +26,7 @@ Inclui:
 - Registro de deposito, saque, transferencia e ajuste em casas.
 - Gestao de estrategias com ROI, acerto, CLV e pausa/reativacao.
 - Alertas basicos de risco: sequencia negativa, exposicao aberta e stake acima da unidade.
+- Configuracao de limites de risco por usuario.
 
 ## Comandos
 
@@ -57,5 +58,5 @@ Copie `.env.example` para `.env.local` se quiser rodar analytics com as variavei
 - Adicionar login Google.
 - Implementar upload de print/OCR.
 - Recalculo contabil completo por ledger.
-- Configuracao de limites de risco por usuario.
+- Bloqueio/cooldown baseado nos limites de risco.
 - Criar relatorios em PDF/HTML.

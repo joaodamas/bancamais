@@ -10,6 +10,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
+import { normalizeState } from "./storage";
 import type { AppState } from "./types";
 
 const appStateDocumentId = "default";
@@ -58,13 +59,14 @@ export async function loadCloudState(userId: string): Promise<AppState | null> {
   if (!snapshot.exists()) return null;
 
   const data = snapshot.data();
-  return {
+  return normalizeState({
     bankrollName: data.bankrollName,
     currency: data.currency,
     startingBalance: data.startingBalance,
+    riskSettings: data.riskSettings,
     bookmakers: data.bookmakers,
     strategies: data.strategies,
     bets: data.bets,
     transactions: data.transactions,
-  } satisfies AppState;
+  });
 }

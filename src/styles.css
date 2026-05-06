@@ -552,6 +552,18 @@ textarea {
   font-size: 14px;
 }
 
+.risk-settings-form {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.risk-settings-form h2,
+.risk-settings-form p,
+.risk-settings-form button {
+  grid-column: 1 / -1;
+}
+
 .report-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -626,6 +638,7 @@ textarea {
   .auth-grid,
   .transaction-form,
   .strategy-form,
+  .risk-settings-form,
   .settings-grid {
     grid-template-columns: 1fr;
   }

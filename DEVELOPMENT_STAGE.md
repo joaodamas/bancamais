@@ -31,6 +31,7 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Registro de movimentacoes financeiras por casa: deposito, saque, transferencia e ajuste.
 - Gestao de estrategias com metricas reais por metodo.
 - Alertas basicos de risco no dashboard.
+- Configuracao de limites de risco: unidade, stake maxima, exposicao aberta e perdas seguidas.
 
 ## Ainda nao entregue
 
@@ -43,7 +44,7 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Deploy com dominio customizado.
 - PDF real dos relatorios.
 - Ledger contabil completo com auditoria.
-- Limites configuraveis de risco e lockout.
+- Lockout/cooldown baseado nos limites configurados.
 
 ## Criterio de aceite desta etapa
 
@@ -58,4 +59,5 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Usuario deve conseguir registrar transacoes e ver saldos das casas atualizados.
 - Usuario deve conseguir criar, pausar e reativar estrategias.
 - Dashboard deve exibir alertas de risco quando houver exposicao elevada, stake acima da unidade ou sequencia negativa.
+- Usuario deve conseguir ajustar os limites que disparam alertas de risco.
 - Usuario deve conseguir conectar via Auth anonimo e salvar/carregar snapshot no Firestore, desde que Auth/Firestore estejam habilitados no Firebase.

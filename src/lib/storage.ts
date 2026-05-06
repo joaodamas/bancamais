@@ -8,10 +8,25 @@ export function loadState(): AppState {
   if (!raw) return initialState;
 
   try {
-    return JSON.parse(raw) as AppState;
+    return normalizeState(JSON.parse(raw) as Partial<AppState>);
   } catch {
     return initialState;
   }
+}
+
+export function normalizeState(state: Partial<AppState>): AppState {
+  return {
+    ...initialState,
+    ...state,
+    riskSettings: {
+      ...initialState.riskSettings,
+      ...state.riskSettings,
+    },
+    bookmakers: state.bookmakers ?? initialState.bookmakers,
+    strategies: state.strategies ?? initialState.strategies,
+    bets: state.bets ?? initialState.bets,
+    transactions: state.transactions ?? initialState.transactions,
+  };
 }
 
 export function saveState(state: AppState) {

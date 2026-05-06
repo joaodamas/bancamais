@@ -24,7 +24,7 @@ import {
   riskAlerts,
 } from "./lib/metrics";
 import { createBetId, createStrategyId, createTransactionId, loadState, resetState, saveState } from "./lib/storage";
-import type { AppState, Bet, Strategy, Transaction, TransactionType } from "./lib/types";
+import type { AppState, Bet, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
 
 type View = "dashboard" | "bets" | "new-bet" | "import" | "strategies" | "reports" | "books" | "settings";
 
@@ -283,6 +283,19 @@ export function App() {
     });
   }
 
+  function updateRiskSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const riskSettings: RiskSettings = {
+      unitPercent: Number(data.get("unitPercent")),
+      maxStakeUnits: Number(data.get("maxStakeUnits")),
+      maxOpenExposurePercent: Number(data.get("maxOpenExposurePercent")),
+      lossStreakLimit: Number(data.get("lossStreakLimit")),
+    };
+
+    updateState({ ...state, riskSettings });
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -332,6 +345,7 @@ export function App() {
             signInAccount={signInAccount}
             sendReset={sendReset}
             authMessage={authMessage}
+            updateRiskSettings={updateRiskSettings}
           />
         )}
       </main>
@@ -803,6 +817,7 @@ function Settings({
   signInAccount,
   sendReset,
   authMessage,
+  updateRiskSettings,
 }: {
   state: AppState;
   reset: () => void;
@@ -816,6 +831,7 @@ function Settings({
   signInAccount: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   sendReset: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   authMessage: string;
+  updateRiskSettings: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
     <section className="page">
@@ -880,6 +896,27 @@ function Settings({
           </form>
         </div>
       </article>
+
+      <form className="panel risk-settings-form" onSubmit={updateRiskSettings}>
+        <h2>Limites de risco</h2>
+        <p>
+          Estes limites alimentam os alertas do dashboard. No futuro, eles tambem podem bloquear
+          novas apostas ou exigir cooldown.
+        </p>
+        <label>Unidade da banca (%)
+          <input defaultValue={state.riskSettings.unitPercent} min="0.1" name="unitPercent" required step="0.1" type="number" />
+        </label>
+        <label>Stake maxima (unidades)
+          <input defaultValue={state.riskSettings.maxStakeUnits} min="0.5" name="maxStakeUnits" required step="0.5" type="number" />
+        </label>
+        <label>Exposicao aberta maxima (%)
+          <input defaultValue={state.riskSettings.maxOpenExposurePercent} min="1" name="maxOpenExposurePercent" required step="1" type="number" />
+        </label>
+        <label>Alerta apos perdas seguidas
+          <input defaultValue={state.riskSettings.lossStreakLimit} min="1" name="lossStreakLimit" required step="1" type="number" />
+        </label>
+        <button className="primary" type="submit">Salvar limites</button>
+      </form>
       </div>
     </section>
   );
