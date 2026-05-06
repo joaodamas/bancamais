@@ -37,6 +37,8 @@ export interface Bet {
   payout?: number;
   closingOdds?: number;
   mode: "prelive" | "live";
+  slipImageUrl?: string;
+  slipImagePath?: string;
 }
 
 export interface Transaction {

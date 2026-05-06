@@ -36,6 +36,8 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Navegacao lateral agrupada e topbar com busca visual.
 - Telas dedicadas de Inteligencia e CLV & Edge.
 - Botao flutuante para nova aposta.
+- Firestore e Storage registrados como infraestrutura criada.
+- Upload de imagem do bilhete para Firebase Storage quando o usuario esta autenticado.
 
 ## Ainda nao entregue
 
@@ -51,6 +53,7 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Lockout/cooldown baseado nos limites configurados.
 - Busca global funcional.
 - Graficos mais fieis ao prototipo.
+- OCR de bilhete usando as imagens armazenadas no Storage.
 
 ## Criterio de aceite desta etapa
 
@@ -67,4 +70,5 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Dashboard deve exibir alertas de risco quando houver exposicao elevada, stake acima da unidade ou sequencia negativa.
 - Usuario deve conseguir ajustar os limites que disparam alertas de risco.
 - Usuario deve conseguir acessar Inteligencia e CLV em telas separadas.
+- Usuario autenticado deve conseguir anexar print do bilhete ao criar aposta.
 - Usuario deve conseguir conectar via Auth anonimo e salvar/carregar snapshot no Firestore, desde que Auth/Firestore estejam habilitados no Firebase.

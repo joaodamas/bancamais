@@ -24,6 +24,7 @@ import {
   riskAlerts,
 } from "./lib/metrics";
 import { createBetId, createStrategyId, createTransactionId, loadState, resetState, saveState } from "./lib/storage";
+import { uploadBetSlip } from "./lib/storageRepository";
 import type { AppState, Bet, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
 
 type View = "dashboard" | "bets" | "new-bet" | "import" | "intelligence" | "reports" | "clv" | "books" | "strategies" | "settings";
@@ -193,9 +194,25 @@ export function App() {
     }
   }
 
-  function addBet(event: FormEvent<HTMLFormElement>) {
+  async function addBet(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const maybeSlip = data.get("slip");
+    let slipImagePath: string | undefined;
+    let slipImageUrl: string | undefined;
+
+    if (maybeSlip instanceof File && maybeSlip.size > 0) {
+      if (!user) {
+        setSyncStatus("Conecte uma conta antes de enviar print para o Storage.");
+        return;
+      }
+
+      const upload = await uploadBetSlip(user.uid, maybeSlip);
+      slipImagePath = upload.path;
+      slipImageUrl = upload.url;
+    }
+
     const bet: Bet = {
       id: createBetId(),
       placedAt: new Date().toISOString(),
@@ -216,10 +233,12 @@ export function App() {
       status: "pending",
       closingOdds: Number(data.get("closingOdds")) || undefined,
       mode: String(data.get("mode")) as Bet["mode"],
+      slipImagePath,
+      slipImageUrl,
     };
 
     updateState({ ...state, bets: [bet, ...state.bets] });
-    event.currentTarget.reset();
+    form.reset();
     setView("bets");
   }
 
@@ -501,6 +520,7 @@ function Bets({ state, settleBet }: { state: AppState; settleBet: (id: string, s
                 <td>
                   <strong>{bet.eventName}</strong>
                   <small>{bet.sport} · {bet.league} · {new Date(bet.eventAt).toLocaleString("pt-BR")}</small>
+                  {bet.slipImageUrl && <a className="inline-link" href={bet.slipImageUrl} rel="noreferrer" target="_blank">ver print</a>}
                 </td>
                 <td>
                   {bet.selection}
@@ -531,10 +551,15 @@ function Bets({ state, settleBet }: { state: AppState; settleBet: (id: string, s
   );
 }
 
-function NewBet({ state, addBet }: { state: AppState; addBet: (event: FormEvent<HTMLFormElement>) => void }) {
+function NewBet({ state, addBet }: { state: AppState; addBet: (event: FormEvent<HTMLFormElement>) => void | Promise<void> }) {
   return (
     <section className="page">
       <form className="panel form" onSubmit={addBet}>
+        <div className="dropzone full">
+          <strong>Cole, arraste ou selecione o print do bilhete</strong>
+          <span>Upload no Firebase Storage quando houver usuario conectado. OCR entra na proxima etapa.</span>
+          <input accept="image/*" name="slip" type="file" />
+        </div>
         <label>Evento<input name="eventName" required placeholder="Real Madrid x Manchester City" /></label>
         <label>Data do evento<input name="eventAt" required type="datetime-local" /></label>
         <label>Esporte<input name="sport" required placeholder="Futebol" /></label>
@@ -563,7 +588,7 @@ function NewBet({ state, addBet }: { state: AppState; addBet: (event: FormEvent<
         </label>
         <label className="full">Tags<input name="tags" placeholder="euro, overgols, prelive" /></label>
         <div className="form-actions">
-          <span>Entrada manual pronta. OCR entra na proxima etapa.</span>
+          <span>Entrada manual com anexo opcional. OCR entra na proxima etapa.</span>
           <button className="primary" type="submit">Salvar aposta</button>
         </div>
       </form>

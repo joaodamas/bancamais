@@ -37,3 +37,4 @@ Data: 06/05/2026.
 - Botao flutuante de nova aposta.
 - Tela Inteligencia com resumo, sugestoes, exposicao e odds.
 - Tela CLV & Edge com CLV medio e distribuicao por casa.
+- Entrada de nova aposta com area de upload de print alinhada ao prototipo.

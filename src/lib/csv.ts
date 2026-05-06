@@ -32,6 +32,7 @@ export function betsToCsv(state: AppState) {
     "closingOdds",
     "mode",
     "tags",
+    "slipImageUrl",
   ]);
 
   const rows = state.bets.map((bet: Bet) => row([
@@ -51,6 +52,7 @@ export function betsToCsv(state: AppState) {
     bet.closingOdds ?? "",
     bet.mode,
     bet.tags.join("|"),
+    bet.slipImageUrl ?? "",
   ]));
 
   return [header, ...rows].join("\n");
@@ -145,6 +147,7 @@ export function parseBetsCsv(content: string, state: AppState) {
       payout: record.payout ? Number(record.payout) : undefined,
       closingOdds: record.closingOdds ? Number(record.closingOdds) : undefined,
       mode: record.mode === "live" ? "live" : "prelive",
+      slipImageUrl: record.slipImageUrl || undefined,
     });
   });
 

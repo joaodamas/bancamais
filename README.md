@@ -22,6 +22,8 @@ Inclui:
 - Cadastro/login por email e senha com Firebase Auth.
 - Recuperacao de senha por email.
 - Firebase Hosting, Firestore Rules e Storage Rules iniciais.
+- Firestore criado e Storage criado em `gs://bancamais-12778.firebasestorage.app`.
+- Upload de print/comprovante de bilhete para Firebase Storage.
 - Relatorios basicos com exportacao de base mensal/fiscal.
 - Registro de deposito, saque, transferencia e ajuste em casas.
 - Gestao de estrategias com ROI, acerto, CLV e pausa/reativacao.
@@ -61,7 +63,7 @@ Copie `.env.example` para `.env.local` se quiser rodar analytics com as variavei
 
 - Usar Firestore como fonte principal quando autenticado.
 - Adicionar login Google.
-- Implementar upload de print/OCR.
+- Implementar OCR sobre os prints salvos.
 - Recalculo contabil completo por ledger.
 - Bloqueio/cooldown baseado nos limites de risco.
 - Busca global funcional por evento, liga, mercado e tag.
