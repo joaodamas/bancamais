@@ -26,7 +26,7 @@ import {
 import { createBetId, createStrategyId, createTransactionId, loadState, resetState, saveState } from "./lib/storage";
 import type { AppState, Bet, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
 
-type View = "dashboard" | "bets" | "new-bet" | "import" | "strategies" | "reports" | "books" | "settings";
+type View = "dashboard" | "bets" | "new-bet" | "import" | "intelligence" | "reports" | "clv" | "books" | "strategies" | "settings";
 
 const statusLabel: Record<Bet["status"], string> = {
   pending: "Pendente",
@@ -36,15 +36,32 @@ const statusLabel: Record<Bet["status"], string> = {
   void: "Cancelada",
 };
 
-const navItems: Array<{ id: View; label: string }> = [
-  { id: "dashboard", label: "Dashboard" },
-  { id: "bets", label: "Apostas" },
-  { id: "new-bet", label: "Nova aposta" },
-  { id: "import", label: "Importar" },
-  { id: "strategies", label: "Estrategias" },
-  { id: "reports", label: "Relatorios" },
-  { id: "books", label: "Bancas & casas" },
-  { id: "settings", label: "Configuracoes" },
+const navGroups: Array<{ label: string; items: Array<{ id: View; label: string; badge?: string }> }> = [
+  {
+    label: "Inicio",
+    items: [
+      { id: "dashboard", label: "Dashboard" },
+      { id: "bets", label: "Apostas", badge: "+12" },
+      { id: "new-bet", label: "Nova aposta" },
+      { id: "import", label: "Importar" },
+    ],
+  },
+  {
+    label: "Analise",
+    items: [
+      { id: "intelligence", label: "Inteligencia", badge: "IA" },
+      { id: "reports", label: "Relatorios" },
+      { id: "clv", label: "CLV & Edge" },
+    ],
+  },
+  {
+    label: "Gestao",
+    items: [
+      { id: "books", label: "Bancas & casas" },
+      { id: "strategies", label: "Estrategias" },
+      { id: "settings", label: "Configuracoes" },
+    ],
+  },
 ];
 
 export function App() {
@@ -307,28 +324,44 @@ export function App() {
         </button>
 
         <nav>
-          {navItems.map((item) => (
-            <button className={view === item.id ? "active" : ""} key={item.id} onClick={() => setView(item.id)}>
-              {item.label}
-            </button>
+          {navGroups.map((group) => (
+            <div className="nav-group" key={group.label}>
+              <span>{group.label}</span>
+              {group.items.map((item) => (
+                <button className={view === item.id ? "active" : ""} key={item.id} onClick={() => setView(item.id)}>
+                  {item.label}
+                  {item.badge && <em>{item.badge}</em>}
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
       </aside>
 
       <main className="main">
         <header className="topbar">
-          <div>
+          <div className="search-box">
+            <span>⌕</span>
+            <input placeholder="Buscar evento, liga, mercado, tag..." />
+          </div>
+          <div className="topbar-meta">
             <strong>{viewTitle(view)}</strong>
             <span>{user ? accountLabel(user) : "Modo local"} · bancamais.jpproject.com.br</span>
           </div>
-          <button className="primary" onClick={() => setView("new-bet")}>Nova aposta</button>
+          <div className="topbar-actions">
+            <button title="Notificacoes">●</button>
+            <button title="Calendario">□</button>
+            <button className="primary" onClick={() => setView("new-bet")}>+ Nova aposta</button>
+          </div>
         </header>
 
         {view === "dashboard" && <Dashboard state={state} metrics={metrics} />}
         {view === "bets" && <Bets state={state} settleBet={settleBet} />}
         {view === "new-bet" && <NewBet state={state} addBet={addBet} />}
         {view === "import" && <Import state={state} importBets={importBets} />}
+        {view === "intelligence" && <Intelligence state={state} metrics={metrics} />}
         {view === "strategies" && <Strategies state={state} addStrategy={addStrategy} toggleStrategy={toggleStrategy} />}
+        {view === "clv" && <ClvEdge state={state} metrics={metrics} />}
         {view === "reports" && <Reports state={state} metrics={metrics} />}
         {view === "books" && <Books state={state} addTransaction={addTransaction} />}
         {view === "settings" && (
@@ -348,13 +381,14 @@ export function App() {
             updateRiskSettings={updateRiskSettings}
           />
         )}
+        <button className="fab" onClick={() => setView("new-bet")} title="Nova aposta">+</button>
       </main>
     </div>
   );
 }
 
 function viewTitle(view: View) {
-  const item = navItems.find((nav) => nav.id === view);
+  const item = navGroups.flatMap((group) => group.items).find((nav) => nav.id === view);
   return item?.label ?? "Banca+";
 }
 
@@ -610,6 +644,124 @@ function Import({ state, importBets }: { state: AppState; importBets: (bets: Bet
             <button className="primary" type="button" onClick={commitImport}>Importar</button>
           </div>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function Intelligence({ state, metrics }: { state: AppState; metrics: ReturnType<typeof calculateMetrics> }) {
+  const strategies = groupProfitByStrategy(state);
+  const best = [...strategies].sort((a, b) => b.profit - a.profit)[0];
+  const worst = [...strategies].sort((a, b) => a.profit - b.profit)[0];
+  const alerts = riskAlerts(state);
+  const pending = state.bets.filter((bet) => bet.status === "pending");
+  const exposure = pending.reduce((sum, bet) => sum + bet.stake, 0);
+
+  return (
+    <section className="page">
+      <div className="section-head">
+        <div>
+          <h1>Inteligencia · IA</h1>
+          <p>Analise automatica do historico. Nesta etapa, as recomendacoes usam regras locais e metricas reais.</p>
+        </div>
+        <button>Gerar relatorio semanal</button>
+      </div>
+
+      <div className="grid two">
+        <article className="panel intelligence-summary">
+          <span>Resumo do mes</span>
+          <p>
+            Sua banca esta com ROI de <b>{percent.format(metrics.roi)}</b> em {state.bets.length} apostas.
+            A melhor estrategia e <b>{best?.name ?? "sem dados"}</b>, com resultado de <b>{money.format(best?.profit ?? 0)}</b>.
+            O principal ponto de atencao e <b>{worst?.name ?? "sem dados"}</b>, com {money.format(worst?.profit ?? 0)}.
+          </p>
+          <div className="summary-list compact">
+            <div><span>Top estrategia</span><strong>{best?.name ?? "-"}</strong></div>
+            <div><span>Pior estrategia</span><strong>{worst?.name ?? "-"}</strong></div>
+            <div><span>Exposicao aberta</span><strong>{money.format(exposure)}</strong></div>
+          </div>
+        </article>
+
+        <article className="panel heatmap-card">
+          <h2>Heatmap de performance</h2>
+          <div className="heatmap">
+            {["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"].map((day) => <span key={day}>{day}</span>)}
+            {[8, 22, 12, 34, 41, 5, 0, 2, -4, -12, 0, -21, -9, -7, 15, 0, 7, 19, 4, 24, 9].map((value, index) => (
+              <b className={value > 0 ? "hm-pos" : value < 0 ? "hm-neg" : ""} key={index}>{value > 0 ? `+${value}` : value}</b>
+            ))}
+          </div>
+        </article>
+      </div>
+
+      <div className="insight-grid">
+        <article className="panel">
+          <h2>Sugestoes</h2>
+          <div className="insight-list">
+            <p>Aumente foco em <b>{best?.name ?? "estrategias lucrativas"}</b> se o CLV continuar positivo.</p>
+            {alerts.map((alert) => <p key={alert.title}>{alert.detail}</p>)}
+            <p>Revise odds de fechamento antes de subir stake em estrategias com pouca amostra.</p>
+          </div>
+        </article>
+
+        <article className="panel">
+          <h2>Conflitos & exposicao</h2>
+          <p>Voce tem <b>{pending.length} apostas pendentes</b> com exposicao total de <b>{money.format(exposure)}</b>.</p>
+        </article>
+
+        <article className="panel">
+          <h2>Comparador de odds</h2>
+          <div className="odds-list">
+            <div><span>Pinnacle</span><strong>1.95</strong></div>
+            <div className="highlight"><span>Bet365</span><strong>1.92</strong></div>
+            <div><span>Betano</span><strong>1.88</strong></div>
+            <div><span>KTO</span><strong>1.85</strong></div>
+          </div>
+        </article>
+      </div>
+    </section>
+  );
+}
+
+function ClvEdge({ state, metrics }: { state: AppState; metrics: ReturnType<typeof calculateMetrics> }) {
+  const byBook = groupProfitByBookmaker(state).map((book) => {
+    const bets = state.bets.filter((bet) => bet.bookmakerId === book.id);
+    const clvs = bets.map(clvPercent).filter((value): value is number => value !== null);
+    return {
+      ...book,
+      clv: clvs.length > 0 ? clvs.reduce((sum, value) => sum + value, 0) / clvs.length : 0,
+    };
+  });
+
+  return (
+    <section className="page">
+      <div className="section-head">
+        <div>
+          <h1>CLV & Edge · Pro</h1>
+          <p>Mede se voce esta batendo a linha de fechamento. E o melhor sinal de edge antes do resultado.</p>
+        </div>
+      </div>
+
+      <div className="grid two">
+        <article className="panel clv-hero">
+          <span>CLV medio</span>
+          <strong className={metrics.clvAverage >= 0 ? "pos" : "neg"}>{percent.format(metrics.clvAverage)}</strong>
+          <p>Voce bate a linha em apostas com odd de fechamento registrada.</p>
+          <svg viewBox="0 0 600 180" role="img" aria-label="Curva CLV">
+            <path d="M20 130 L80 120 L140 100 L200 112 L260 82 L320 70 L380 88 L440 58 L520 42 L580 30" fill="none" stroke="#a78bfa" strokeWidth="4" />
+            <path d="M20 130 L80 120 L140 100 L200 112 L260 82 L320 70 L380 88 L440 58 L520 42 L580 30 L580 170 L20 170 Z" fill="rgba(167,139,250,.18)" />
+          </svg>
+        </article>
+
+        <article className="panel">
+          <h2>CLV por casa</h2>
+          {byBook.map((book) => (
+            <div className="clv-row" key={book.id}>
+              <span>{book.name}</span>
+              <meter min="-0.1" max="0.1" value={book.clv} />
+              <strong className={book.clv >= 0 ? "pos" : "neg"}>{percent.format(book.clv)}</strong>
+            </div>
+          ))}
+        </article>
       </div>
     </section>
   );

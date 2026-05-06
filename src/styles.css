@@ -116,7 +116,20 @@ small {
 
 nav {
   display: grid;
+  gap: 18px;
+}
+
+.nav-group {
+  display: grid;
   gap: 6px;
+}
+
+.nav-group > span {
+  color: var(--soft);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  margin: 4px 10px;
+  text-transform: uppercase;
 }
 
 nav button {
@@ -125,7 +138,20 @@ nav button {
   padding: 10px;
   background: transparent;
   color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
   text-align: left;
+}
+
+nav button em {
+  background: var(--accent);
+  border-radius: 999px;
+  color: #062014;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+  padding: 1px 6px;
 }
 
 nav button.active,
@@ -144,12 +170,49 @@ nav button:hover {
   z-index: 2;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   padding: 16px 28px;
   border-bottom: 1px solid var(--line);
   background: rgba(7, 9, 15, 0.78);
   backdrop-filter: blur(16px);
+}
+
+.search-box {
+  align-items: center;
+  background: #0f172a;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  max-width: 480px;
+  padding: 8px 12px;
+}
+
+.search-box input {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.topbar-meta {
+  flex: 1;
+  min-width: 220px;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-actions button:not(.primary) {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--muted);
+  height: 36px;
+  min-width: 36px;
 }
 
 .topbar strong,
@@ -161,6 +224,32 @@ nav button:hover {
   max-width: 1280px;
   margin: 0 auto;
   padding: 28px;
+}
+
+.section-head {
+  align-items: flex-end;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.section-head h1 {
+  font-size: 28px;
+  margin: 0 0 6px;
+}
+
+.section-head p {
+  color: var(--muted);
+  margin: 0;
+}
+
+.section-head button {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 10px 14px;
 }
 
 .page-actions {
@@ -266,6 +355,110 @@ nav button:hover {
 
 .risk-card.danger {
   border-color: rgba(255, 107, 129, 0.42);
+}
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.intelligence-summary > span,
+.clv-hero > span {
+  color: var(--muted);
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.intelligence-summary > p {
+  color: var(--text);
+  font-size: 18px;
+}
+
+.summary-list.compact {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.heatmap {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.heatmap span,
+.heatmap b {
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 10px 6px;
+  text-align: center;
+}
+
+.heatmap span {
+  color: var(--muted);
+}
+
+.heatmap b {
+  background: rgba(148, 163, 184, 0.12);
+  font-weight: 700;
+}
+
+.heatmap .hm-pos {
+  background: rgba(34, 197, 151, 0.62);
+  color: #062014;
+}
+
+.heatmap .hm-neg {
+  background: rgba(255, 107, 129, 0.58);
+}
+
+.insight-list {
+  display: grid;
+  gap: 8px;
+}
+
+.insight-list p {
+  border-bottom: 1px solid var(--line);
+  margin: 0;
+  padding: 0 0 10px;
+}
+
+.odds-list,
+.clv-row {
+  display: grid;
+  gap: 8px;
+}
+
+.odds-list div,
+.clv-row {
+  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  padding: 7px 0;
+}
+
+.odds-list .highlight {
+  background: rgba(124, 255, 178, 0.08);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.clv-hero strong {
+  display: block;
+  font-size: 54px;
+  margin-top: 10px;
+}
+
+.clv-hero svg {
+  height: 180px;
+  width: 100%;
+}
+
+.clv-row {
+  grid-template-columns: 110px 1fr 70px;
 }
 
 .panel {
@@ -564,6 +757,24 @@ textarea {
   grid-column: 1 / -1;
 }
 
+.fab {
+  align-items: center;
+  background: linear-gradient(135deg, var(--accent), var(--cyan));
+  border: 0;
+  border-radius: 999px;
+  bottom: 28px;
+  box-shadow: 0 18px 44px rgba(124, 255, 178, 0.26);
+  color: #062014;
+  display: flex;
+  font-size: 26px;
+  font-weight: 900;
+  height: 58px;
+  justify-content: center;
+  position: fixed;
+  right: 28px;
+  width: 58px;
+}
+
 .report-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -635,6 +846,7 @@ textarea {
   .grid.two,
   .form,
   .report-grid,
+  .insight-grid,
   .auth-grid,
   .transaction-form,
   .strategy-form,
@@ -646,5 +858,14 @@ textarea {
   .page-actions {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .topbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .search-box {
+    max-width: none;
   }
 }

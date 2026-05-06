@@ -27,6 +27,11 @@ Inclui:
 - Gestao de estrategias com ROI, acerto, CLV e pausa/reativacao.
 - Alertas basicos de risco: sequencia negativa, exposicao aberta e stake acima da unidade.
 - Configuracao de limites de risco por usuario.
+- Topbar com busca global visual, atalhos e acao rapida.
+- Navegacao lateral agrupada conforme prototipo.
+- Tela Inteligencia com resumo, sugestoes, exposicao e comparador de odds.
+- Tela CLV & Edge com CLV medio e CLV por casa.
+- Botao flutuante de nova aposta.
 
 ## Comandos
 
@@ -59,4 +64,5 @@ Copie `.env.example` para `.env.local` se quiser rodar analytics com as variavei
 - Implementar upload de print/OCR.
 - Recalculo contabil completo por ledger.
 - Bloqueio/cooldown baseado nos limites de risco.
+- Busca global funcional por evento, liga, mercado e tag.
 - Criar relatorios em PDF/HTML.

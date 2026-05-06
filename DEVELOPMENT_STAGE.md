@@ -32,6 +32,10 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Gestao de estrategias com metricas reais por metodo.
 - Alertas basicos de risco no dashboard.
 - Configuracao de limites de risco: unidade, stake maxima, exposicao aberta e perdas seguidas.
+- Revisao visual baseada nas telas do prototipo.
+- Navegacao lateral agrupada e topbar com busca visual.
+- Telas dedicadas de Inteligencia e CLV & Edge.
+- Botao flutuante para nova aposta.
 
 ## Ainda nao entregue
 
@@ -45,6 +49,8 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - PDF real dos relatorios.
 - Ledger contabil completo com auditoria.
 - Lockout/cooldown baseado nos limites configurados.
+- Busca global funcional.
+- Graficos mais fieis ao prototipo.
 
 ## Criterio de aceite desta etapa
 
@@ -60,4 +66,5 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Usuario deve conseguir criar, pausar e reativar estrategias.
 - Dashboard deve exibir alertas de risco quando houver exposicao elevada, stake acima da unidade ou sequencia negativa.
 - Usuario deve conseguir ajustar os limites que disparam alertas de risco.
+- Usuario deve conseguir acessar Inteligencia e CLV em telas separadas.
 - Usuario deve conseguir conectar via Auth anonimo e salvar/carregar snapshot no Firestore, desde que Auth/Firestore estejam habilitados no Firebase.
