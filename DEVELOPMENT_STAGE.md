@@ -20,6 +20,8 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Liquidacao rapida de aposta pendente.
 - Persistencia demo via `localStorage`.
 - Firebase Auth anonimo opcional.
+- Firebase Auth com email/senha.
+- Recuperacao de senha por email.
 - Snapshot de estado no Firestore por usuario.
 - Carregamento de snapshot do Firestore.
 - Exportacao CSV das apostas.
@@ -29,7 +31,7 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 
 ## Ainda nao entregue
 
-- Login real por email/Google.
+- Login Google.
 - Cloud Functions.
 - OCR.
 - Importacao CSV/Excel.
@@ -47,4 +49,5 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Usuario deve conseguir exportar CSV.
 - Usuario deve conseguir importar CSV exportado pelo Banca+.
 - Usuario deve conseguir acessar relatorios e exportar bases mensal/fiscal.
+- Usuario deve conseguir criar conta, entrar e recuperar senha se Firebase Auth estiver habilitado.
 - Usuario deve conseguir conectar via Auth anonimo e salvar/carregar snapshot no Firestore, desde que Auth/Firestore estejam habilitados no Firebase.

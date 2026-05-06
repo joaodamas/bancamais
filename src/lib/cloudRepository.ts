@@ -1,4 +1,13 @@
-import { onAuthStateChanged, signInAnonymously, signOut, type User } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInAnonymously,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
+  type User,
+} from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import type { AppState } from "./types";
@@ -12,6 +21,24 @@ export function watchAuth(callback: (user: User | null) => void) {
 export async function signInDemoUser() {
   const credential = await signInAnonymously(auth);
   return credential.user;
+}
+
+export async function createEmailUser(email: string, password: string, displayName: string) {
+  const credential = await createUserWithEmailAndPassword(auth, email, password);
+  if (displayName.trim()) {
+    await updateProfile(credential.user, { displayName: displayName.trim() });
+  }
+
+  return credential.user;
+}
+
+export async function signInEmailUser(email: string, password: string) {
+  const credential = await signInWithEmailAndPassword(auth, email, password);
+  return credential.user;
+}
+
+export async function resetEmailPassword(email: string) {
+  await sendPasswordResetEmail(auth, email);
 }
 
 export async function signOutDemoUser() {

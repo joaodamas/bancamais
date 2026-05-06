@@ -453,6 +453,46 @@ textarea {
   letter-spacing: 0.08em;
 }
 
+.settings-layout {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-message {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(124, 255, 178, 0.05);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.auth-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+}
+
+.auth-grid form {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  background: rgba(11, 15, 26, 0.62);
+}
+
+.auth-grid h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
 .report-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -524,6 +564,7 @@ textarea {
   .grid.two,
   .form,
   .report-grid,
+  .auth-grid,
   .settings-grid {
     grid-template-columns: 1fr;
   }

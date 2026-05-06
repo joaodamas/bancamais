@@ -19,6 +19,8 @@ Inclui:
 - Calculos financeiros isolados em `src/lib/metrics.ts`.
 - Persistencia local em `localStorage` para validacao rapida.
 - Sincronizacao opcional com Firebase Auth anonimo + Firestore.
+- Cadastro/login por email e senha com Firebase Auth.
+- Recuperacao de senha por email.
 - Firebase Hosting, Firestore Rules e Storage Rules iniciais.
 - Relatorios basicos com exportacao de base mensal/fiscal.
 
@@ -48,7 +50,7 @@ Copie `.env.example` para `.env.local` se quiser rodar analytics com as variavei
 
 ## Proxima etapa
 
-- Trocar Auth anonimo por login real.
 - Usar Firestore como fonte principal quando autenticado.
+- Adicionar login Google.
 - Implementar upload de print/OCR.
 - Criar relatorios em PDF/HTML.

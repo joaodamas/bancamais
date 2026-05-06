@@ -1,7 +1,16 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { User } from "firebase/auth";
 import { BrandLogo } from "./components/BrandLogo";
-import { loadCloudState, saveCloudState, signInDemoUser, signOutDemoUser, watchAuth } from "./lib/cloudRepository";
+import {
+  createEmailUser,
+  loadCloudState,
+  resetEmailPassword,
+  saveCloudState,
+  signInDemoUser,
+  signInEmailUser,
+  signOutDemoUser,
+  watchAuth,
+} from "./lib/cloudRepository";
 import { betsToCsv, downloadTextFile, parseBetsCsv } from "./lib/csv";
 import { calculateMetrics, clvPercent, groupProfitByBookmaker, groupProfitBySport, money, percent, potentialReturn } from "./lib/metrics";
 import { createBetId, loadState, resetState, saveState } from "./lib/storage";
@@ -32,9 +41,19 @@ export function App() {
   const [state, setState] = useState<AppState>(() => loadState());
   const [user, setUser] = useState<User | null>(null);
   const [syncStatus, setSyncStatus] = useState("Modo demo local");
+  const [authMessage, setAuthMessage] = useState("Entre para sincronizar seus dados em nuvem.");
   const metrics = useMemo(() => calculateMetrics(state), [state]);
 
-  useEffect(() => watchAuth(setUser), []);
+  useEffect(() => watchAuth((nextUser) => {
+    setUser(nextUser);
+    if (!nextUser) {
+      setSyncStatus("Modo demo local");
+      return;
+    }
+
+    const label = nextUser.isAnonymous ? "usuario anonimo" : nextUser.email ?? "usuario autenticado";
+    setSyncStatus(`Conectado como ${label}`);
+  }), []);
 
   function updateState(next: AppState) {
     setState(next);
@@ -48,6 +67,60 @@ export function App() {
       setSyncStatus(`Conectado anonimamente: ${signedUser.uid.slice(0, 8)}`);
     } catch (error) {
       setSyncStatus(error instanceof Error ? error.message : "Falha ao conectar ao Firebase");
+    }
+  }
+
+  async function createAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const displayName = String(data.get("displayName"));
+    const email = String(data.get("email"));
+    const password = String(data.get("password"));
+
+    setAuthMessage("Criando conta...");
+    try {
+      const createdUser = await createEmailUser(email, password, displayName);
+      await saveCloudState(createdUser.uid, state);
+      setAuthMessage(`Conta criada para ${createdUser.email}. Snapshot local salvo na nuvem.`);
+    } catch (error) {
+      setAuthMessage(error instanceof Error ? error.message : "Falha ao criar conta.");
+    }
+  }
+
+  async function signInAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const email = String(data.get("email"));
+    const password = String(data.get("password"));
+
+    setAuthMessage("Entrando...");
+    try {
+      const signedUser = await signInEmailUser(email, password);
+      const cloudState = await loadCloudState(signedUser.uid);
+      if (cloudState) {
+        updateState(cloudState);
+        setAuthMessage("Login feito. Snapshot carregado da nuvem.");
+        return;
+      }
+
+      await saveCloudState(signedUser.uid, state);
+      setAuthMessage("Login feito. Nenhum snapshot anterior encontrado; estado local salvo na nuvem.");
+    } catch (error) {
+      setAuthMessage(error instanceof Error ? error.message : "Falha ao entrar.");
+    }
+  }
+
+  async function sendReset(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const email = String(data.get("email"));
+
+    setAuthMessage("Enviando reset...");
+    try {
+      await resetEmailPassword(email);
+      setAuthMessage("Email de recuperacao enviado.");
+    } catch (error) {
+      setAuthMessage(error instanceof Error ? error.message : "Falha ao enviar recuperacao.");
     }
   }
 
@@ -163,7 +236,7 @@ export function App() {
         <header className="topbar">
           <div>
             <strong>{viewTitle(view)}</strong>
-            <span>Repositorio joaodamas/bancamais · dominio bancamais.jpproject.com.br</span>
+            <span>{user ? accountLabel(user) : "Modo local"} · bancamais.jpproject.com.br</span>
           </div>
           <button className="primary" onClick={() => setView("new-bet")}>Nova aposta</button>
         </header>
@@ -184,6 +257,10 @@ export function App() {
             disconnectCloud={disconnectCloud}
             pushCloud={pushCloud}
             pullCloud={pullCloud}
+            createAccount={createAccount}
+            signInAccount={signInAccount}
+            sendReset={sendReset}
+            authMessage={authMessage}
           />
         )}
       </main>
@@ -194,6 +271,11 @@ export function App() {
 function viewTitle(view: View) {
   const item = navItems.find((nav) => nav.id === view);
   return item?.label ?? "Banca+";
+}
+
+function accountLabel(user: User) {
+  if (user.isAnonymous) return `Conectado anonimo ${user.uid.slice(0, 8)}`;
+  return user.displayName || user.email || "Conta conectada";
 }
 
 function Dashboard({ state, metrics }: { state: AppState; metrics: ReturnType<typeof calculateMetrics> }) {
@@ -527,6 +609,10 @@ function Settings({
   disconnectCloud,
   pushCloud,
   pullCloud,
+  createAccount,
+  signInAccount,
+  sendReset,
+  authMessage,
 }: {
   state: AppState;
   reset: () => void;
@@ -536,9 +622,14 @@ function Settings({
   disconnectCloud: () => Promise<void>;
   pushCloud: () => Promise<void>;
   pullCloud: () => Promise<void>;
+  createAccount: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  signInAccount: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  sendReset: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  authMessage: string;
 }) {
   return (
     <section className="page">
+      <div className="settings-layout">
       <article className="panel">
         <h2>Etapa atual</h2>
         <p>
@@ -567,6 +658,39 @@ function Settings({
           </div>
         </div>
       </article>
+
+      <article className="panel auth-panel">
+        <h2>Conta Banca+</h2>
+        <p>
+          Use email e senha para criar uma conta real no Firebase Auth. Ao criar ou entrar,
+          o app salva/carrega o snapshot do Firestore automaticamente.
+        </p>
+        <div className="auth-message">{authMessage}</div>
+
+        <div className="auth-grid">
+          <form onSubmit={createAccount}>
+            <h3>Criar conta</h3>
+            <label>Nome<input name="displayName" placeholder="Joao Damas" /></label>
+            <label>Email<input name="email" required type="email" placeholder="voce@email.com" /></label>
+            <label>Senha<input name="password" required minLength={6} type="password" placeholder="minimo 6 caracteres" /></label>
+            <button className="primary" type="submit">Criar e sincronizar</button>
+          </form>
+
+          <form onSubmit={signInAccount}>
+            <h3>Entrar</h3>
+            <label>Email<input name="email" required type="email" placeholder="voce@email.com" /></label>
+            <label>Senha<input name="password" required type="password" /></label>
+            <button className="primary" type="submit">Entrar</button>
+          </form>
+
+          <form onSubmit={sendReset}>
+            <h3>Recuperar senha</h3>
+            <label>Email<input name="email" required type="email" placeholder="voce@email.com" /></label>
+            <button type="submit">Enviar reset</button>
+          </form>
+        </div>
+      </article>
+      </div>
     </section>
   );
 }
