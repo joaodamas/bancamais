@@ -1,0 +1,72 @@
+export type BetStatus = "pending" | "won" | "lost" | "cashout" | "void";
+
+export type TransactionType = "deposit" | "withdrawal" | "transfer" | "adjustment";
+
+export type BookmakerStatus = "synced" | "manual" | "reconnect";
+
+export interface BookmakerAccount {
+  id: string;
+  name: string;
+  balance: number;
+  status: BookmakerStatus;
+  lastSyncLabel: string;
+}
+
+export interface Strategy {
+  id: string;
+  name: string;
+  description: string;
+  status: "active" | "paused";
+}
+
+export interface Bet {
+  id: string;
+  placedAt: string;
+  eventAt: string;
+  sport: string;
+  league: string;
+  eventName: string;
+  market: string;
+  selection: string;
+  bookmakerId: string;
+  strategyId?: string;
+  tags: string[];
+  stake: number;
+  odds: number;
+  status: BetStatus;
+  payout?: number;
+  closingOdds?: number;
+  mode: "prelive" | "live";
+}
+
+export interface Transaction {
+  id: string;
+  date: string;
+  type: TransactionType;
+  bookmakerId: string;
+  description: string;
+  amount: number;
+}
+
+export interface AppState {
+  bankrollName: string;
+  currency: "BRL";
+  startingBalance: number;
+  bookmakers: BookmakerAccount[];
+  strategies: Strategy[];
+  bets: Bet[];
+  transactions: Transaction[];
+}
+
+export interface DashboardMetrics {
+  totalBalance: number;
+  openExposure: number;
+  profit: number;
+  roi: number;
+  yield: number;
+  hitRate: number;
+  averageOdds: number;
+  clvAverage: number;
+  pendingCount: number;
+  settledCount: number;
+}
