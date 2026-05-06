@@ -12,7 +12,9 @@ Inclui:
 - Lista de apostas com status e liquidacao rapida.
 - Cadastro manual de nova aposta.
 - Exportacao CSV das apostas.
+- Importacao CSV no mesmo contrato de dados da exportacao.
 - Bancas/casas seedadas com Bet365, Betano, Sportingbet e KTO.
+- Logo inicial em SVG e guia visual.
 - Modelos de dominio em TypeScript.
 - Calculos financeiros isolados em `src/lib/metrics.ts`.
 - Persistencia local em `localStorage` para validacao rapida.
@@ -48,4 +50,4 @@ Copie `.env.example` para `.env.local` se quiser rodar analytics com as variavei
 - Trocar Auth anonimo por login real.
 - Usar Firestore como fonte principal quando autenticado.
 - Implementar upload de print/OCR.
-- Criar relatorios basicos e exportacao CSV.
+- Criar relatorios basicos em PDF/HTML.

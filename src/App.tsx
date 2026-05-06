@@ -1,12 +1,13 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { User } from "firebase/auth";
+import { BrandLogo } from "./components/BrandLogo";
 import { loadCloudState, saveCloudState, signInDemoUser, signOutDemoUser, watchAuth } from "./lib/cloudRepository";
-import { betsToCsv, downloadTextFile } from "./lib/csv";
+import { betsToCsv, downloadTextFile, parseBetsCsv } from "./lib/csv";
 import { calculateMetrics, clvPercent, groupProfitByBookmaker, groupProfitBySport, money, percent, potentialReturn } from "./lib/metrics";
 import { createBetId, loadState, resetState, saveState } from "./lib/storage";
 import type { AppState, Bet } from "./lib/types";
 
-type View = "dashboard" | "bets" | "new-bet" | "books" | "settings";
+type View = "dashboard" | "bets" | "new-bet" | "import" | "books" | "settings";
 
 const statusLabel: Record<Bet["status"], string> = {
   pending: "Pendente",
@@ -20,6 +21,7 @@ const navItems: Array<{ id: View; label: string }> = [
   { id: "dashboard", label: "Dashboard" },
   { id: "bets", label: "Apostas" },
   { id: "new-bet", label: "Nova aposta" },
+  { id: "import", label: "Importar" },
   { id: "books", label: "Bancas & casas" },
   { id: "settings", label: "Configuracoes" },
 ];
@@ -130,16 +132,17 @@ export function App() {
     });
   }
 
+  function importBets(bets: Bet[]) {
+    const existingIds = new Set(state.bets.map((bet) => bet.id));
+    const uniqueBets = bets.filter((bet) => !existingIds.has(bet.id));
+    updateState({ ...state, bets: [...uniqueBets, ...state.bets] });
+    setView("bets");
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-mark">+</div>
-          <div>
-            <strong>Banca+</strong>
-            <span>Controle profissional</span>
-          </div>
-        </div>
+        <BrandLogo />
 
         <button className="bank-pill" onClick={() => setView("books")}>
           <span>{state.bankrollName}</span>
@@ -167,6 +170,7 @@ export function App() {
         {view === "dashboard" && <Dashboard state={state} metrics={metrics} />}
         {view === "bets" && <Bets state={state} settleBet={settleBet} />}
         {view === "new-bet" && <NewBet state={state} addBet={addBet} />}
+        {view === "import" && <Import state={state} importBets={importBets} />}
         {view === "books" && <Books state={state} />}
         {view === "settings" && (
           <Settings
@@ -343,6 +347,84 @@ function NewBet({ state, addBet }: { state: AppState; addBet: (event: FormEvent<
           <button className="primary" type="submit">Salvar aposta</button>
         </div>
       </form>
+    </section>
+  );
+}
+
+function Import({ state, importBets }: { state: AppState; importBets: (bets: Bet[]) => void }) {
+  const [csv, setCsv] = useState("");
+  const [message, setMessage] = useState("Cole um CSV exportado pelo Banca+ ou por planilha equivalente.");
+
+  async function readFile(file: File) {
+    setCsv(await file.text());
+    setMessage(`Arquivo carregado: ${file.name}`);
+  }
+
+  function previewImport() {
+    const result = parseBetsCsv(csv, state);
+    if (result.bets.length === 0) {
+      setMessage(result.errors.join(" ") || "Nenhuma aposta valida encontrada.");
+      return;
+    }
+
+    if (result.errors.length > 0) {
+      setMessage(`${result.bets.length} apostas validas. Alertas: ${result.errors.join(" ")}`);
+      return;
+    }
+
+    setMessage(`${result.bets.length} apostas prontas para importar.`);
+  }
+
+  function commitImport() {
+    const result = parseBetsCsv(csv, state);
+    if (result.bets.length === 0) {
+      setMessage(result.errors.join(" ") || "Nenhuma aposta valida encontrada.");
+      return;
+    }
+
+    importBets(result.bets);
+  }
+
+  return (
+    <section className="page">
+      <div className="panel import-panel">
+        <div>
+          <h2>Importar apostas por CSV</h2>
+          <p>
+            Esta etapa aceita o mesmo formato gerado em Exportar CSV. Isso ja cria o caminho
+            para migrar planilhas e historico antes de construir OCR e conectores.
+          </p>
+        </div>
+
+        <label className="file-drop">
+          <span>Selecionar arquivo CSV</span>
+          <input
+            accept=".csv,text/csv"
+            type="file"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void readFile(file);
+            }}
+          />
+        </label>
+
+        <label className="full">
+          Conteudo CSV
+          <textarea
+            value={csv}
+            onChange={(event) => setCsv(event.target.value)}
+            placeholder="id,placedAt,eventAt,sport,league,eventName,market,selection,bookmaker,stake,odds,status,payout,closingOdds,mode,tags"
+          />
+        </label>
+
+        <div className="form-actions">
+          <span>{message}</span>
+          <div className="actions">
+            <button type="button" onClick={previewImport}>Validar</button>
+            <button className="primary" type="button" onClick={commitImport}>Importar</button>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }

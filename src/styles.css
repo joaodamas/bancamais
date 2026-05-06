@@ -50,30 +50,48 @@ button {
   padding: 22px 16px;
 }
 
-.brand {
+.brand-logo {
   display: flex;
   gap: 12px;
   align-items: center;
   margin-bottom: 18px;
 }
 
-.brand-mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--accent), var(--cyan));
-  color: #062014;
-  display: grid;
-  place-items: center;
-  font-weight: 900;
+.brand-logo.compact {
+  margin-bottom: 0;
 }
 
-.brand strong {
+.brand-symbol {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 12px 24px rgba(124, 255, 178, 0.12));
+}
+
+.symbol-bg {
+  fill: url("#brand-gradient");
+}
+
+.symbol-b,
+.symbol-plus {
+  fill: #062014;
+}
+
+.symbol-line {
+  fill: none;
+  stroke: #062014;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.55;
+}
+
+.brand-logo strong {
   display: block;
   font-size: 22px;
 }
 
-.brand span,
+.brand-logo span,
 .topbar span,
 small {
   color: var(--muted);
@@ -346,13 +364,40 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 9px;
   padding: 11px 12px;
   background: #0b0f1a;
   color: var(--text);
+}
+
+textarea {
+  min-height: 220px;
+  resize: vertical;
+}
+
+.import-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.file-drop {
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  background: rgba(124, 255, 178, 0.04);
+}
+
+.file-drop span {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.file-drop input {
+  margin-top: 10px;
 }
 
 .form-actions {

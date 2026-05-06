@@ -23,6 +23,8 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Snapshot de estado no Firestore por usuario.
 - Carregamento de snapshot do Firestore.
 - Exportacao CSV das apostas.
+- Importacao CSV das apostas.
+- Primeiro sistema visual de marca: logo SVG, favicon e guia visual.
 
 ## Ainda nao entregue
 
@@ -30,6 +32,7 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Cloud Functions.
 - OCR.
 - Importacao CSV/Excel.
+- Importacao Excel.
 - Pagamentos.
 - Deploy com dominio customizado.
 
@@ -40,4 +43,5 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Usuario deve conseguir cadastrar uma aposta e ver metricas atualizadas.
 - Usuario deve conseguir liquidar aposta pendente.
 - Usuario deve conseguir exportar CSV.
+- Usuario deve conseguir importar CSV exportado pelo Banca+.
 - Usuario deve conseguir conectar via Auth anonimo e salvar/carregar snapshot no Firestore, desde que Auth/Firestore estejam habilitados no Firebase.
