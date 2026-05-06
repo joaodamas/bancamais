@@ -12,11 +12,21 @@ import {
   watchAuth,
 } from "./lib/cloudRepository";
 import { betsToCsv, downloadTextFile, parseBetsCsv } from "./lib/csv";
-import { calculateMetrics, clvPercent, groupProfitByBookmaker, groupProfitBySport, money, percent, potentialReturn } from "./lib/metrics";
-import { createBetId, createTransactionId, loadState, resetState, saveState } from "./lib/storage";
-import type { AppState, Bet, Transaction, TransactionType } from "./lib/types";
+import {
+  calculateMetrics,
+  clvPercent,
+  groupProfitByBookmaker,
+  groupProfitBySport,
+  groupProfitByStrategy,
+  money,
+  percent,
+  potentialReturn,
+  riskAlerts,
+} from "./lib/metrics";
+import { createBetId, createStrategyId, createTransactionId, loadState, resetState, saveState } from "./lib/storage";
+import type { AppState, Bet, Strategy, Transaction, TransactionType } from "./lib/types";
 
-type View = "dashboard" | "bets" | "new-bet" | "import" | "reports" | "books" | "settings";
+type View = "dashboard" | "bets" | "new-bet" | "import" | "strategies" | "reports" | "books" | "settings";
 
 const statusLabel: Record<Bet["status"], string> = {
   pending: "Pendente",
@@ -31,6 +41,7 @@ const navItems: Array<{ id: View; label: string }> = [
   { id: "bets", label: "Apostas" },
   { id: "new-bet", label: "Nova aposta" },
   { id: "import", label: "Importar" },
+  { id: "strategies", label: "Estrategias" },
   { id: "reports", label: "Relatorios" },
   { id: "books", label: "Bancas & casas" },
   { id: "settings", label: "Configuracoes" },
@@ -247,6 +258,31 @@ export function App() {
     event.currentTarget.reset();
   }
 
+  function addStrategy(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const strategy: Strategy = {
+      id: createStrategyId(),
+      name: String(data.get("name")),
+      description: String(data.get("description")),
+      status: "active",
+    };
+
+    updateState({ ...state, strategies: [strategy, ...state.strategies] });
+    event.currentTarget.reset();
+  }
+
+  function toggleStrategy(id: string) {
+    updateState({
+      ...state,
+      strategies: state.strategies.map((strategy) => (
+        strategy.id === id
+          ? { ...strategy, status: strategy.status === "active" ? "paused" : "active" }
+          : strategy
+      )),
+    });
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -279,6 +315,7 @@ export function App() {
         {view === "bets" && <Bets state={state} settleBet={settleBet} />}
         {view === "new-bet" && <NewBet state={state} addBet={addBet} />}
         {view === "import" && <Import state={state} importBets={importBets} />}
+        {view === "strategies" && <Strategies state={state} addStrategy={addStrategy} toggleStrategy={toggleStrategy} />}
         {view === "reports" && <Reports state={state} metrics={metrics} />}
         {view === "books" && <Books state={state} addTransaction={addTransaction} />}
         {view === "settings" && (
@@ -315,6 +352,7 @@ function accountLabel(user: User) {
 function Dashboard({ state, metrics }: { state: AppState; metrics: ReturnType<typeof calculateMetrics> }) {
   const byBook = groupProfitByBookmaker(state);
   const bySport = groupProfitBySport(state);
+  const alerts = riskAlerts(state);
   const bestBook = [...byBook].sort((a, b) => b.profit - a.profit)[0];
   const worstSport = [...bySport].sort((a, b) => a.profit - b.profit)[0];
 
@@ -354,6 +392,22 @@ function Dashboard({ state, metrics }: { state: AppState; metrics: ReturnType<ty
             </div>
           ))}
         </article>
+      </div>
+
+      <div className="risk-grid">
+        {alerts.length > 0 ? alerts.map((alert) => (
+          <article className={`panel risk-card ${alert.level}`} key={alert.title}>
+            <span>{alert.level === "danger" ? "Risco alto" : "Atencao"}</span>
+            <strong>{alert.title}</strong>
+            <p>{alert.detail}</p>
+          </article>
+        )) : (
+          <article className="panel risk-card">
+            <span>Risco controlado</span>
+            <strong>Nenhum alerta critico</strong>
+            <p>A banca nao apresenta exposicao aberta elevada ou sequencia negativa relevante neste momento.</p>
+          </article>
+        )}
       </div>
     </section>
   );
@@ -600,6 +654,65 @@ function Books({ state, addTransaction }: { state: AppState; addTransaction: (ev
             ))}
           </div>
         </article>
+      </div>
+    </section>
+  );
+}
+
+function Strategies({
+  state,
+  addStrategy,
+  toggleStrategy,
+}: {
+  state: AppState;
+  addStrategy: (event: FormEvent<HTMLFormElement>) => void;
+  toggleStrategy: (id: string) => void;
+}) {
+  const rows = groupProfitByStrategy(state);
+
+  return (
+    <section className="page">
+      <div className="strategy-layout">
+        <form className="panel strategy-form" onSubmit={addStrategy}>
+          <h2>Nova estrategia</h2>
+          <label>Nome<input name="name" required placeholder="Over 1.5 ligas europeias" /></label>
+          <label>Descricao<input name="description" required placeholder="Pre-live, odds 1.40 a 1.70" /></label>
+          <button className="primary" type="submit">Criar estrategia</button>
+        </form>
+
+        <div className="table-card">
+          <table>
+            <thead>
+              <tr>
+                <th>Estrategia</th>
+                <th>Apostas</th>
+                <th>ROI</th>
+                <th>Acerto</th>
+                <th>CLV</th>
+                <th>Lucro</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <strong>{row.name}</strong>
+                    <small>{row.description}</small>
+                  </td>
+                  <td>{row.bets}</td>
+                  <td className={row.roi >= 0 ? "pos" : "neg"}>{percent.format(row.roi)}</td>
+                  <td>{percent.format(row.hitRate)}</td>
+                  <td className={row.clvAverage >= 0 ? "pos" : "neg"}>{percent.format(row.clvAverage)}</td>
+                  <td className={row.profit >= 0 ? "pos" : "neg"}>{money.format(row.profit)}</td>
+                  <td><span className={`pill ${row.status === "active" ? "won" : "pending"}`}>{row.status === "active" ? "Ativa" : "Pausada"}</span></td>
+                  <td><button onClick={() => toggleStrategy(row.id)}>{row.status === "active" ? "Pausar" : "Reativar"}</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );

@@ -236,6 +236,38 @@ nav button:hover {
   gap: 14px;
 }
 
+.risk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.risk-card span,
+.risk-card strong {
+  display: block;
+}
+
+.risk-card span {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.risk-card strong {
+  margin-top: 8px;
+  font-size: 18px;
+}
+
+.risk-card.warning {
+  border-color: rgba(255, 181, 71, 0.36);
+}
+
+.risk-card.danger {
+  border-color: rgba(255, 107, 129, 0.42);
+}
+
 .panel {
   padding: 18px;
 }
@@ -441,6 +473,22 @@ textarea {
   grid-column: 1 / -1;
 }
 
+.strategy-layout {
+  display: grid;
+  gap: 14px;
+}
+
+.strategy-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.strategy-form h2 {
+  grid-column: 1 / -1;
+}
+
 .settings-grid {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -577,6 +625,7 @@ textarea {
   .report-grid,
   .auth-grid,
   .transaction-form,
+  .strategy-form,
   .settings-grid {
     grid-template-columns: 1fr;
   }

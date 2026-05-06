@@ -74,3 +74,60 @@ export function groupProfitBySport(state: AppState): Array<{ sport: string; stak
 
   return [...groups.values()].sort((a, b) => b.stake - a.stake);
 }
+
+export function groupProfitByStrategy(state: AppState) {
+  return state.strategies.map((strategy) => {
+    const bets = state.bets.filter((bet) => bet.strategyId === strategy.id);
+    const settled = bets.filter((bet) => bet.status !== "pending" && bet.status !== "void");
+    const stake = bets.reduce((sum, bet) => sum + bet.stake, 0);
+    const settledStake = settled.reduce((sum, bet) => sum + bet.stake, 0);
+    const profit = bets.reduce((sum, bet) => sum + betProfit(bet), 0);
+    const wins = settled.filter((bet) => bet.status === "won" || bet.status === "cashout").length;
+    const clvs = bets.map(clvPercent).filter((value): value is number => value !== null);
+
+    return {
+      ...strategy,
+      bets: bets.length,
+      stake,
+      profit,
+      roi: settledStake > 0 ? profit / settledStake : 0,
+      hitRate: settled.length > 0 ? wins / settled.length : 0,
+      clvAverage: clvs.length > 0 ? clvs.reduce((sum, value) => sum + value, 0) / clvs.length : 0,
+    };
+  });
+}
+
+export function riskAlerts(state: AppState) {
+  const metrics = calculateMetrics(state);
+  const lastBets = [...state.bets].sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
+  const recentLosses = lastBets.slice(0, 3).filter((bet) => bet.status === "lost").length;
+  const largestPending = state.bets.filter((bet) => bet.status === "pending").sort((a, b) => b.stake - a.stake)[0];
+  const unit = metrics.totalBalance * 0.01;
+  const alerts: Array<{ level: "warning" | "danger"; title: string; detail: string }> = [];
+
+  if (recentLosses >= 2) {
+    alerts.push({
+      level: "danger",
+      title: "Sequencia negativa",
+      detail: `${recentLosses} perdas nas ultimas 3 apostas registradas. Considere reduzir ritmo antes de novas entradas.`,
+    });
+  }
+
+  if (largestPending && largestPending.stake > unit * 2) {
+    alerts.push({
+      level: "warning",
+      title: "Stake acima da unidade",
+      detail: `${largestPending.eventName} tem stake de ${money.format(largestPending.stake)}, acima de 2u pela banca atual.`,
+    });
+  }
+
+  if (metrics.openExposure > metrics.totalBalance * 0.05) {
+    alerts.push({
+      level: "warning",
+      title: "Exposicao aberta elevada",
+      detail: `${money.format(metrics.openExposure)} em apostas pendentes, acima de 5% da banca total.`,
+    });
+  }
+
+  return alerts;
+}
