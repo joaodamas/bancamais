@@ -1,4 +1,7 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import type { User } from "firebase/auth";
+import { loadCloudState, saveCloudState, signInDemoUser, signOutDemoUser, watchAuth } from "./lib/cloudRepository";
+import { betsToCsv, downloadTextFile } from "./lib/csv";
 import { calculateMetrics, clvPercent, groupProfitByBookmaker, groupProfitBySport, money, percent, potentialReturn } from "./lib/metrics";
 import { createBetId, loadState, resetState, saveState } from "./lib/storage";
 import type { AppState, Bet } from "./lib/types";
@@ -24,11 +27,66 @@ const navItems: Array<{ id: View; label: string }> = [
 export function App() {
   const [view, setView] = useState<View>("dashboard");
   const [state, setState] = useState<AppState>(() => loadState());
+  const [user, setUser] = useState<User | null>(null);
+  const [syncStatus, setSyncStatus] = useState("Modo demo local");
   const metrics = useMemo(() => calculateMetrics(state), [state]);
+
+  useEffect(() => watchAuth(setUser), []);
 
   function updateState(next: AppState) {
     setState(next);
     saveState(next);
+  }
+
+  async function connectCloud() {
+    setSyncStatus("Conectando ao Firebase...");
+    try {
+      const signedUser = await signInDemoUser();
+      setSyncStatus(`Conectado anonimamente: ${signedUser.uid.slice(0, 8)}`);
+    } catch (error) {
+      setSyncStatus(error instanceof Error ? error.message : "Falha ao conectar ao Firebase");
+    }
+  }
+
+  async function disconnectCloud() {
+    await signOutDemoUser();
+    setSyncStatus("Modo demo local");
+  }
+
+  async function pushCloud() {
+    if (!user) {
+      setSyncStatus("Conecte ao Firebase antes de salvar na nuvem.");
+      return;
+    }
+
+    setSyncStatus("Salvando snapshot no Firestore...");
+    try {
+      await saveCloudState(user.uid, state);
+      setSyncStatus(`Snapshot salvo no Firestore em ${new Date().toLocaleTimeString("pt-BR")}`);
+    } catch (error) {
+      setSyncStatus(error instanceof Error ? error.message : "Falha ao salvar no Firestore");
+    }
+  }
+
+  async function pullCloud() {
+    if (!user) {
+      setSyncStatus("Conecte ao Firebase antes de carregar da nuvem.");
+      return;
+    }
+
+    setSyncStatus("Carregando snapshot do Firestore...");
+    try {
+      const cloudState = await loadCloudState(user.uid);
+      if (!cloudState) {
+        setSyncStatus("Nenhum snapshot encontrado na nuvem.");
+        return;
+      }
+
+      updateState(cloudState);
+      setSyncStatus(`Snapshot carregado do Firestore em ${new Date().toLocaleTimeString("pt-BR")}`);
+    } catch (error) {
+      setSyncStatus(error instanceof Error ? error.message : "Falha ao carregar do Firestore");
+    }
   }
 
   function addBet(event: FormEvent<HTMLFormElement>) {
@@ -114,6 +172,12 @@ export function App() {
           <Settings
             state={state}
             reset={() => updateState(resetState())}
+            user={user}
+            syncStatus={syncStatus}
+            connectCloud={connectCloud}
+            disconnectCloud={disconnectCloud}
+            pushCloud={pushCloud}
+            pullCloud={pullCloud}
           />
         )}
       </main>
@@ -186,6 +250,13 @@ function Metric({ label, value, detail, tone }: { label: string; value: string; 
 function Bets({ state, settleBet }: { state: AppState; settleBet: (id: string, status: Bet["status"]) => void }) {
   return (
     <section className="page">
+      <div className="page-actions">
+        <div>
+          <strong>{state.bets.length} apostas registradas</strong>
+          <span>Exportacao CSV pronta para relatorios e migracao de dados.</span>
+        </div>
+        <button onClick={() => downloadTextFile("bancamais-apostas.csv", betsToCsv(state))}>Exportar CSV</button>
+      </div>
       <div className="table-card">
         <table>
           <thead>
@@ -291,7 +362,25 @@ function Books({ state }: { state: AppState }) {
   );
 }
 
-function Settings({ state, reset }: { state: AppState; reset: () => void }) {
+function Settings({
+  state,
+  reset,
+  user,
+  syncStatus,
+  connectCloud,
+  disconnectCloud,
+  pushCloud,
+  pullCloud,
+}: {
+  state: AppState;
+  reset: () => void;
+  user: User | null;
+  syncStatus: string;
+  connectCloud: () => Promise<void>;
+  disconnectCloud: () => Promise<void>;
+  pushCloud: () => Promise<void>;
+  pullCloud: () => Promise<void>;
+}) {
   return (
     <section className="page">
       <article className="panel">
@@ -301,10 +390,26 @@ function Settings({ state, reset }: { state: AppState; reset: () => void }) {
           <b> bancamais.jpproject.com.br</b>.
         </p>
         <p>
-          Esta entrega usa persistencia local para acelerar validacao. O contrato de dados ja
-          esta separado em `src/lib/types.ts` para migrar para Firestore/Cloud Functions.
+          Esta entrega manteve a persistencia local e adicionou sincronizacao opcional com
+          Firebase Auth anonimo + Firestore. O proximo passo e trocar anonimo por login real.
         </p>
-        <button onClick={reset}>Restaurar dados demo de {state.bankrollName}</button>
+        <div className="settings-grid">
+          <div>
+            <span>Status de sync</span>
+            <strong>{syncStatus}</strong>
+            <small>{user ? `UID: ${user.uid}` : "Nenhum usuario Firebase conectado"}</small>
+          </div>
+          <div className="actions">
+            {user ? (
+              <button onClick={disconnectCloud}>Desconectar</button>
+            ) : (
+              <button onClick={connectCloud}>Conectar Firebase</button>
+            )}
+            <button onClick={pushCloud}>Salvar na nuvem</button>
+            <button onClick={pullCloud}>Carregar da nuvem</button>
+            <button onClick={reset}>Restaurar demo</button>
+          </div>
+        </div>
       </article>
     </section>
   );

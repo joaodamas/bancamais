@@ -19,11 +19,14 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - Cadastro manual de aposta.
 - Liquidacao rapida de aposta pendente.
 - Persistencia demo via `localStorage`.
+- Firebase Auth anonimo opcional.
+- Snapshot de estado no Firestore por usuario.
+- Carregamento de snapshot do Firestore.
+- Exportacao CSV das apostas.
 
 ## Ainda nao entregue
 
-- Login.
-- Firestore real.
+- Login real por email/Google.
 - Cloud Functions.
 - OCR.
 - Importacao CSV/Excel.
@@ -36,3 +39,5 @@ Transformar o prototipo estatico em uma base de produto executavel, com dominio 
 - App deve abrir localmente com `npm run dev`.
 - Usuario deve conseguir cadastrar uma aposta e ver metricas atualizadas.
 - Usuario deve conseguir liquidar aposta pendente.
+- Usuario deve conseguir exportar CSV.
+- Usuario deve conseguir conectar via Auth anonimo e salvar/carregar snapshot no Firestore, desde que Auth/Firestore estejam habilitados no Firebase.
