@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import { BarChart3, Brain, Cloud, TrendingUp } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 
 type AuthMode = "signin" | "signup" | "reset";
@@ -103,31 +104,31 @@ export function AuthPage({ onSignIn, onSignUp, onReset, onDemoMode, message }: A
       </div>
 
       <div className="auth-page-features">
-        <h2>Controle total da sua banca</h2>
+        <h2>Operacao clara, historico confiavel</h2>
         <ul>
           <li>
-            <span className="feature-icon">📊</span>
+            <span className="feature-icon"><BarChart3 size={18} /></span>
             <div>
               <strong>Dashboard com gráficos reais</strong>
               <small>Evolução da banca, ROI mensal e distribuição por esporte</small>
             </div>
           </li>
           <li>
-            <span className="feature-icon">🧠</span>
+            <span className="feature-icon"><Brain size={18} /></span>
             <div>
-              <strong>Análise de IA</strong>
-              <small>Insights automáticos sobre estratégias e alertas de risco</small>
+              <strong>Insights automáticos</strong>
+              <small>Leitura rápida de risco, estratégia e exposição da operação</small>
             </div>
           </li>
           <li>
-            <span className="feature-icon">📈</span>
+            <span className="feature-icon"><TrendingUp size={18} /></span>
             <div>
               <strong>CLV &amp; Edge tracking</strong>
               <small>Meça se você está batendo a linha de fechamento</small>
             </div>
           </li>
           <li>
-            <span className="feature-icon">☁️</span>
+            <span className="feature-icon"><Cloud size={18} /></span>
             <div>
               <strong>Sincronização em nuvem</strong>
               <small>Acesse seus dados em qualquer dispositivo</small>

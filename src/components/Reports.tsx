@@ -14,38 +14,51 @@ export function Reports({ state, metrics }: ReportsProps) {
   const lost = settled.filter((bet) => bet.status === "lost");
   const totalStaked = state.bets.reduce((sum, bet) => sum + bet.stake, 0);
   const csv = betsToCsv(state);
+  const currentMonthLabel = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date());
+  const settlementRate = state.bets.length > 0 ? settled.length / state.bets.length : 0;
+  const transactionBalance = state.transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+  const latestTransactions = [...state.transactions]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 6);
 
   return (
     <section className="page">
+      <div className="page-actions">
+        <div className="page-actions-copy">
+          <strong>Relatórios operacionais</strong>
+          <span>Consolide performance, fiscal e movimentação com uma leitura menos provisória e mais acionável.</span>
+        </div>
+      </div>
+
       <div className="report-grid">
         <article className="panel report-card">
-          <span>Relatorio mensal</span>
-          <strong>Maio 2026</strong>
+          <span>Relatório mensal</span>
+          <strong className="report-title-case">{currentMonthLabel}</strong>
           <p>
             Resultado liquidado de <b>{money.format(metrics.profit)}</b>, ROI de <b>{percent.format(metrics.roi)}</b>
-            e exposicao aberta de <b>{money.format(metrics.openExposure)}</b>.
+            e exposição aberta de <b>{money.format(metrics.openExposure)}</b>.
           </p>
-          <button onClick={() => downloadTextFile("bancamais-relatorio-maio-2026.csv", csv)}>Baixar base CSV</button>
+          <button onClick={() => downloadTextFile("bancamais-relatorio-operacional.csv", csv)}>Baixar base CSV</button>
         </article>
 
         <article className="panel report-card">
           <span>Resumo fiscal</span>
           <strong>{money.format(Math.max(metrics.profit, 0))}</strong>
           <p>
-            Valor positivo liquidado no periodo. A regra fiscal final ainda precisa ser validada
+            Valor positivo liquidado no período. A regra fiscal final ainda precisa ser validada
             com contador antes de automatizar DARF/IR.
           </p>
           <button onClick={() => downloadTextFile("bancamais-fiscal-base.csv", csv)}>Exportar fiscal</button>
         </article>
 
         <article className="panel report-card">
-          <span>Pagina tipster</span>
+          <span>Página tipster</span>
           <strong>Banca verificada</strong>
           <p>
-            Base pronta para mostrar ROI, yield e historico sem expor valores absolutos.
-            Publicacao fica para a etapa de auth/perfil.
+            Base pronta para mostrar ROI, yield e histórico sem expor valores absolutos.
+            Publicação fica para a etapa de auth/perfil.
           </p>
-          <button disabled>Preparar perfil publico</button>
+          <button disabled>Preparar perfil público</button>
         </article>
       </div>
 
@@ -59,20 +72,35 @@ export function Reports({ state, metrics }: ReportsProps) {
             <div><span>Perdidas</span><strong>{lost.length}</strong></div>
             <div><span>Valor apostado</span><strong>{money.format(totalStaked)}</strong></div>
             <div><span>Yield</span><strong>{percent.format(metrics.yield)}</strong></div>
+            <div><span>Taxa de liquidação</span><strong>{percent.format(settlementRate)}</strong></div>
+            <div><span>Hit rate</span><strong>{percent.format(metrics.hitRate)}</strong></div>
           </div>
         </article>
 
         <article className="panel">
           <h2>Transacoes</h2>
           <div className="transaction-list">
-            {state.transactions.map((transaction) => (
-              <div key={transaction.id}>
+            {latestTransactions.length > 0 ? latestTransactions.map((transaction) => (
+              <div key={transaction.id} className="transaction-row">
                 <span>
-                  {new Date(transaction.date).toLocaleDateString("pt-BR")} · {transaction.description}
+                  <b>{new Date(transaction.date).toLocaleDateString("pt-BR")}</b>
+                  <small>{transaction.description || "Lançamento sem descrição operacional."}</small>
                 </span>
                 <strong className={transaction.amount >= 0 ? "pos" : "neg"}>{money.format(transaction.amount)}</strong>
               </div>
-            ))}
+            )) : (
+              <div className="transaction-row">
+                <span>
+                  <b>Sem transações registradas</b>
+                  <small>Os relatórios financeiros ficam mais úteis depois do primeiro depósito, saque ou ajuste.</small>
+                </span>
+                <strong>{money.format(0)}</strong>
+              </div>
+            )}
+          </div>
+          <div className="report-note">
+            <span>Saldo transacional líquido</span>
+            <strong className={transactionBalance >= 0 ? "pos" : "neg"}>{money.format(transactionBalance)}</strong>
           </div>
         </article>
       </div>

@@ -37,20 +37,18 @@ export function Settings({
     <section className="page">
       <div className="settings-layout">
       <article className="panel">
-        <h2>Etapa atual</h2>
+        <h2>Dados e sincronizacao</h2>
         <p>
-          Produto <b>Banca+</b>, Firebase <b>bancamais-12778</b>, deploy planejado em
-          <b> bancamais.jpproject.com.br</b>.
+          Mantenha sua base acessivel entre dispositivos e acompanhe o estado atual da conta conectada.
         </p>
         <p>
-          Esta entrega manteve a persistencia local e adicionou sincronizacao opcional com
-          Firebase Auth anonimo + Firestore. O proximo passo e trocar anonimo por login real.
+          O aplicativo funciona localmente e pode sincronizar sua operacao quando houver uma conta conectada.
         </p>
         <div className="settings-grid">
           <div>
             <span>Status de sync</span>
             <strong>{syncStatus}</strong>
-            <small>{user ? `UID: ${user.uid}` : "Nenhum usuario Firebase conectado"}</small>
+            <small>{user ? `Identificador: ${user.uid}` : "Nenhuma conta conectada"}</small>
           </div>
           <div className="actions">
             {user ? (
@@ -68,8 +66,7 @@ export function Settings({
       <article className="panel auth-panel">
         <h2>Conta Banca+</h2>
         <p>
-          Use email e senha para criar uma conta real no Firebase Auth. Ao criar ou entrar,
-          o app salva/carrega o snapshot do Firestore automaticamente.
+          Crie uma conta para sincronizar sua operacao com seguranca e continuar de qualquer dispositivo.
         </p>
         <div className="auth-message">{authMessage}</div>
 
@@ -100,8 +97,7 @@ export function Settings({
       <form className="panel risk-settings-form" onSubmit={updateRiskSettings}>
         <h2>Limites de risco</h2>
         <p>
-          Estes limites alimentam os alertas do dashboard. No futuro, eles tambem podem bloquear
-          novas apostas ou exigir cooldown.
+          Defina os limites operacionais que orientam alertas e disciplina de stake.
         </p>
         <label>Unidade da banca (%)
           <input defaultValue={state.riskSettings.unitPercent} min="0.1" name="unitPercent" required step="0.1" type="number" />

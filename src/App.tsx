@@ -34,13 +34,39 @@ import {
   money,
   potentialReturn,
 } from "./lib/metrics";
-import { createBetId, createStrategyId, createTransactionId, isFirstRun, loadState, resetState, saveState } from "./lib/storage";
+import { createBetId, createBookmakerId, createStrategyId, createTransactionId, isFirstRun, loadState, resetState, saveState } from "./lib/storage";
 import { uploadBetSlip } from "./lib/storageRepository";
-import type { AppState, Bet, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
+import type { AppState, Bet, BookmakerAccount, NewBetPrefill, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
+import type { OcrSubmissionMetadata } from "./lib/ocr";
 
 type View = "dashboard" | "bets" | "new-bet" | "import" | "intelligence" | "reports" | "clv" | "books" | "strategies" | "settings" | "auth";
 
 type NavItem = { id: View; label: string; badge?: string; Icon: React.ElementType };
+
+function parseOcrMetadata(raw: FormDataEntryValue | null): OcrSubmissionMetadata | undefined {
+  if (typeof raw !== "string" || raw.trim().length === 0) return undefined;
+
+  try {
+    return JSON.parse(raw) as OcrSubmissionMetadata;
+  } catch {
+    return undefined;
+  }
+}
+
+function getOcrConfidenceScore(metadata: OcrSubmissionMetadata | undefined): number | undefined {
+  if (!metadata) return undefined;
+
+  const confidentFields = metadata.fields
+    .map((field) => field.confidence)
+    .filter((value): value is number => typeof value === "number");
+
+  if (confidentFields.length === 0) return undefined;
+  return confidentFields.reduce((sum, value) => sum + value, 0) / confidentFields.length;
+}
+
+function isSuccessfulOcr(metadata: OcrSubmissionMetadata | undefined) {
+  return metadata?.status === "success" || metadata?.status === "needs_review";
+}
 
 const navGroups: Array<{ label: string; items: NavItem[] }> = [
   {
@@ -72,6 +98,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
 export function App() {
   const [view, setView] = useState<View>("dashboard");
   const [state, setState] = useState<AppState>(() => loadState());
+  const [newBetPrefill, setNewBetPrefill] = useState<NewBetPrefill | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(() => isFirstRun(loadState()));
   const [user, setUser] = useState<User | null>(null);
   const [syncStatus, setSyncStatus] = useState("Modo demo local");
@@ -107,7 +134,24 @@ export function App() {
     saveState(next);
   }
 
+  function openNewBet(prefill: NewBetPrefill | null = null) {
+    setNewBetPrefill(prefill);
+    setView("new-bet");
+  }
+
   function completeOnboarding(patch: Pick<AppState, "bankrollName" | "startingBalance" | "bookmakers">) {
+    const onboardingTransactions = patch.bookmakers
+      .filter((book) => book.balance > 0)
+      .map((book) => ({
+        id: createTransactionId(),
+        date: new Date().toISOString(),
+        type: "deposit" as TransactionType,
+        bookmakerId: book.id,
+        description: `Saldo inicial - ${book.name}`,
+        amount: book.balance,
+        referenceType: "bookmaker" as const,
+        referenceId: book.id,
+      }));
     const next: AppState = {
       ...state,
       bankrollName: patch.bankrollName,
@@ -115,6 +159,7 @@ export function App() {
       bookmakers: patch.bookmakers.length > 0
         ? patch.bookmakers
         : state.bookmakers,
+      transactions: onboardingTransactions.length > 0 ? onboardingTransactions : state.transactions,
     };
     updateState(next);
     setShowOnboarding(false);
@@ -247,18 +292,46 @@ export function App() {
     const form = event.currentTarget;
     const data = new FormData(form);
     const maybeSlip = data.get("slip");
+    const bookmakerId = String(data.get("bookmakerId"));
+    const stake = Number(data.get("stake"));
+    const uploadedSlipImagePath = String(data.get("uploadedSlipImagePath") || "");
+    const uploadedSlipImageUrl = String(data.get("uploadedSlipImageUrl") || "");
+    const ocrMetadata = parseOcrMetadata(data.get("ocrMetadata"));
+    const hasSuccessfulOcr = isSuccessfulOcr(ocrMetadata);
+    const suggestionId = String(data.get("suggestionId") || "") || undefined;
+    const fixtureId = String(data.get("fixtureId") || "") || undefined;
+    const estimatedProbability = Number(data.get("estimatedProbability"));
+    const estimatedEdge = Number(data.get("estimatedEdge"));
+    const suggestionConfidenceScore = Number(data.get("suggestionConfidenceScore"));
     let slipImagePath: string | undefined;
     let slipImageUrl: string | undefined;
 
-    if (maybeSlip instanceof File && maybeSlip.size > 0) {
-      if (!user) {
-        setSyncStatus("Conecte uma conta antes de enviar print para o Storage.");
-        return;
-      }
+    const selectedBookmaker = state.bookmakers.find((book) => book.id === bookmakerId);
+    if (!selectedBookmaker) {
+      toast.error("Cadastre uma casa antes de registrar a aposta.");
+      setView("books");
+      return;
+    }
 
-      const upload = await uploadBetSlip(user.uid, maybeSlip);
-      slipImagePath = upload.path;
-      slipImageUrl = upload.url;
+    if (!Number.isFinite(stake) || stake <= 0) {
+      toast.error("Informe uma stake valida.");
+      return;
+    }
+
+    if (stake > selectedBookmaker.balance) {
+      toast.error(`Saldo insuficiente na ${selectedBookmaker.name}.`);
+      return;
+    }
+
+    if (maybeSlip instanceof File && maybeSlip.size > 0) {
+      if (uploadedSlipImagePath && uploadedSlipImageUrl) {
+        slipImagePath = uploadedSlipImagePath;
+        slipImageUrl = uploadedSlipImageUrl;
+      } else if (user) {
+        const upload = await uploadBetSlip(user.uid, maybeSlip);
+        slipImagePath = upload.path;
+        slipImageUrl = upload.url;
+      }
     }
 
     const bet: Bet = {
@@ -270,35 +343,81 @@ export function App() {
       eventName: String(data.get("eventName")),
       market: String(data.get("market")),
       selection: String(data.get("selection")),
-      bookmakerId: String(data.get("bookmakerId")),
+      bookmakerId,
+      source: suggestionId ? "ai_suggestion" : hasSuccessfulOcr ? "ocr" : "manual",
+      suggestionId,
+      fixtureId,
       strategyId: String(data.get("strategyId")) || undefined,
       tags: String(data.get("tags"))
         .split(",")
         .map((tag) => tag.trim())
         .filter(Boolean),
-      stake: Number(data.get("stake")),
+      stake,
       odds: Number(data.get("odds")),
       status: "pending",
       closingOdds: Number(data.get("closingOdds")) || undefined,
+      estimatedProbability: Number.isFinite(estimatedProbability) ? estimatedProbability : undefined,
+      estimatedEdge: Number.isFinite(estimatedEdge) ? estimatedEdge : undefined,
+      confidenceScore: suggestionId
+        ? (Number.isFinite(suggestionConfidenceScore) ? suggestionConfidenceScore : undefined)
+        : hasSuccessfulOcr
+          ? getOcrConfidenceScore(ocrMetadata)
+          : undefined,
       mode: String(data.get("mode")) as Bet["mode"],
       slipImagePath,
       slipImageUrl,
+      ocrMetadata,
     };
 
-    updateState({ ...state, bets: [bet, ...state.bets] });
+    const transaction: Transaction = {
+      id: createTransactionId(),
+      date: bet.placedAt,
+      type: "bet_stake",
+      bookmakerId,
+      description: `Stake - ${bet.eventName}`,
+      amount: -stake,
+      referenceType: "bet",
+      referenceId: bet.id,
+    };
+    const bookmakers = state.bookmakers.map((book) => (
+      book.id === bookmakerId ? { ...book, balance: book.balance - stake } : book
+    ));
+
+    updateState({ ...state, bookmakers, bets: [bet, ...state.bets], transactions: [transaction, ...state.transactions] });
+    setNewBetPrefill(null);
     form.reset();
     setView("bets");
     toast.success("Aposta registrada com sucesso!");
   }
 
   function settleBet(id: string, status: Bet["status"]) {
+    const currentBet = state.bets.find((bet) => bet.id === id);
+    if (!currentBet || currentBet.status !== "pending") return;
+
+    const payout = status === "won" ? potentialReturn(currentBet) : status === "void" ? currentBet.stake : 0;
+    const transaction = payout > 0 ? [{
+      id: createTransactionId(),
+      date: new Date().toISOString(),
+      type: (status === "won" ? "bet_payout" : "bet_refund") as TransactionType,
+      bookmakerId: currentBet.bookmakerId,
+      description: status === "won"
+        ? `Retorno - ${currentBet.eventName}`
+        : `Void - ${currentBet.eventName}`,
+      amount: payout,
+      referenceType: "bet" as const,
+      referenceId: currentBet.id,
+    }] : [];
+    const bookmakers = state.bookmakers.map((book) => (
+      book.id === currentBet.bookmakerId ? { ...book, balance: book.balance + payout } : book
+    ));
+
     updateState({
       ...state,
-      bets: state.bets.map((bet) => {
-        if (bet.id !== id) return bet;
-        const payout = status === "won" ? potentialReturn(bet) : status === "void" ? bet.stake : 0;
-        return { ...bet, status, payout };
-      }),
+      bookmakers,
+      transactions: [...transaction, ...state.transactions],
+      bets: state.bets.map((bet) => (
+        bet.id === id ? { ...bet, status, payout, settlementSource: "manual" } : bet
+      )),
     });
     const labels: Record<Bet["status"], string> = {
       won: "Ganha! 🎯", lost: "Perdida", cashout: "Cashout registrado",
@@ -310,9 +429,167 @@ export function App() {
   function importBets(bets: Bet[]) {
     const existingIds = new Set(state.bets.map((bet) => bet.id));
     const uniqueBets = bets.filter((bet) => !existingIds.has(bet.id));
-    updateState({ ...state, bets: [...uniqueBets, ...state.bets] });
+    const importTransactions: Transaction[] = uniqueBets.flatMap((bet) => {
+      const items: Transaction[] = [{
+        id: createTransactionId(),
+        date: bet.placedAt,
+        type: "bet_stake",
+        bookmakerId: bet.bookmakerId,
+        description: `Stake - ${bet.eventName}`,
+        amount: -bet.stake,
+        referenceType: "bet",
+        referenceId: bet.id,
+      }];
+
+      if (bet.status === "won" || bet.status === "cashout") {
+        const payout = bet.payout ?? (bet.status === "won" ? potentialReturn(bet) : undefined);
+        if (payout != null) {
+          items.push({
+            id: createTransactionId(),
+            date: bet.eventAt,
+            type: "bet_payout",
+            bookmakerId: bet.bookmakerId,
+            description: `Retorno - ${bet.eventName}`,
+            amount: payout,
+            referenceType: "bet",
+            referenceId: bet.id,
+          });
+        }
+      }
+
+      if (bet.status === "void") {
+        items.push({
+          id: createTransactionId(),
+          date: bet.eventAt,
+          type: "bet_refund",
+          bookmakerId: bet.bookmakerId,
+          description: `Void - ${bet.eventName}`,
+          amount: bet.stake,
+          referenceType: "bet",
+          referenceId: bet.id,
+        });
+      }
+
+      return items;
+    });
+    const bookmakers = state.bookmakers.map((book) => {
+      const balanceDelta = importTransactions.reduce((sum, transaction) => (
+        transaction.bookmakerId === book.id ? sum + transaction.amount : sum
+      ), 0);
+      return balanceDelta !== 0 ? { ...book, balance: book.balance + balanceDelta } : book;
+    });
+
+    updateState({
+      ...state,
+      bookmakers,
+      bets: [...uniqueBets, ...state.bets],
+      transactions: [...importTransactions.reverse(), ...state.transactions],
+    });
     setView("bets");
     toast.success(`${uniqueBets.length} apostas importadas!`);
+  }
+
+  function addBookmaker(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const name = String(data.get("name")).trim();
+    const balance = Number(data.get("balance")) || 0;
+
+    if (!name) {
+      toast.error("Informe o nome da casa.");
+      return;
+    }
+
+    if (state.bookmakers.some((book) => book.name.toLowerCase() === name.toLowerCase())) {
+      toast.error("Esta casa ja esta cadastrada.");
+      return;
+    }
+
+    const bookmaker: BookmakerAccount = {
+      id: createBookmakerId(),
+      name,
+      balance,
+      status: "manual",
+      lastSyncLabel: "manual",
+    };
+
+    const transaction = balance > 0 ? [{
+      id: createTransactionId(),
+      date: new Date().toISOString(),
+      type: "deposit" as TransactionType,
+      bookmakerId: bookmaker.id,
+      description: `Saldo inicial - ${name}`,
+      amount: balance,
+      referenceType: "bookmaker" as const,
+      referenceId: bookmaker.id,
+    }] : [];
+
+    updateState({
+      ...state,
+      bookmakers: [...state.bookmakers, bookmaker],
+      transactions: [...transaction, ...state.transactions],
+    });
+    event.currentTarget.reset();
+    toast.success("Casa adicionada.");
+  }
+
+  function updateBookmaker(event: FormEvent<HTMLFormElement>, bookmakerId: string) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const name = String(data.get("name")).trim();
+
+    if (!name) {
+      toast.error("Informe o nome da casa.");
+      return;
+    }
+
+    const currentBook = state.bookmakers.find((book) => book.id === bookmakerId);
+    if (!currentBook) {
+      toast.error("Casa nao encontrada.");
+      return;
+    }
+
+    if (
+      state.bookmakers.some(
+        (book) => book.id !== bookmakerId && book.name.toLowerCase() === name.toLowerCase()
+      )
+    ) {
+      toast.error("Ja existe outra casa com este nome.");
+      return;
+    }
+
+    updateState({
+      ...state,
+      bookmakers: state.bookmakers.map((book) => (
+        book.id === bookmakerId ? { ...book, name } : book
+      )),
+    });
+    toast.success(`Casa atualizada para ${name}.`);
+  }
+
+  function removeBookmaker(bookmakerId: string) {
+    const currentBook = state.bookmakers.find((book) => book.id === bookmakerId);
+    if (!currentBook) {
+      toast.error("Casa nao encontrada.");
+      return;
+    }
+
+    const hasBets = state.bets.some((bet) => bet.bookmakerId === bookmakerId);
+    const hasTransactions = state.transactions.some(
+      (transaction) =>
+        transaction.bookmakerId === bookmakerId || transaction.targetBookmakerId === bookmakerId
+    );
+
+    if (hasBets || hasTransactions) {
+      toast.error("Nao e possivel remover uma casa com historico vinculado.");
+      return;
+    }
+
+    updateState({
+      ...state,
+      bookmakers: state.bookmakers.filter((book) => book.id !== bookmakerId),
+    });
+    toast.success(`Casa ${currentBook.name} removida.`);
   }
 
   function addTransaction(event: FormEvent<HTMLFormElement>) {
@@ -322,16 +599,71 @@ export function App() {
     const bookmakerId = String(data.get("bookmakerId"));
     const targetBookmakerId = String(data.get("targetBookmakerId"));
     const rawAmount = Math.abs(Number(data.get("amount")));
+    const sourceBookmaker = state.bookmakers.find((book) => book.id === bookmakerId);
+    const targetBookmaker = state.bookmakers.find((book) => book.id === targetBookmakerId);
+
+    if (!sourceBookmaker) {
+      toast.error("Selecione uma casa de origem valida.");
+      return;
+    }
+
+    if (!Number.isFinite(rawAmount) || rawAmount <= 0) {
+      toast.error("Informe um valor valido.");
+      return;
+    }
+
+    if (type === "transfer") {
+      if (!targetBookmaker) {
+        toast.error("Selecione uma casa de destino valida.");
+        return;
+      }
+      if (targetBookmakerId === bookmakerId) {
+        toast.error("Origem e destino precisam ser diferentes.");
+        return;
+      }
+    }
+
+    if ((type === "withdrawal" || type === "transfer") && rawAmount > sourceBookmaker.balance) {
+      toast.error(`Saldo insuficiente na ${sourceBookmaker.name}.`);
+      return;
+    }
+
     const signedAmount = type === "withdrawal" || type === "transfer" ? -rawAmount : rawAmount;
-    const transaction: Transaction = {
-      id: createTransactionId(),
-      date: new Date().toISOString(),
-      type,
-      bookmakerId,
-      targetBookmakerId: type === "transfer" ? targetBookmakerId : undefined,
-      description: String(data.get("description")) || type,
-      amount: signedAmount,
-    };
+    const baseDate = new Date().toISOString();
+    const description = String(data.get("description")) || type;
+    const transactions: Transaction[] = type === "transfer"
+      ? [
+        {
+          id: createTransactionId(),
+          date: baseDate,
+          type,
+          bookmakerId,
+          targetBookmakerId,
+          description,
+          amount: signedAmount,
+          referenceType: "manual",
+        },
+        {
+          id: createTransactionId(),
+          date: baseDate,
+          type,
+          bookmakerId: targetBookmakerId,
+          targetBookmakerId: bookmakerId,
+          description,
+          amount: rawAmount,
+          referenceType: "manual",
+        },
+      ]
+      : [{
+        id: createTransactionId(),
+        date: baseDate,
+        type,
+        bookmakerId,
+        targetBookmakerId: undefined,
+        description,
+        amount: signedAmount,
+        referenceType: "manual",
+      }];
 
     const bookmakers = state.bookmakers.map((book) => {
       if (book.id === bookmakerId) {
@@ -345,7 +677,7 @@ export function App() {
       return book;
     });
 
-    updateState({ ...state, bookmakers, transactions: [transaction, ...state.transactions] });
+    updateState({ ...state, bookmakers, transactions: [...transactions.reverse(), ...state.transactions] });
     event.currentTarget.reset();
     toast.success("Transação registrada!");
   }
@@ -436,7 +768,7 @@ export function App() {
           </div>
           <div className="topbar-meta">
             <strong>{viewTitle(view)}</strong>
-            <span>{user ? accountLabel(user) : "Modo local"} · bancamais.jpproject.com.br</span>
+            <span>{user ? accountLabel(user) : "Operacao local"}</span>
           </div>
           <div className="topbar-actions">
             <button title="Notificações"><Bell size={18} /></button>
@@ -449,21 +781,36 @@ export function App() {
                 <span>Salvar</span>
               </button>
             )}
-            <button className="primary btn-nova-aposta" onClick={() => setView("new-bet")}>
+            <button className="primary btn-nova-aposta" onClick={() => openNewBet()}>
               <Plus size={16} />
               Nova aposta
             </button>
           </div>
         </header>
 
-        {view === "dashboard" && <Dashboard state={state} metrics={metrics} />}
+        {view === "dashboard" && (
+          <Dashboard
+            state={state}
+            metrics={metrics}
+            onOpenNewBet={() => openNewBet()}
+            onOpenBooks={() => setView("books")}
+          />
+        )}
         {view === "bets" && <Bets state={state} settleBet={settleBet} />}
-        {view === "import" && <Import state={state} importBets={importBets} />}
-        {view === "intelligence" && <Intelligence state={state} metrics={metrics} />}
+        {view === "import" && <Import state={state} importBets={importBets} onOpenBets={() => setView("bets")} />}
+        {view === "intelligence" && <Intelligence state={state} metrics={metrics} onOpenNewBet={openNewBet} />}
         {view === "strategies" && <Strategies state={state} addStrategy={addStrategy} toggleStrategy={toggleStrategy} />}
         {view === "clv" && <ClvEdge state={state} metrics={metrics} />}
         {view === "reports" && <Reports state={state} metrics={metrics} />}
-        {view === "books" && <Books state={state} addTransaction={addTransaction} />}
+        {view === "books" && (
+          <Books
+            state={state}
+            addBookmaker={addBookmaker}
+            updateBookmaker={updateBookmaker}
+            removeBookmaker={removeBookmaker}
+            addTransaction={addTransaction}
+          />
+        )}
         {view === "auth" && (
           <AuthPage
             onSignIn={signInAccount}
@@ -493,9 +840,17 @@ export function App() {
 
         {/* Modal — renderizado sobre qualquer view */}
         {view === "new-bet" && (
-          <NewBet state={state} addBet={addBet} onClose={() => setView("bets")} />
+          <NewBet
+            state={state}
+            addBet={addBet}
+            onClose={() => {
+              setNewBetPrefill(null);
+              setView("bets");
+            }}
+            prefill={newBetPrefill}
+          />
         )}
-        <button className="fab" onClick={() => setView("new-bet")} title="Nova aposta">+</button>
+        <button className="fab" onClick={() => openNewBet()} title="Nova aposta">+</button>
 
         <Toaster
           position="bottom-right"
@@ -522,6 +877,6 @@ function viewTitle(view: View) {
 }
 
 function accountLabel(user: User) {
-  if (user.isAnonymous) return `Conectado anonimo ${user.uid.slice(0, 8)}`;
+  if (user.isAnonymous) return `Conta temporaria ${user.uid.slice(0, 8)}`;
   return user.displayName || user.email || "Conta conectada";
 }

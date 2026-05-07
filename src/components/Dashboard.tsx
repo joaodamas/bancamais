@@ -15,6 +15,7 @@ import {
 import { calculateMetrics, groupProfitBySport, riskAlerts, money, percent } from "../lib/metrics";
 import { buildBankrollTimeSeries, buildMonthlyData } from "../lib/chartData";
 import type { AppState } from "../lib/types";
+import { EmptyState } from "./EmptyState";
 import { Metric } from "./Metric";
 
 // Cores do design system Banca+ (hex direto — Recharts não lê CSS vars)
@@ -47,9 +48,13 @@ function MoneyTooltip({ active, payload, label }: { active?: boolean; payload?: 
 export function Dashboard({
   state,
   metrics,
+  onOpenNewBet,
+  onOpenBooks,
 }: {
   state: AppState;
   metrics: ReturnType<typeof calculateMetrics>;
+  onOpenNewBet: () => void;
+  onOpenBooks: () => void;
 }) {
   const alerts = riskAlerts(state);
   const timeSeries = useMemo(() => buildBankrollTimeSeries(state), [state]);
@@ -61,6 +66,36 @@ export function Dashboard({
         .slice(0, 6),
     [state]
   );
+  const isEmpty = state.bets.length === 0;
+  const hasBookmakers = state.bookmakers.length > 0;
+
+  if (isEmpty) {
+    return (
+      <section className="page">
+        <div className="section-head">
+          <div>
+            <h1>Dashboard</h1>
+            <p>Painel principal da sua operacao, com banca, risco e desempenho.</p>
+          </div>
+        </div>
+
+        <article className="panel">
+          <EmptyState
+            title="Sua base ainda esta vazia"
+            description={
+              hasBookmakers
+                ? "Registre a primeira aposta para iniciar curva de banca, ROI e alertas operacionais."
+                : "Cadastre uma casa e registre a primeira aposta para liberar acompanhamento completo da operacao."
+            }
+            action={{
+              label: hasBookmakers ? "Registrar primeira aposta" : "Configurar casas",
+              onClick: hasBookmakers ? onOpenNewBet : onOpenBooks,
+            }}
+          />
+        </article>
+      </section>
+    );
+  }
 
   return (
     <section className="page">
@@ -140,7 +175,7 @@ export function Dashboard({
           </ResponsiveContainer>
         ) : (
           <div className="chart-empty">
-            <span>Registre apostas para ver a evolução da banca</span>
+            <span>Liquide as primeiras apostas para visualizar a evolucao da banca</span>
           </div>
         )}
       </article>
@@ -194,7 +229,7 @@ export function Dashboard({
             </ResponsiveContainer>
           ) : (
             <div className="chart-empty">
-              <span>Sem dados mensais ainda</span>
+              <span>Sem volume suficiente para consolidar o ROI mensal</span>
             </div>
           )}
         </article>
@@ -244,7 +279,7 @@ export function Dashboard({
             </ResponsiveContainer>
           ) : (
             <div className="chart-empty">
-              <span>Sem apostas liquidadas por esporte</span>
+              <span>Sem apostas liquidadas o bastante para comparar esportes</span>
             </div>
           )}
         </article>

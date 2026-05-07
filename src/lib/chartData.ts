@@ -1,5 +1,6 @@
 import type { AppState } from "./types";
 import { potentialReturn, groupProfitBySport, groupProfitByBookmaker, groupProfitByStrategy, clvPercent } from "./metrics";
+import { buildLedgerTimeline, deriveBookmakerBalances } from "./ledger";
 
 export interface TimeSeriesPoint {
   label: string;
@@ -36,27 +37,12 @@ export interface ClvPoint {
 }
 
 export function buildBankrollTimeSeries(state: AppState): TimeSeriesPoint[] {
-  const events: Array<{ date: string; amount: number; label: string }> = [];
+  const events = buildLedgerTimeline(state);
+  const openingFunding = state.transactions
+    .filter((transaction) => transaction.referenceType === "bookmaker" && transaction.amount > 0)
+    .reduce((sum, transaction) => sum + transaction.amount, 0);
 
-  for (const tx of state.transactions) {
-    events.push({ date: tx.date, amount: tx.amount, label: tx.description });
-  }
-
-  for (const bet of state.bets) {
-    if (bet.status === "pending") continue;
-    const payout =
-      bet.status === "won"
-        ? potentialReturn(bet)
-        : bet.status === "void"
-        ? bet.stake
-        : 0;
-    const pnl = payout - bet.stake;
-    events.push({ date: bet.eventAt, amount: pnl, label: bet.eventName });
-  }
-
-  events.sort((a, b) => a.date.localeCompare(b.date));
-
-  let balance = state.startingBalance;
+  let balance = Math.max(0, state.startingBalance - openingFunding);
   const points: TimeSeriesPoint[] = [
     { label: "Início", balance, date: "" },
   ];
@@ -120,14 +106,18 @@ export function buildMonthlyData(state: AppState): MonthlyPoint[] {
 }
 
 export function buildBookmakerShareData(state: AppState): BookmakerShare[] {
-  const total = state.bookmakers.reduce((sum, b) => sum + Math.max(b.balance, 0), 0);
+  const balances = deriveBookmakerBalances(state);
+  const total = balances.reduce((sum, b) => sum + Math.max(b.derivedBalance, 0), 0);
   return state.bookmakers
+    .map((b) => {
+      const ledgerBalance = balances.find((entry) => entry.bookmakerId === b.id)?.derivedBalance ?? b.balance;
+      return {
+        name: b.name,
+        value: total > 0 ? Math.round((ledgerBalance / total) * 100) : 0,
+        balance: ledgerBalance,
+      };
+    })
     .filter((b) => b.balance > 0)
-    .map((b) => ({
-      name: b.name,
-      value: total > 0 ? Math.round((b.balance / total) * 100) : 0,
-      balance: b.balance,
-    }))
     .sort((a, b) => b.value - a.value);
 }
 

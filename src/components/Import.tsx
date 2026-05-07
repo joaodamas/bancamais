@@ -5,9 +5,10 @@ import type { AppState, Bet } from "../lib/types";
 interface ImportProps {
   state: AppState;
   importBets: (bets: Bet[]) => void;
+  onOpenBets: () => void;
 }
 
-export function Import({ state, importBets }: ImportProps) {
+export function Import({ state, importBets, onOpenBets }: ImportProps) {
   const [csv, setCsv] = useState("");
   const [message, setMessage] = useState("Cole um CSV exportado pelo Banca+ ou por planilha equivalente.");
 
@@ -47,10 +48,16 @@ export function Import({ state, importBets }: ImportProps) {
         <div>
           <h2>Importar apostas por CSV</h2>
           <p>
-            Esta etapa aceita o mesmo formato gerado em Exportar CSV. Isso ja cria o caminho
-            para migrar planilhas e historico antes de construir OCR e conectores.
+            Use o mesmo formato exportado pelo Banca+ para incorporar historico operacional sem redigitar apostas.
           </p>
         </div>
+
+        {state.bets.length > 0 && !csv && (
+          <div className="import-context">
+            <strong>Base atual: {state.bets.length} apostas registradas</strong>
+            <button type="button" onClick={onOpenBets}>Ver base atual</button>
+          </div>
+        )}
 
         <label className="file-drop">
           <span>Selecionar arquivo CSV</span>
@@ -63,6 +70,13 @@ export function Import({ state, importBets }: ImportProps) {
             }}
           />
         </label>
+
+        {!csv && (
+          <div className="import-empty">
+            <strong>Pronto para importar</strong>
+            <span>Selecione um arquivo ou cole o conteudo CSV para validar antes da entrada na base.</span>
+          </div>
+        )}
 
         <label className="full">
           Conteudo CSV

@@ -1,6 +1,15 @@
+import type { OcrSubmissionMetadata } from "./ocr";
+
 export type BetStatus = "pending" | "won" | "lost" | "cashout" | "void";
 
-export type TransactionType = "deposit" | "withdrawal" | "transfer" | "adjustment";
+export type TransactionType =
+  | "deposit"
+  | "withdrawal"
+  | "transfer"
+  | "adjustment"
+  | "bet_stake"
+  | "bet_payout"
+  | "bet_refund";
 
 export type BookmakerStatus = "synced" | "manual" | "reconnect";
 
@@ -29,6 +38,9 @@ export interface Bet {
   market: string;
   selection: string;
   bookmakerId: string;
+  source?: "manual" | "ocr" | "ai_suggestion";
+  suggestionId?: string;
+  fixtureId?: number | string;
   strategyId?: string;
   tags: string[];
   stake: number;
@@ -36,9 +48,36 @@ export interface Bet {
   status: BetStatus;
   payout?: number;
   closingOdds?: number;
+  settlementSource?: "manual" | "api";
+  estimatedProbability?: number;
+  estimatedEdge?: number;
+  confidenceScore?: number;
   mode: "prelive" | "live";
   slipImageUrl?: string;
   slipImagePath?: string;
+  ocrMetadata?: OcrSubmissionMetadata;
+}
+
+export interface NewBetPrefill {
+  eventName?: string;
+  eventAt?: string;
+  sport?: string;
+  league?: string;
+  market?: string;
+  selection?: string;
+  bookmakerId?: string;
+  strategyId?: string;
+  stake?: string;
+  odds?: string;
+  closingOdds?: string;
+  mode?: Bet["mode"];
+  tags?: string;
+  source?: Bet["source"];
+  suggestionId?: string;
+  fixtureId?: number | string;
+  estimatedProbability?: number;
+  estimatedEdge?: number;
+  confidenceScore?: number;
 }
 
 export interface Transaction {
@@ -49,6 +88,8 @@ export interface Transaction {
   targetBookmakerId?: string;
   description: string;
   amount: number;
+  referenceType?: "bet" | "bookmaker" | "manual";
+  referenceId?: string;
 }
 
 export interface AppState {

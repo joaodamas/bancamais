@@ -76,6 +76,10 @@ export function createTransactionId() {
   return `tx-${crypto.randomUUID()}`;
 }
 
+export function createBookmakerId() {
+  return `book-${crypto.randomUUID()}`;
+}
+
 export function createStrategyId() {
   return `strategy-${crypto.randomUUID()}`;
 }

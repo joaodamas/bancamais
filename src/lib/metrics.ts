@@ -1,4 +1,5 @@
 import type { AppState, Bet, DashboardMetrics } from "./types";
+import { calculateLedgerTotalBalance } from "./ledger";
 
 export const money = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -27,7 +28,7 @@ export function clvPercent(bet: Bet): number | null {
 }
 
 export function calculateMetrics(state: AppState): DashboardMetrics {
-  const totalBalance = state.bookmakers.reduce((sum, book) => sum + book.balance, 0);
+  const totalBalance = calculateLedgerTotalBalance(state);
   const pending = state.bets.filter((bet) => bet.status === "pending");
   const settled = state.bets.filter((bet) => bet.status !== "pending" && bet.status !== "void");
   const stakedSettled = settled.reduce((sum, bet) => sum + bet.stake, 0);

@@ -1,12 +1,13 @@
 import { useMemo } from "react";
 import { useAIAnalysis } from "../lib/useAIAnalysis";
 import { groupProfitByStrategy, riskAlerts, money, percent } from "../lib/metrics";
-import type { AppState } from "../lib/types";
+import type { AppState, NewBetPrefill } from "../lib/types";
 import type { calculateMetrics } from "../lib/metrics";
 import { EmptyState } from "./EmptyState";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { extractTeamsFromBets, isNewsApiConfigured } from "../lib/newsApi";
 import { TeamNewsWidget } from "./TeamNewsWidget";
+import { Suggestions } from "./Suggestions";
 
 // Gera heatmap data-driven dos últimos 21 dias
 function buildHeatmapData(state: AppState) {
@@ -40,9 +41,11 @@ const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 export function Intelligence({
   state,
   metrics,
+  onOpenNewBet,
 }: {
   state: AppState;
   metrics: ReturnType<typeof calculateMetrics>;
+  onOpenNewBet: (prefill?: NewBetPrefill | null) => void;
 }) {
   const { analysis, loading, error, refresh } = useAIAnalysis(state);
   const strategies = useMemo(() => groupProfitByStrategy(state), [state]);
@@ -57,7 +60,7 @@ export function Intelligence({
       <div className="section-head">
         <div>
           <h1>Inteligência · IA</h1>
-          <p>Análise automática do portfólio com base nos dados reais das suas apostas.</p>
+          <p>Insights automáticos sobre desempenho, risco e exposição com base nas apostas registradas.</p>
         </div>
         <button onClick={refresh} disabled={loading} className="btn-refresh">
           {loading ? "Analisando..." : "Atualizar análise"}
@@ -79,6 +82,16 @@ export function Intelligence({
             </div>
           ) : analysis ? (
             <>
+              <div className="analysis-meta">
+                <div>
+                  <span>Fonte</span>
+                  <strong>{analysis.source === "api" ? "Modelo externo" : "Regras internas"}</strong>
+                </div>
+                <div>
+                  <span>Gerado em</span>
+                  <strong>{new Date(analysis.generatedAt).toLocaleString("pt-BR")}</strong>
+                </div>
+              </div>
               <p className="ai-summary">{analysis.summary}</p>
               {analysis.topInsight && (
                 <div className="ai-insight">
@@ -86,6 +99,9 @@ export function Intelligence({
                   <strong>{analysis.topInsight}</strong>
                 </div>
               )}
+              <div className="analysis-note">
+                Os insights apoiam a decisao operacional. Confirme contexto, noticias e precificacao antes de executar uma entrada.
+              </div>
               <div className="summary-list compact">
                 <div>
                   <span>Melhor estratégia</span>
@@ -112,37 +128,50 @@ export function Intelligence({
               )}
             </>
           ) : (
-            <div style={{ marginTop: 12 }}>
-              <p style={{ color: "var(--muted)" }}>Clique em "Atualizar análise" para gerar insights sobre o seu portfólio.</p>
-              <button onClick={refresh} className="primary" style={{ marginTop: 12 }}>
-                Analisar agora
-              </button>
-            </div>
+            <EmptyState
+              title="Ainda nao existe leitura da operacao"
+              description={
+                state.bets.length === 0
+                  ? "Registre as primeiras apostas para liberar insights de desempenho e risco."
+                  : "Atualize a analise para gerar uma leitura automatica do portfolio atual."
+              }
+              action={{
+                label: state.bets.length === 0 ? "Registrar primeira aposta" : "Gerar analise",
+                onClick: state.bets.length === 0 ? onOpenNewBet : refresh,
+              }}
+            />
           )}
         </article>
 
         {/* Heatmap data-driven */}
         <article className="panel heatmap-card">
           <h2>Heatmap — últimos 21 dias</h2>
-          <div className="heatmap">
-            {DAY_LABELS.map(day => <span key={day}>{day}</span>)}
-            {heatmapData.map((day, index) => {
-              const hasData = day.bets > 0;
-              const cls = !hasData ? "" : day.profit > 0 ? "hm-pos" : "hm-neg";
-              const label = hasData
-                ? (day.profit > 0 ? `+${day.profit.toFixed(0)}` : day.profit.toFixed(0))
-                : "–";
-              return (
-                <b
-                  key={index}
-                  className={cls}
-                  title={`${day.date.toLocaleDateString("pt-BR")}: ${day.bets} aposta(s), ${money.format(day.profit)}`}
-                >
-                  {label}
-                </b>
-              );
-            })}
-          </div>
+          {state.bets.length > 0 ? (
+            <div className="heatmap">
+              {DAY_LABELS.map(day => <span key={day}>{day}</span>)}
+              {heatmapData.map((day, index) => {
+                const hasData = day.bets > 0;
+                const cls = !hasData ? "" : day.profit > 0 ? "hm-pos" : "hm-neg";
+                const label = hasData
+                  ? (day.profit > 0 ? `+${day.profit.toFixed(0)}` : day.profit.toFixed(0))
+                  : "–";
+                return (
+                  <b
+                    key={index}
+                    className={cls}
+                    title={`${day.date.toLocaleDateString("pt-BR")}: ${day.bets} aposta(s), ${money.format(day.profit)}`}
+                  >
+                    {label}
+                  </b>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyState
+              title="Sem atividade recente"
+              description="O mapa diario aparece quando houver apostas registradas e resultados entrando na base."
+            />
+          )}
         </article>
       </div>
 
@@ -222,6 +251,8 @@ export function Intelligence({
           </div>
         </article>
       )}
+
+      <Suggestions state={state} onOpenNewBet={onOpenNewBet} />
     </section>
   );
 }

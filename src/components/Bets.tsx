@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { betsToCsv, downloadTextFile } from "../lib/csv";
-import { clvPercent, money, percent } from "../lib/metrics";
+import { betProfit, clvPercent, money, percent } from "../lib/metrics";
 import type { AppState, Bet } from "../lib/types";
 
 const statusLabel: Record<Bet["status"], string> = {
@@ -20,31 +20,55 @@ export function Bets({ state, settleBet }: BetsProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<Bet["status"] | "all">("all");
 
+  const pendingBets = state.bets.filter((bet) => bet.status === "pending");
+  const settledBets = state.bets.filter((bet) => bet.status !== "pending");
+  const openExposure = pendingBets.reduce((sum, bet) => sum + bet.stake, 0);
+  const settledProfit = settledBets.reduce((sum, bet) => sum + betProfit(bet), 0);
+
   const filtered = state.bets
-    .filter(b => statusFilter === "all" || b.status === statusFilter)
-    .filter(b => !search ||
-      b.eventName.toLowerCase().includes(search.toLowerCase()) ||
-      b.sport.toLowerCase().includes(search.toLowerCase()) ||
-      b.league.toLowerCase().includes(search.toLowerCase())
-    );
+    .filter((bet) => statusFilter === "all" || bet.status === statusFilter)
+    .filter((bet) => !search
+      || bet.eventName.toLowerCase().includes(search.toLowerCase())
+      || bet.sport.toLowerCase().includes(search.toLowerCase())
+      || bet.league.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <section className="page">
       <div className="page-actions">
-        <div>
+        <div className="page-actions-copy">
           <strong>{state.bets.length} apostas registradas</strong>
-          <span>Exportação CSV pronta para relatórios e migração de dados.</span>
+          <span>Filtre a fila, liquide resultados pendentes e exporte a base para conciliação.</span>
         </div>
-        <input
-          placeholder="Buscar evento, esporte, liga..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <button onClick={() => downloadTextFile("bancamais-apostas.csv", betsToCsv(state))}>Exportar CSV</button>
+        <div className="page-actions-controls">
+          <input
+            placeholder="Buscar evento, esporte, liga..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <button onClick={() => downloadTextFile("bancamais-apostas.csv", betsToCsv(state))}>Exportar CSV</button>
+        </div>
+      </div>
+
+      <div className="ops-summary-grid">
+        <article className="ops-summary-card">
+          <span>Fila ativa</span>
+          <strong>{pendingBets.length}</strong>
+          <small>{money.format(openExposure)} expostos em apostas pendentes.</small>
+        </article>
+        <article className="ops-summary-card">
+          <span>Liquidadas</span>
+          <strong>{settledBets.length}</strong>
+          <small>Base pronta para revisar resultado e performance.</small>
+        </article>
+        <article className="ops-summary-card">
+          <span>Resultado liquidado</span>
+          <strong className={settledProfit >= 0 ? "pos" : "neg"}>{money.format(settledProfit)}</strong>
+          <small>Lucro acumulado das apostas já encerradas.</small>
+        </article>
       </div>
 
       <div className="filter-tabs">
-        {(["all", "pending", "won", "lost", "cashout", "void"] as const).map(s => (
+        {(["all", "pending", "won", "lost", "cashout", "void"] as const).map((s) => (
           <button
             key={s}
             className={statusFilter === s ? "filter-tab active" : "filter-tab"}
@@ -52,7 +76,7 @@ export function Bets({ state, settleBet }: BetsProps) {
           >
             {s === "all" ? "Todas" : (statusLabel[s as Bet["status"]] ?? s)}
             {s === "all" && <em>{state.bets.length}</em>}
-            {s !== "all" && <em>{state.bets.filter(b => b.status === s).length}</em>}
+            {s !== "all" && <em>{state.bets.filter((bet) => bet.status === s).length}</em>}
           </button>
         ))}
       </div>
@@ -83,7 +107,7 @@ export function Bets({ state, settleBet }: BetsProps) {
                   {bet.selection}
                   <small>{bet.market} · {bet.mode}</small>
                 </td>
-                <td>{state.bookmakers.find((book) => book.id === bet.bookmakerId)?.name}</td>
+                <td>{state.bookmakers.find((book) => book.id === bet.bookmakerId)?.name ?? "-"}</td>
                 <td>{money.format(bet.stake)}</td>
                 <td>{bet.odds.toFixed(2)}</td>
                 <td>{clvPercent(bet) === null ? "-" : percent.format(clvPercent(bet)!)}</td>
@@ -96,7 +120,10 @@ export function Bets({ state, settleBet }: BetsProps) {
                       <button onClick={() => settleBet(bet.id, "void")}>Void</button>
                     </div>
                   ) : (
-                    <span>{money.format((bet.payout ?? 0) - bet.stake)}</span>
+                    <div className="settlement-value">
+                      <span className={betProfit(bet) >= 0 ? "pos" : "neg"}>{money.format(betProfit(bet))}</span>
+                      <small>{bet.payout ? `Retorno ${money.format(bet.payout)}` : "Sem retorno financeiro"}</small>
+                    </div>
                   )}
                 </td>
               </tr>
@@ -104,10 +131,13 @@ export function Bets({ state, settleBet }: BetsProps) {
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={8}>
-                  <div className="table-empty">
-                    {state.bets.length === 0
-                      ? "Nenhuma aposta registrada. Use o botão + para adicionar sua primeira aposta."
-                      : "Nenhuma aposta encontrada com os filtros atuais."}
+                  <div className="table-empty rich">
+                    <strong>{state.bets.length === 0 ? "Nenhuma aposta registrada" : "Nenhum resultado para os filtros atuais"}</strong>
+                    <span>
+                      {state.bets.length === 0
+                        ? "Nenhuma aposta registrada. Abra Nova aposta para iniciar sua base."
+                        : "Nenhuma aposta encontrada com os filtros atuais."}
+                    </span>
                   </div>
                 </td>
               </tr>
