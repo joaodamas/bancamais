@@ -1,5 +1,11 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "firebase/auth";
+import { Toaster, toast } from "react-hot-toast";
+import {
+  LayoutDashboard, ListChecks, Upload, Brain, FileBarChart,
+  TrendingUp, Wallet, Target, Settings2, Plus,
+  CloudUpload, User as UserIcon, Bell
+} from "lucide-react";
 import { BrandLogo } from "./components/BrandLogo";
 import { Dashboard } from "./components/Dashboard";
 import { Bets } from "./components/Bets";
@@ -11,6 +17,7 @@ import { Books } from "./components/Books";
 import { Strategies } from "./components/Strategies";
 import { Reports } from "./components/Reports";
 import { Settings } from "./components/Settings";
+import { AuthPage } from "./components/AuthPage";
 import {
   createEmailUser,
   loadCloudState,
@@ -30,31 +37,33 @@ import { createBetId, createStrategyId, createTransactionId, loadState, resetSta
 import { uploadBetSlip } from "./lib/storageRepository";
 import type { AppState, Bet, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
 
-type View = "dashboard" | "bets" | "new-bet" | "import" | "intelligence" | "reports" | "clv" | "books" | "strategies" | "settings";
+type View = "dashboard" | "bets" | "new-bet" | "import" | "intelligence" | "reports" | "clv" | "books" | "strategies" | "settings" | "auth";
 
-const navGroups: Array<{ label: string; items: Array<{ id: View; label: string; badge?: string }> }> = [
+type NavItem = { id: View; label: string; badge?: string; Icon: React.ElementType };
+
+const navGroups: Array<{ label: string; items: NavItem[] }> = [
   {
     label: "Inicio",
     items: [
-      { id: "dashboard", label: "Dashboard" },
-      { id: "bets", label: "Apostas", badge: "+12" },
-      { id: "import", label: "Importar" },
+      { id: "dashboard" as View, label: "Dashboard", Icon: LayoutDashboard },
+      { id: "bets" as View, label: "Apostas", Icon: ListChecks },
+      { id: "import" as View, label: "Importar", Icon: Upload },
     ],
   },
   {
-    label: "Analise",
+    label: "Análise",
     items: [
-      { id: "intelligence", label: "Inteligencia", badge: "IA" },
-      { id: "reports", label: "Relatorios" },
-      { id: "clv", label: "CLV & Edge" },
+      { id: "intelligence" as View, label: "Inteligência", badge: "IA", Icon: Brain },
+      { id: "reports" as View, label: "Relatórios", Icon: FileBarChart },
+      { id: "clv" as View, label: "CLV & Edge", Icon: TrendingUp },
     ],
   },
   {
-    label: "Gestao",
+    label: "Gestão",
     items: [
-      { id: "books", label: "Bancas & casas" },
-      { id: "strategies", label: "Estrategias" },
-      { id: "settings", label: "Configuracoes" },
+      { id: "books" as View, label: "Bancas & Casas", Icon: Wallet },
+      { id: "strategies" as View, label: "Estratégias", Icon: Target },
+      { id: "settings" as View, label: "Configurações", Icon: Settings2 },
     ],
   },
 ];
@@ -78,6 +87,19 @@ export function App() {
     setSyncStatus(`Conectado como ${label}`);
   }), []);
 
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!user || user.isAnonymous) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      saveCloudState(user.uid, state).catch(console.error);
+    }, 3000);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [state, user]);
+
   function updateState(next: AppState) {
     setState(next);
     saveState(next);
@@ -88,8 +110,11 @@ export function App() {
     try {
       const signedUser = await signInDemoUser();
       setSyncStatus(`Conectado anonimamente: ${signedUser.uid.slice(0, 8)}`);
+      toast.success("Conectado ao Firebase!");
     } catch (error) {
-      setSyncStatus(error instanceof Error ? error.message : "Falha ao conectar ao Firebase");
+      const msg = error instanceof Error ? error.message : "Falha ao conectar";
+      setSyncStatus(msg);
+      toast.error(msg);
     }
   }
 
@@ -105,8 +130,11 @@ export function App() {
       const createdUser = await createEmailUser(email, password, displayName);
       await saveCloudState(createdUser.uid, state);
       setAuthMessage(`Conta criada para ${createdUser.email}. Snapshot local salvo na nuvem.`);
+      toast.success(`Conta criada para ${createdUser.email}!`);
     } catch (error) {
-      setAuthMessage(error instanceof Error ? error.message : "Falha ao criar conta.");
+      const msg = error instanceof Error ? error.message : "Falha ao criar conta.";
+      setAuthMessage(msg);
+      toast.error(msg);
     }
   }
 
@@ -123,13 +151,17 @@ export function App() {
       if (cloudState) {
         updateState(cloudState);
         setAuthMessage("Login feito. Snapshot carregado da nuvem.");
+        toast.success("Login feito. Dados carregados da nuvem!");
         return;
       }
 
       await saveCloudState(signedUser.uid, state);
       setAuthMessage("Login feito. Nenhum snapshot anterior encontrado; estado local salvo na nuvem.");
+      toast.success("Login feito. Estado local salvo na nuvem!");
     } catch (error) {
-      setAuthMessage(error instanceof Error ? error.message : "Falha ao entrar.");
+      const msg = error instanceof Error ? error.message : "Falha ao entrar.";
+      setAuthMessage(msg);
+      toast.error(msg);
     }
   }
 
@@ -142,8 +174,11 @@ export function App() {
     try {
       await resetEmailPassword(email);
       setAuthMessage("Email de recuperacao enviado.");
+      toast.success("Email de recuperação enviado!");
     } catch (error) {
-      setAuthMessage(error instanceof Error ? error.message : "Falha ao enviar recuperacao.");
+      const msg = error instanceof Error ? error.message : "Falha ao enviar recuperacao.";
+      setAuthMessage(msg);
+      toast.error(msg);
     }
   }
 
@@ -162,8 +197,10 @@ export function App() {
     try {
       await saveCloudState(user.uid, state);
       setSyncStatus(`Snapshot salvo no Firestore em ${new Date().toLocaleTimeString("pt-BR")}`);
+      toast.success("Dados salvos na nuvem!");
     } catch (error) {
       setSyncStatus(error instanceof Error ? error.message : "Falha ao salvar no Firestore");
+      toast.error("Falha ao salvar na nuvem");
     }
   }
 
@@ -183,8 +220,10 @@ export function App() {
 
       updateState(cloudState);
       setSyncStatus(`Snapshot carregado do Firestore em ${new Date().toLocaleTimeString("pt-BR")}`);
+      toast.success("Dados carregados da nuvem!");
     } catch (error) {
       setSyncStatus(error instanceof Error ? error.message : "Falha ao carregar do Firestore");
+      toast.error("Falha ao carregar da nuvem");
     }
   }
 
@@ -234,6 +273,7 @@ export function App() {
     updateState({ ...state, bets: [bet, ...state.bets] });
     form.reset();
     setView("bets");
+    toast.success("Aposta registrada com sucesso!");
   }
 
   function settleBet(id: string, status: Bet["status"]) {
@@ -245,6 +285,11 @@ export function App() {
         return { ...bet, status, payout };
       }),
     });
+    const labels: Record<Bet["status"], string> = {
+      won: "Ganha! 🎯", lost: "Perdida", cashout: "Cashout registrado",
+      void: "Aposta cancelada", pending: "Pendente"
+    };
+    toast.success(labels[status] ?? "Status atualizado");
   }
 
   function importBets(bets: Bet[]) {
@@ -252,6 +297,7 @@ export function App() {
     const uniqueBets = bets.filter((bet) => !existingIds.has(bet.id));
     updateState({ ...state, bets: [...uniqueBets, ...state.bets] });
     setView("bets");
+    toast.success(`${uniqueBets.length} apostas importadas!`);
   }
 
   function addTransaction(event: FormEvent<HTMLFormElement>) {
@@ -286,6 +332,7 @@ export function App() {
 
     updateState({ ...state, bookmakers, transactions: [transaction, ...state.transactions] });
     event.currentTarget.reset();
+    toast.success("Transação registrada!");
   }
 
   function addStrategy(event: FormEvent<HTMLFormElement>) {
@@ -300,17 +347,21 @@ export function App() {
 
     updateState({ ...state, strategies: [strategy, ...state.strategies] });
     event.currentTarget.reset();
+    toast.success("Estratégia criada!");
   }
 
   function toggleStrategy(id: string) {
+    const strategy = state.strategies.find(s => s.id === id);
+    const nextStatus = strategy?.status === "active" ? "pausada" : "reativada";
     updateState({
       ...state,
-      strategies: state.strategies.map((strategy) => (
-        strategy.id === id
-          ? { ...strategy, status: strategy.status === "active" ? "paused" : "active" }
-          : strategy
+      strategies: state.strategies.map((s) => (
+        s.id === id
+          ? { ...s, status: s.status === "active" ? "paused" : "active" }
+          : s
       )),
     });
+    toast.success(`Estratégia ${nextStatus}`);
   }
 
   function updateRiskSettings(event: FormEvent<HTMLFormElement>) {
@@ -341,8 +392,15 @@ export function App() {
             <div className="nav-group" key={group.label}>
               <span>{group.label}</span>
               {group.items.map((item) => (
-                <button className={view === item.id ? "active" : ""} key={item.id} onClick={() => setView(item.id)}>
-                  {item.label}
+                <button
+                  className={view === item.id ? "active" : ""}
+                  key={item.id}
+                  onClick={() => setView(item.id)}
+                >
+                  <span className="nav-icon-label">
+                    <item.Icon size={16} strokeWidth={2} />
+                    {item.label}
+                  </span>
                   {item.badge && <em>{item.badge}</em>}
                 </button>
               ))}
@@ -362,9 +420,20 @@ export function App() {
             <span>{user ? accountLabel(user) : "Modo local"} · bancamais.jpproject.com.br</span>
           </div>
           <div className="topbar-actions">
-            <button title="Notificacoes">●</button>
-            <button title="Calendario">□</button>
-            <button className="primary" onClick={() => setView("new-bet")}>+ Nova aposta</button>
+            <button title="Notificações"><Bell size={18} /></button>
+            <button title={user ? "Configurações" : "Entrar"} onClick={() => setView(user ? "settings" : "auth")}>
+              <UserIcon size={18} />
+            </button>
+            {user && (
+              <button title="Sync" onClick={pushCloud} className="sync-btn">
+                <CloudUpload size={16} />
+                <span>Salvar</span>
+              </button>
+            )}
+            <button className="primary btn-nova-aposta" onClick={() => setView("new-bet")}>
+              <Plus size={16} />
+              Nova aposta
+            </button>
           </div>
         </header>
 
@@ -376,6 +445,15 @@ export function App() {
         {view === "clv" && <ClvEdge state={state} metrics={metrics} />}
         {view === "reports" && <Reports state={state} metrics={metrics} />}
         {view === "books" && <Books state={state} addTransaction={addTransaction} />}
+        {view === "auth" && (
+          <AuthPage
+            onSignIn={signInAccount}
+            onSignUp={createAccount}
+            onReset={sendReset}
+            onDemoMode={async () => { await connectCloud(); setView("dashboard"); }}
+            message={authMessage}
+          />
+        )}
         {view === "settings" && (
           <Settings
             state={state}
@@ -399,6 +477,21 @@ export function App() {
           <NewBet state={state} addBet={addBet} onClose={() => setView("bets")} />
         )}
         <button className="fab" onClick={() => setView("new-bet")} title="Nova aposta">+</button>
+
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: "#141c33",
+              color: "#e6ecf7",
+              border: "1px solid rgba(148,163,184,0.16)",
+              fontFamily: "'Space Grotesk', system-ui, sans-serif",
+              fontSize: "14px",
+            },
+            success: { iconTheme: { primary: "#7cffb2", secondary: "#052015" } },
+            error: { iconTheme: { primary: "#ff6b81", secondary: "#1a0008" } },
+          }}
+        />
       </main>
     </div>
   );

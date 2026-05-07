@@ -18,20 +18,22 @@ interface BetsProps {
 
 export function Bets({ state, settleBet }: BetsProps) {
   const [search, setSearch] = useState("");
-  const filtered = search
-    ? state.bets.filter(b =>
-        b.eventName.toLowerCase().includes(search.toLowerCase()) ||
-        b.sport.toLowerCase().includes(search.toLowerCase()) ||
-        b.league.toLowerCase().includes(search.toLowerCase())
-      )
-    : state.bets;
+  const [statusFilter, setStatusFilter] = useState<Bet["status"] | "all">("all");
+
+  const filtered = state.bets
+    .filter(b => statusFilter === "all" || b.status === statusFilter)
+    .filter(b => !search ||
+      b.eventName.toLowerCase().includes(search.toLowerCase()) ||
+      b.sport.toLowerCase().includes(search.toLowerCase()) ||
+      b.league.toLowerCase().includes(search.toLowerCase())
+    );
 
   return (
     <section className="page">
       <div className="page-actions">
         <div>
           <strong>{state.bets.length} apostas registradas</strong>
-          <span>Exportacao CSV pronta para relatorios e migracao de dados.</span>
+          <span>Exportação CSV pronta para relatórios e migração de dados.</span>
         </div>
         <input
           placeholder="Buscar evento, esporte, liga..."
@@ -40,6 +42,21 @@ export function Bets({ state, settleBet }: BetsProps) {
         />
         <button onClick={() => downloadTextFile("bancamais-apostas.csv", betsToCsv(state))}>Exportar CSV</button>
       </div>
+
+      <div className="filter-tabs">
+        {(["all", "pending", "won", "lost", "cashout", "void"] as const).map(s => (
+          <button
+            key={s}
+            className={statusFilter === s ? "filter-tab active" : "filter-tab"}
+            onClick={() => setStatusFilter(s)}
+          >
+            {s === "all" ? "Todas" : (statusLabel[s as Bet["status"]] ?? s)}
+            {s === "all" && <em>{state.bets.length}</em>}
+            {s !== "all" && <em>{state.bets.filter(b => b.status === s).length}</em>}
+          </button>
+        ))}
+      </div>
+
       <div className="table-card">
         <table>
           <thead>
@@ -51,7 +68,7 @@ export function Bets({ state, settleBet }: BetsProps) {
               <th>Odd</th>
               <th>CLV</th>
               <th>Status</th>
-              <th>Acoes</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -84,6 +101,17 @@ export function Bets({ state, settleBet }: BetsProps) {
                 </td>
               </tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={8}>
+                  <div className="table-empty">
+                    {state.bets.length === 0
+                      ? "Nenhuma aposta registrada. Use o botão + para adicionar sua primeira aposta."
+                      : "Nenhuma aposta encontrada com os filtros atuais."}
+                  </div>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

@@ -70,3 +70,21 @@ export async function loadCloudState(userId: string): Promise<AppState | null> {
     transactions: data.transactions,
   });
 }
+
+/** Salva estado parcial sem sobrescrever campos extras no Firestore */
+export async function saveCloudStateSafe(userId: string, state: AppState) {
+  await setDoc(
+    doc(db, "users", userId, "appStates", appStateDocumentId),
+    {
+      ...state,
+      updatedAt: serverTimestamp(),
+      schemaVersion: 1,
+    },
+    { merge: true }
+  );
+}
+
+export async function hasCloudState(userId: string): Promise<boolean> {
+  const snapshot = await getDoc(doc(db, "users", userId, "appStates", appStateDocumentId));
+  return snapshot.exists();
+}
