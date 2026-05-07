@@ -75,8 +75,8 @@ export function buildMonthlyData(state: AppState): MonthlyPoint[] {
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const existing = map.get(key) ?? { profit: 0, staked: 0, bets: 0 };
     const payout =
-      bet.status === "won"
-        ? potentialReturn(bet)
+      bet.status === "won" || bet.status === "cashout"
+        ? (bet.payout ?? potentialReturn(bet))
         : bet.status === "void"
         ? bet.stake
         : 0;

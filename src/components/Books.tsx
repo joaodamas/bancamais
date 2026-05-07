@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { money } from "../lib/metrics";
-import { computeBookmakerLedger, TRANSACTION_TYPE_LABELS } from "../lib/ledger";
+import { calculateLedgerTotalBalance, computeBookmakerLedger, TRANSACTION_TYPE_LABELS } from "../lib/ledger";
 import type { AppState, BookmakerStatus, Transaction } from "../lib/types";
 
 interface BooksProps {
@@ -26,7 +26,7 @@ export function Books({
   const [voidingId, setVoidingId] = useState<string | null>(null);
   const [voidReason, setVoidReason] = useState("");
 
-  const totalBalance = state.bookmakers.reduce((sum, book) => sum + book.balance, 0);
+  const totalBalance = useMemo(() => calculateLedgerTotalBalance(state), [state]);
   const linkedBooksCount = state.bookmakers.filter(
     (book) =>
       state.bets.some((bet) => bet.bookmakerId === book.id) ||

@@ -31,7 +31,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
     if (!newBookName.trim()) return;
     const balance = parseFloat(newBookBalance) || 0;
     const bookmaker: BookmakerAccount = {
-      id: `book-${Date.now()}`,
+      id: `book-${crypto.randomUUID()}`,
       name: newBookName.trim(),
       balance,
       status: "manual",

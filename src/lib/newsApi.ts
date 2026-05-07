@@ -1,3 +1,6 @@
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { firebaseApp } from "./firebase";
+
 interface CacheEntry<T> {
   data: T;
   expiresAt: number;
@@ -38,46 +41,25 @@ export interface NewsArticle {
   image: string | null;
 }
 
-const GNEWS_KEY = import.meta.env.VITE_GNEWS_KEY as string | undefined;
-const BASE_URL = "https://gnews.io/api/v4";
+const functions = getFunctions(firebaseApp, "southamerica-east1");
+const fetchTeamNewsCallable = httpsCallable<
+  { teamName: string; maxResults?: number },
+  NewsArticle[]
+>(functions, "fetchTeamNewsCallable");
 
 export async function fetchTeamNews(teamName: string, maxResults = 3): Promise<NewsArticle[]> {
-  if (!GNEWS_KEY || teamName.trim().length < 2) return [];
+  if (teamName.trim().length < 2) return [];
 
   const cacheKey = `team_${teamName.toLowerCase().trim()}`;
   const cached = cacheGet<NewsArticle[]>(cacheKey);
   if (cached) return cached;
 
   try {
-    const params = new URLSearchParams({
-      q: teamName,
-      lang: "pt",
-      country: "br",
-      topic: "sports",
-      max: String(maxResults),
-      token: GNEWS_KEY,
+    const response = await fetchTeamNewsCallable({
+      teamName: teamName.trim(),
+      maxResults,
     });
-
-    const res = await fetch(`${BASE_URL}/search?${params}`);
-    if (!res.ok) return [];
-
-    const json = await res.json() as { articles?: unknown[] };
-    if (!Array.isArray(json.articles)) return [];
-
-    const articles: NewsArticle[] = json.articles.map((item: unknown) => {
-      const a = item as Record<string, unknown>;
-      return ({
-      title: typeof a.title === "string" ? a.title : "",
-      description: typeof a.description === "string" ? a.description : "",
-      url: typeof a.url === "string" ? a.url : "",
-      source: typeof (a.source as Record<string, unknown>)?.name === "string"
-        ? (a.source as Record<string, unknown>).name as string
-        : "",
-      publishedAt: typeof a.publishedAt === "string" ? a.publishedAt : "",
-      image: typeof a.image === "string" ? a.image : null,
-    });
-    });
-
+    const articles = Array.isArray(response.data) ? response.data : [];
     cacheSet(cacheKey, articles, NEWS_TTL);
     return articles;
   } catch {
@@ -86,7 +68,8 @@ export async function fetchTeamNews(teamName: string, maxResults = 3): Promise<N
 }
 
 export function isNewsApiConfigured(): boolean {
-  return Boolean(import.meta.env.VITE_GNEWS_KEY);
+  // Only show the news widget when the project ID is set, implying Firebase Functions are deployed.
+  return Boolean(import.meta.env.VITE_FIREBASE_PROJECT_ID);
 }
 
 /** Extrai os nomes de times únicos de uma lista de apostas pendentes */

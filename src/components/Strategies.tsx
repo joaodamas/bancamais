@@ -51,6 +51,16 @@ export function Strategies({ state, addStrategy, toggleStrategy }: StrategiesPro
                   <td><button onClick={() => toggleStrategy(row.id)}>{row.status === "active" ? "Pausar" : "Reativar"}</button></td>
                 </tr>
               ))}
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={8}>
+                    <div className="table-empty rich">
+                      <strong>Nenhuma estratégia cadastrada</strong>
+                      <span>Crie sua primeira estratégia no formulário ao lado para organizar e comparar seus mercados.</span>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

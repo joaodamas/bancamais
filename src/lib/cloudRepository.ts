@@ -76,6 +76,7 @@ export async function loadCloudState(userId: string): Promise<AppState | null> {
     strategies: data.strategies,
     bets: data.bets,
     transactions: data.transactions,
+    cooldownUntil: data.cooldownUntil ?? null,
   });
 }
 

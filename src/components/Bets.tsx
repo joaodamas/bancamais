@@ -13,12 +13,14 @@ const statusLabel: Record<Bet["status"], string> = {
 
 interface BetsProps {
   state: AppState;
-  settleBet: (id: string, status: Bet["status"]) => void;
+  settleBet: (id: string, status: Bet["status"], cashoutAmount?: number) => void;
 }
 
 export function Bets({ state, settleBet }: BetsProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<Bet["status"] | "all">("all");
+  const [cashoutBetId, setCashoutBetId] = useState<string | null>(null);
+  const [cashoutInput, setCashoutInput] = useState("");
 
   const pendingBets = state.bets.filter((bet) => bet.status === "pending");
   const settledBets = state.bets.filter((bet) => bet.status !== "pending");
@@ -114,11 +116,57 @@ export function Bets({ state, settleBet }: BetsProps) {
                 <td><span className={`pill ${bet.status}`}>{statusLabel[bet.status]}</span></td>
                 <td>
                   {bet.status === "pending" ? (
-                    <div className="actions">
-                      <button onClick={() => settleBet(bet.id, "won")}>Ganha</button>
-                      <button onClick={() => settleBet(bet.id, "lost")}>Perdida</button>
-                      <button onClick={() => settleBet(bet.id, "void")}>Void</button>
-                    </div>
+                    cashoutBetId === bet.id ? (
+                      <div className="cashout-form">
+                        <input
+                          autoFocus
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          placeholder={`Retorno cashout (máx ${money.format(bet.stake * bet.odds)})`}
+                          value={cashoutInput}
+                          onChange={(e) => setCashoutInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              const amount = Number(cashoutInput);
+                              if (amount > 0) {
+                                settleBet(bet.id, "cashout", amount);
+                                setCashoutBetId(null);
+                                setCashoutInput("");
+                              }
+                            }
+                            if (e.key === "Escape") {
+                              setCashoutBetId(null);
+                              setCashoutInput("");
+                            }
+                          }}
+                        />
+                        <div className="actions">
+                          <button
+                            className="primary"
+                            disabled={!cashoutInput || Number(cashoutInput) <= 0}
+                            onClick={() => {
+                              const amount = Number(cashoutInput);
+                              if (amount > 0) {
+                                settleBet(bet.id, "cashout", amount);
+                                setCashoutBetId(null);
+                                setCashoutInput("");
+                              }
+                            }}
+                          >
+                            Confirmar
+                          </button>
+                          <button onClick={() => { setCashoutBetId(null); setCashoutInput(""); }}>Cancelar</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="actions">
+                        <button onClick={() => settleBet(bet.id, "won")}>Ganha</button>
+                        <button onClick={() => settleBet(bet.id, "lost")}>Perdida</button>
+                        <button onClick={() => { setCashoutBetId(bet.id); setCashoutInput(""); }}>Cashout</button>
+                        <button onClick={() => settleBet(bet.id, "void")}>Void</button>
+                      </div>
+                    )
                   ) : (
                     <div className="settlement-value">
                       <span className={betProfit(bet) >= 0 ? "pos" : "neg"}>{money.format(betProfit(bet))}</span>

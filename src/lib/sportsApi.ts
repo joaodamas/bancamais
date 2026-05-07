@@ -1,4 +1,6 @@
-// Cache helper com TTL em localStorage
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { firebaseApp } from "./firebase";
+
 interface CacheEntry<T> {
   data: T;
   expiresAt: number;
@@ -51,71 +53,32 @@ export interface Fixture {
 
 export interface FixtureSearchResult {
   fixture: Fixture;
-  displayLabel: string;      // "Flamengo x Palmeiras — Brasileirão — 15 Mai 18:30"
+  displayLabel: string;
 }
 
-const API_KEY = import.meta.env.VITE_API_FOOTBALL_KEY as string | undefined;
-const BASE_URL = "https://v3.football.api-sports.io";
+const functions = getFunctions(firebaseApp, "southamerica-east1");
+const searchSportsFixturesCallable = httpsCallable<
+  { query: string; limit?: number },
+  FixtureSearchResult[]
+>(functions, "searchSportsFixturesCallable");
+const getSportsFixtureResultCallable = httpsCallable<
+  { fixtureId: number },
+  { homeGoals: number; awayGoals: number; status: string } | null
+>(functions, "getSportsFixtureResultCallable");
 
 export async function searchFixtures(query: string): Promise<FixtureSearchResult[]> {
-  if (!API_KEY || query.trim().length < 3) return [];
+  if (query.trim().length < 3) return [];
 
   const cacheKey = `search_${query.toLowerCase().trim()}`;
   const cached = cacheGet<FixtureSearchResult[]>(cacheKey);
   if (cached) return cached;
 
-  // Buscar próximos 14 dias de fixtures
-  const today = new Date();
-  const in14 = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
-  const dateFrom = today.toISOString().slice(0, 10);
-  const dateTo = in14.toISOString().slice(0, 10);
-
   try {
-    const res = await fetch(
-      `${BASE_URL}/fixtures?search=${encodeURIComponent(query)}&from=${dateFrom}&to=${dateTo}&timezone=America/Sao_Paulo`,
-      { headers: { "x-apisports-key": API_KEY } }
-    );
-
-    if (!res.ok) return [];
-    const json = await res.json() as { response: unknown[] };
-    if (!Array.isArray(json.response)) return [];
-
-    const results: FixtureSearchResult[] = json.response
-      .slice(0, 8)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((item: any) => {
-        const f = item.fixture;
-        const teams = item.teams;
-        const league = item.league;
-        const goals = item.goals;
-
-        const fixture: Fixture = {
-          id: f.id,
-          date: f.date,
-          homeTeam: teams.home.name,
-          awayTeam: teams.away.name,
-          homeLogo: teams.home.logo,
-          awayLogo: teams.away.logo,
-          league: league.name,
-          leagueLogo: league.logo,
-          country: league.country,
-          status: f.status.short,
-          homeGoals: goals.home,
-          awayGoals: goals.away,
-        };
-
-        const d = new Date(f.date);
-        const dateLabel = d.toLocaleDateString("pt-BR", {
-          day: "2-digit",
-          month: "short",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-        const displayLabel = `${teams.home.name} x ${teams.away.name} — ${league.name} — ${dateLabel}`;
-
-        return { fixture, displayLabel };
-      });
-
+    const response = await searchSportsFixturesCallable({
+      query: query.trim(),
+      limit: 8,
+    });
+    const results = Array.isArray(response.data) ? response.data : [];
     cacheSet(cacheKey, results, TTL.fixtures);
     return results;
   } catch {
@@ -126,30 +89,17 @@ export async function searchFixtures(query: string): Promise<FixtureSearchResult
 export async function getFixtureResult(
   fixtureId: number
 ): Promise<{ homeGoals: number; awayGoals: number; status: string } | null> {
-  if (!API_KEY) return null;
-
   const cacheKey = `result_${fixtureId}`;
   const cached = cacheGet<{ homeGoals: number; awayGoals: number; status: string }>(cacheKey);
   if (cached) return cached;
 
   try {
-    const res = await fetch(`${BASE_URL}/fixtures?id=${fixtureId}`, {
-      headers: { "x-apisports-key": API_KEY },
+    const response = await getSportsFixtureResultCallable({
+      fixtureId,
     });
-    if (!res.ok) return null;
+    const result = response.data;
+    if (!result) return null;
 
-    const json = await res.json() as { response: unknown[] };
-    if (!Array.isArray(json.response) || json.response.length === 0) return null;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const item = json.response[0] as any;
-    const result = {
-      homeGoals: item.goals.home ?? 0,
-      awayGoals: item.goals.away ?? 0,
-      status: item.fixture.status.short,
-    };
-
-    // Só cachear se o jogo terminou
     if (result.status === "FT" || result.status === "PEN" || result.status === "AET") {
       cacheSet(cacheKey, result, TTL.results);
     }
@@ -161,5 +111,6 @@ export async function getFixtureResult(
 }
 
 export function isSportsApiConfigured(): boolean {
-  return Boolean(import.meta.env.VITE_API_FOOTBALL_KEY);
+  // Only enable fixture search when the project ID is set, implying Firebase Functions are deployed.
+  return Boolean(import.meta.env.VITE_FIREBASE_PROJECT_ID);
 }

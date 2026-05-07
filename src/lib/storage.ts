@@ -78,6 +78,7 @@ export function normalizeState(state: Partial<AppState>): AppState {
     strategies: state.strategies ?? initialState.strategies,
     bets: state.bets ?? initialState.bets,
     transactions: state.transactions ?? initialState.transactions,
+    cooldownUntil: state.cooldownUntil ?? null,
   };
 }
 
