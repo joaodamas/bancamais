@@ -5,6 +5,8 @@ import type { AppState } from "../lib/types";
 import type { calculateMetrics } from "../lib/metrics";
 import { EmptyState } from "./EmptyState";
 import { LoadingSkeleton } from "./LoadingSkeleton";
+import { extractTeamsFromBets, isNewsApiConfigured } from "../lib/newsApi";
+import { TeamNewsWidget } from "./TeamNewsWidget";
 
 // Gera heatmap data-driven dos últimos 21 dias
 function buildHeatmapData(state: AppState) {
@@ -48,6 +50,7 @@ export function Intelligence({
   const alerts = useMemo(() => riskAlerts(state), [state]);
   const pending = state.bets.filter(b => b.status === "pending");
   const exposure = pending.reduce((sum, b) => sum + b.stake, 0);
+  const pendingTeams = useMemo(() => extractTeamsFromBets(state.bets), [state.bets]);
 
   return (
     <section className="page">
@@ -205,6 +208,20 @@ export function Intelligence({
           </div>
         </article>
       </div>
+
+      {isNewsApiConfigured() && pendingTeams.length > 0 && (
+        <article className="panel" style={{ marginTop: 14 }}>
+          <h2>Notícias recentes — apostas pendentes</h2>
+          <div className="news-grid">
+            {pendingTeams.map(team => (
+              <div key={team} className="news-team-section">
+                <span className="news-team-label">{team}</span>
+                <TeamNewsWidget teamName={team} compact />
+              </div>
+            ))}
+          </div>
+        </article>
+      )}
     </section>
   );
 }

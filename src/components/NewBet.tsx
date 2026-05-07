@@ -1,5 +1,7 @@
+import { useState, useRef } from "react";
 import type { FormEvent } from "react";
 import type { AppState } from "../lib/types";
+import { searchFixtures, isSportsApiConfigured, type FixtureSearchResult } from "../lib/sportsApi";
 
 interface NewBetProps {
   state: AppState;
@@ -8,18 +10,104 @@ interface NewBetProps {
 }
 
 export function NewBet({ state, addBet, onClose }: NewBetProps) {
+  const [fixtureQuery, setFixtureQuery] = useState("");
+  const [fixtureSuggestions, setFixtureSuggestions] = useState<FixtureSearchResult[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  function handleEventSearch(value: string) {
+    setFixtureQuery(value);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (value.length < 3 || !isSportsApiConfigured()) {
+      setFixtureSuggestions([]);
+      return;
+    }
+    searchTimer.current = setTimeout(async () => {
+      setIsSearching(true);
+      const results = await searchFixtures(value);
+      setFixtureSuggestions(results);
+      setShowSuggestions(results.length > 0);
+      setIsSearching(false);
+    }, 400);
+  }
+
+  function selectFixture(result: FixtureSearchResult) {
+    const f = result.fixture;
+    const form = formRef.current;
+    if (!form) return;
+    const eventNameInput = form.querySelector<HTMLInputElement>('[name="eventName"]');
+    const eventAtInput = form.querySelector<HTMLInputElement>('[name="eventAt"]');
+    const sportInput = form.querySelector<HTMLInputElement>('[name="sport"]');
+    const leagueInput = form.querySelector<HTMLInputElement>('[name="league"]');
+
+    if (eventNameInput) eventNameInput.value = `${f.homeTeam} x ${f.awayTeam}`;
+    if (eventAtInput) {
+      // Converter para datetime-local format (sem timezone)
+      const d = new Date(f.date);
+      const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+      eventAtInput.value = local.toISOString().slice(0, 16);
+    }
+    if (sportInput) sportInput.value = "Futebol";
+    if (leagueInput) leagueInput.value = f.league;
+
+    setFixtureQuery(`${f.homeTeam} x ${f.awayTeam}`);
+    setShowSuggestions(false);
+    setFixtureSuggestions([]);
+  }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-panel" onClick={e => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose} type="button">×</button>
         <h2>Nova Aposta</h2>
-        <form className="form" onSubmit={addBet}>
+        <form className="form" onSubmit={addBet} ref={formRef}>
           <div className="dropzone full">
             <strong>Cole, arraste ou selecione o print do bilhete</strong>
             <span>Upload no Firebase Storage quando houver usuario conectado. OCR entra na proxima etapa.</span>
             <input accept="image/*" name="slip" type="file" />
           </div>
-          <label>Evento<input name="eventName" required placeholder="Real Madrid x Manchester City" /></label>
+          <label className="full" style={{ position: "relative" }}>
+            Evento
+            {isSportsApiConfigured() && (
+              <span className="fixture-search-hint">
+                {isSearching ? "Buscando..." : "Digite o nome de um time para sugestões"}
+              </span>
+            )}
+            <input
+              name="eventName"
+              required
+              placeholder="Real Madrid x Manchester City"
+              value={fixtureQuery}
+              onChange={e => handleEventSearch(e.target.value)}
+              onFocus={() => fixtureSuggestions.length > 0 && setShowSuggestions(true)}
+              autoComplete="off"
+            />
+            {showSuggestions && fixtureSuggestions.length > 0 && (
+              <ul className="fixture-suggestions">
+                {fixtureSuggestions.map(result => (
+                  <li key={result.fixture.id} onClick={() => selectFixture(result)}>
+                    <div className="fixture-suggestion-teams">
+                      {result.fixture.homeLogo && (
+                        <img src={result.fixture.homeLogo} alt="" width={16} height={16} />
+                      )}
+                      <span>{result.fixture.homeTeam} x {result.fixture.awayTeam}</span>
+                      {result.fixture.awayLogo && (
+                        <img src={result.fixture.awayLogo} alt="" width={16} height={16} />
+                      )}
+                    </div>
+                    <div className="fixture-suggestion-meta">
+                      {result.fixture.league} ·{" "}
+                      {new Date(result.fixture.date).toLocaleDateString("pt-BR", {
+                        day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+                      })}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </label>
           <label>Data do evento<input name="eventAt" required type="datetime-local" /></label>
           <label>Esporte<input name="sport" required placeholder="Futebol" /></label>
           <label>Liga<input name="league" required placeholder="UCL" /></label>
