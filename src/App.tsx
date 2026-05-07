@@ -7,6 +7,7 @@ import {
   CloudUpload, User as UserIcon, Bell
 } from "lucide-react";
 import { BrandLogo } from "./components/BrandLogo";
+import { Onboarding } from "./components/Onboarding";
 import { Dashboard } from "./components/Dashboard";
 import { Bets } from "./components/Bets";
 import { NewBet } from "./components/NewBet";
@@ -33,7 +34,7 @@ import {
   money,
   potentialReturn,
 } from "./lib/metrics";
-import { createBetId, createStrategyId, createTransactionId, loadState, resetState, saveState } from "./lib/storage";
+import { createBetId, createStrategyId, createTransactionId, isFirstRun, loadState, resetState, saveState } from "./lib/storage";
 import { uploadBetSlip } from "./lib/storageRepository";
 import type { AppState, Bet, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
 
@@ -71,6 +72,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
 export function App() {
   const [view, setView] = useState<View>("dashboard");
   const [state, setState] = useState<AppState>(() => loadState());
+  const [showOnboarding, setShowOnboarding] = useState(() => isFirstRun(loadState()));
   const [user, setUser] = useState<User | null>(null);
   const [syncStatus, setSyncStatus] = useState("Modo demo local");
   const [authMessage, setAuthMessage] = useState("Entre para sincronizar seus dados em nuvem.");
@@ -103,6 +105,19 @@ export function App() {
   function updateState(next: AppState) {
     setState(next);
     saveState(next);
+  }
+
+  function completeOnboarding(patch: Pick<AppState, "bankrollName" | "startingBalance" | "bookmakers">) {
+    const next: AppState = {
+      ...state,
+      bankrollName: patch.bankrollName,
+      startingBalance: patch.startingBalance,
+      bookmakers: patch.bookmakers.length > 0
+        ? patch.bookmakers
+        : state.bookmakers,
+    };
+    updateState(next);
+    setShowOnboarding(false);
   }
 
   async function connectCloud() {
@@ -375,6 +390,10 @@ export function App() {
     };
 
     updateState({ ...state, riskSettings });
+  }
+
+  if (showOnboarding) {
+    return <Onboarding onComplete={completeOnboarding} />;
   }
 
   return (
