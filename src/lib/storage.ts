@@ -3,6 +3,36 @@ import type { AppState, Bet } from "./types";
 
 const key = "bancamais.demo.state";
 
+function userKey(uid: string) { return `bancamais.state.${uid}`; }
+
+export function emptyState(): AppState {
+  return {
+    bankrollName: "Minha Banca",
+    currency: "BRL",
+    startingBalance: 0,
+    riskSettings: { unitPercent: 1, maxStakeUnits: 2, maxOpenExposurePercent: 5, lossStreakLimit: 3 },
+    bookmakers: [],
+    strategies: [],
+    bets: [],
+    transactions: [],
+  };
+}
+
+export function loadStateForUser(uid: string): AppState {
+  const raw = localStorage.getItem(userKey(uid));
+  if (!raw) return emptyState();
+  try { return normalizeState(JSON.parse(raw) as Partial<AppState>); }
+  catch { return emptyState(); }
+}
+
+export function saveStateForUser(uid: string, state: AppState) {
+  localStorage.setItem(userKey(uid), JSON.stringify(state));
+}
+
+export function clearStateForUser(uid: string) {
+  localStorage.removeItem(userKey(uid));
+}
+
 // IDs seed do mockData anterior — apagar automaticamente ao carregar
 const SEED_BET_IDS = new Set(["bet-001", "bet-002", "bet-003", "bet-004", "bet-005"]);
 const SEED_TX_IDS = new Set(["tx-001", "tx-002"]);

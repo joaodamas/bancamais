@@ -20,14 +20,14 @@ import { Metric } from "./Metric";
 
 // Cores do design system Banca+ (hex direto — Recharts não lê CSS vars)
 const COLORS = {
-  accent: "#9d8fff",
-  cyan: "#7c6af7",
-  green: "#3fb950",
-  red: "#f85149",
-  amber: "#d29922",
-  panel: "#16152a",
-  line: "rgba(160,150,220,0.14)",
-  muted: "#8b86b0",
+  accent: "#8B7CF6",
+  cyan: "#A899F8",
+  green: "#4ADE80",
+  red: "#F87171",
+  amber: "#FBBF24",
+  panel: "#1E1C18",
+  line: "rgba(255,250,240,0.07)",
+  muted: "#9E9A93",
 };
 
 function MoneyTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) {

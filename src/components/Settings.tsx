@@ -131,7 +131,16 @@ export function Settings({
           <h2>Zona de perigo</h2>
           <p>Ações irreversíveis sobre os dados desta sessão.</p>
           <div className="actions">
-            <button className="btn-danger" onClick={reset}>Restaurar dados demo</button>
+            <button
+              className="btn-danger"
+              onClick={() => {
+                if (window.confirm("Isso apagará todos os seus dados locais e não pode ser desfeito. Continuar?")) {
+                  reset();
+                }
+              }}
+            >
+              Restaurar dados demo
+            </button>
           </div>
         </article>
       </div>

@@ -7,6 +7,7 @@ import {
   CloudUpload, User as UserIcon, Bell, Search, X
 } from "lucide-react";
 import { BrandLogo } from "./components/BrandLogo";
+import { LoadingScreen } from "./components/LoadingScreen";
 import {
   createEmailUser,
   loadCloudState,
@@ -24,12 +25,12 @@ import {
   money,
   potentialReturn,
 } from "./lib/metrics";
-import { createBetId, createBookmakerId, createStrategyId, createTransactionId, isFirstRun, loadState, resetState, saveState } from "./lib/storage";
+import { createBetId, createBookmakerId, createStrategyId, createTransactionId, emptyState, isFirstRun, loadStateForUser, resetState, saveState, saveStateForUser } from "./lib/storage";
 import { uploadBetSlip } from "./lib/storageRepository";
 import type { AppState, Bet, BookmakerAccount, NewBetPrefill, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
 import type { OcrSubmissionMetadata } from "./lib/ocr";
 
-type View = "dashboard" | "bets" | "new-bet" | "import" | "intelligence" | "reports" | "clv" | "books" | "strategies" | "settings" | "auth";
+type View = "dashboard" | "bets" | "new-bet" | "import" | "intelligence" | "reports" | "clv" | "books" | "strategies" | "settings";
 
 type NavItem = { id: View; label: string; badge?: string; Icon: React.ElementType };
 
@@ -45,6 +46,7 @@ const Strategies = lazy(() => import("./components/Strategies").then((module) =>
 const Reports = lazy(() => import("./components/Reports").then((module) => ({ default: module.Reports })));
 const Settings = lazy(() => import("./components/Settings").then((module) => ({ default: module.Settings })));
 const AuthPage = lazy(() => import("./components/AuthPage").then((module) => ({ default: module.AuthPage })));
+
 
 function parseOcrMetadata(raw: FormDataEntryValue | null): OcrSubmissionMetadata | undefined {
   if (typeof raw !== "string" || raw.trim().length === 0) return undefined;
@@ -100,10 +102,11 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
 
 export function App() {
   const [view, setView] = useState<View>("dashboard");
-  const [state, setState] = useState<AppState>(() => loadState());
+  const [state, setState] = useState<AppState>(() => emptyState());
   const [newBetPrefill, setNewBetPrefill] = useState<NewBetPrefill | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(() => isFirstRun(loadState()));
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState("Modo demo local");
   const [authMessage, setAuthMessage] = useState("Entre para sincronizar seus dados em nuvem.");
   const [searchQuery, setSearchQuery] = useState("");
@@ -114,21 +117,42 @@ export function App() {
   const cooldown = useMemo(() => computeCooldown(state), [state]);
   const [cooldownOverride, setCooldownOverride] = useState(false);
 
-  useEffect(() => watchAuth((nextUser) => {
-    setUser(nextUser);
-    if (!nextUser) {
-      setSyncStatus("Modo demo local");
-      return;
-    }
-
-    const label = nextUser.isAnonymous ? "usuario anonimo" : nextUser.email ?? "usuario autenticado";
-    setSyncStatus(`Conectado como ${label}`);
-  }), []);
+  useEffect(() => {
+    const unsubscribe = watchAuth(async (nextUser) => {
+      if (!nextUser) {
+        setUser(null);
+        setState(emptyState());
+        setSyncStatus("Modo demo local");
+        setAuthLoading(false);
+        return;
+      }
+      setUser(nextUser);
+      const label = nextUser.isAnonymous ? "usuario anonimo" : nextUser.email ?? "usuario autenticado";
+      setSyncStatus(`Conectado como ${label}`);
+      let loadedState: AppState;
+      try {
+        const cloudState = await loadCloudState(nextUser.uid);
+        if (cloudState) {
+          loadedState = cloudState;
+          saveStateForUser(nextUser.uid, cloudState);
+        } else {
+          loadedState = loadStateForUser(nextUser.uid);
+        }
+      } catch {
+        loadedState = loadStateForUser(nextUser.uid);
+      }
+      setState(loadedState);
+      setShowOnboarding(isFirstRun(loadedState));
+      setAuthLoading(false);
+    });
+    return unsubscribe;
+  }, []);
 
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!user || user.isAnonymous) return;
+    if (!user || user.isAnonymous || authLoading) return;
+    saveStateForUser(user.uid, state);
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(() => {
       saveCloudState(user.uid, state).catch(console.error);
@@ -136,7 +160,7 @@ export function App() {
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     };
-  }, [state, user]);
+  }, [state, user, authLoading]);
 
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -198,7 +222,11 @@ export function App() {
 
   function updateState(next: AppState) {
     setState(next);
-    saveState(next);
+    if (user) {
+      saveStateForUser(user.uid, next);
+    } else {
+      saveState(next);
+    }
   }
 
   function openNewBet(prefill: NewBetPrefill | null = null) {
@@ -339,6 +367,8 @@ export function App() {
 
   async function disconnectCloud() {
     await signOutDemoUser();
+    setState(emptyState());
+    setUser(null);
     setSyncStatus("Modo demo local");
   }
 
@@ -491,11 +521,18 @@ export function App() {
     toast.success("Aposta registrada com sucesso!");
   }
 
-  function settleBet(id: string, status: Bet["status"]) {
+  function settleBet(id: string, status: Bet["status"], cashoutAmount?: number) {
     const currentBet = state.bets.find((bet) => bet.id === id);
     if (!currentBet || currentBet.status !== "pending") return;
 
-    const payout = (status === "won" || status === "cashout") ? potentialReturn(currentBet) : status === "void" ? currentBet.stake : 0;
+    const payout =
+      status === "won"
+        ? potentialReturn(currentBet)
+        : status === "cashout"
+          ? (cashoutAmount != null && cashoutAmount > 0 ? cashoutAmount : potentialReturn(currentBet))
+          : status === "void"
+            ? currentBet.stake
+            : 0;
     const transaction = payout > 0 ? [{
       id: createTransactionId(),
       date: new Date().toISOString(),
@@ -859,6 +896,24 @@ export function App() {
     };
 
     updateState({ ...state, riskSettings });
+    toast.success("Limites de risco atualizados.");
+  }
+
+  if (authLoading) return <LoadingScreen />;
+
+  if (!user) {
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <AuthPage
+          onSignIn={signInAccount}
+          onSignUp={createAccount}
+          onReset={sendReset}
+          onDemoMode={async () => { await connectCloud(); }}
+          onGoogleSignIn={signInWithGoogleAccount}
+          message={authMessage}
+        />
+      </Suspense>
+    );
   }
 
   if (showOnboarding) {
@@ -1004,7 +1059,7 @@ export function App() {
           </div>
           <div className="topbar-actions">
             <button title="Notificações"><Bell size={18} /></button>
-            <button title={user ? "Configurações" : "Entrar"} onClick={() => setView(user ? "settings" : "auth")}>
+            <button title="Configurações" onClick={() => setView("settings")}>
               <UserIcon size={18} />
             </button>
             {user && (
@@ -1061,14 +1116,14 @@ export function App() {
           position="bottom-right"
           toastOptions={{
             style: {
-              background: "#141c33",
-              color: "#e6ecf7",
-              border: "1px solid rgba(148,163,184,0.16)",
-              fontFamily: "'Space Grotesk', system-ui, sans-serif",
+              background: "#1E1C18",
+              color: "#F0EDE8",
+              border: "1px solid rgba(255,250,240,0.13)",
+              fontFamily: "'Inter', system-ui, sans-serif",
               fontSize: "14px",
             },
-            success: { iconTheme: { primary: "#7cffb2", secondary: "#052015" } },
-            error: { iconTheme: { primary: "#ff6b81", secondary: "#1a0008" } },
+            success: { iconTheme: { primary: "#4ADE80", secondary: "#0a1a0f" } },
+            error: { iconTheme: { primary: "#F87171", secondary: "#1a0505" } },
           }}
         />
       </main>
@@ -1118,19 +1173,8 @@ export function App() {
             pushCloud={pushCloud}
             pullCloud={pullCloud}
             disconnectCloud={disconnectCloud}
-            onGoToAuth={() => setView("auth")}
+            onGoToAuth={() => { /* auth is now the gate — logging out redirects automatically */ }}
             updateRiskSettings={updateRiskSettings}
-          />
-        );
-      case "auth":
-        return (
-          <AuthPage
-            onSignIn={signInAccount}
-            onSignUp={createAccount}
-            onReset={sendReset}
-            onDemoMode={async () => { await connectCloud(); setView("dashboard"); }}
-            onGoogleSignIn={signInWithGoogleAccount}
-            message={authMessage}
           />
         );
       default:
