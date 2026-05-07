@@ -9,7 +9,8 @@ export type TransactionType =
   | "adjustment"
   | "bet_stake"
   | "bet_payout"
-  | "bet_refund";
+  | "bet_refund"
+  | "void_entry";
 
 export type BookmakerStatus = "synced" | "manual" | "reconnect";
 
@@ -90,6 +91,10 @@ export interface Transaction {
   amount: number;
   referenceType?: "bet" | "bookmaker" | "manual";
   referenceId?: string;
+  /** ID of the void_entry transaction that cancels this transaction */
+  voidedById?: string;
+  /** ID of the original transaction this void_entry cancels */
+  voidsCancelledId?: string;
 }
 
 export interface AppState {
@@ -101,6 +106,8 @@ export interface AppState {
   strategies: Strategy[];
   bets: Bet[];
   transactions: Transaction[];
+  /** ISO string: if set and in the future, "Nova Aposta" is blocked unless overridden */
+  cooldownUntil?: string | null;
 }
 
 export interface RiskSettings {

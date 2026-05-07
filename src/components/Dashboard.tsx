@@ -20,14 +20,14 @@ import { Metric } from "./Metric";
 
 // Cores do design system Banca+ (hex direto — Recharts não lê CSS vars)
 const COLORS = {
-  accent: "#7cffb2",
-  cyan: "#5ee0ff",
-  green: "#22c597",
-  red: "#ff6b81",
-  amber: "#ffb547",
-  panel: "#10172a",
-  line: "rgba(148,163,184,0.16)",
-  muted: "#8a95ad",
+  accent: "#9d8fff",
+  cyan: "#7c6af7",
+  green: "#3fb950",
+  red: "#f85149",
+  amber: "#d29922",
+  panel: "#16152a",
+  line: "rgba(160,150,220,0.14)",
+  muted: "#8b86b0",
 };
 
 function MoneyTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) {
@@ -75,17 +75,17 @@ export function Dashboard({
         <div className="section-head">
           <div>
             <h1>Dashboard</h1>
-            <p>Painel principal da sua operacao, com banca, risco e desempenho.</p>
+            <p>Visão geral da banca · {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</p>
           </div>
         </div>
 
         <article className="panel">
           <EmptyState
-            title="Sua base ainda esta vazia"
+            title="Nenhuma aposta registrada ainda"
             description={
               hasBookmakers
-                ? "Registre a primeira aposta para iniciar curva de banca, ROI e alertas operacionais."
-                : "Cadastre uma casa e registre a primeira aposta para liberar acompanhamento completo da operacao."
+                ? "Registre sua primeira aposta para ativar os gráficos, curva de banca e métricas de desempenho."
+                : "Cadastre uma casa de apostas e registre sua primeira operação para liberar o painel completo."
             }
             action={{
               label: hasBookmakers ? "Registrar primeira aposta" : "Configurar casas",

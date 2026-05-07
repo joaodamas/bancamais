@@ -14,8 +14,8 @@
 - [x] Remover dupla contagem financeira da curva de banca.
 - [x] Conciliar onboarding inicial com o ledger para evitar drift nas casas.
 - [x] Alimentar o ledger na importacao CSV de apostas.
-- [ ] Transformar transacoes em ledger contabil completo e auditavel.
-- [ ] Criar bloqueios/cooldown quando limites de risco forem ultrapassados.
+- [x] Transformar transacoes em ledger contabil completo e auditavel.
+- [x] Criar bloqueios/cooldown quando limites de risco forem ultrapassados.
 
 ## Prioridade 2 - OCR de bilhetes
 
@@ -30,18 +30,18 @@
 ## Prioridade 3 - Sugestoes de apostas com IA
 
 - [x] Criar modelo de dados para jogos futuros, times, odds e sugestoes.
-- [ ] Mover consultas esportivas sensiveis para backend.
-- [ ] Buscar historico recente dos times, mando/visitante, confrontos diretos, tabela e odds.
-- [ ] Calcular probabilidade estimada e edge por mercado.
+- [x] Mover consultas esportivas sensiveis para backend.
+- [x] Buscar historico recente dos times, mando/visitante, confrontos diretos, tabela e odds.
+- [x] Calcular probabilidade estimada e edge por mercado.
 - [x] Criar tela "Sugestoes IA" com justificativa, risco, odd e fonte dos dados.
 - [x] Permitir transformar uma sugestao em nova aposta pre-preenchida.
 - [x] Medir performance das sugestoes aceitas pelo usuario.
 
 ## Prioridade 4 - Produto e operacao
 
-- [ ] Ativar busca global funcional.
-- [ ] Ligar sincronizacao Firestore em tempo real ou remover hook nao usado.
-- [ ] Adicionar login Google.
+- [x] Ativar busca global funcional.
+- [x] Ligar sincronizacao Firestore em tempo real ou remover hook nao usado.
+- [x] Adicionar login Google.
 - [ ] Ativar App Check antes de producao.
 - [x] Estabelecer uma frente recorrente de QA para smoke test e regressao das entregas.
 - [ ] Fazer code splitting para reduzir bundle principal.
@@ -56,10 +56,14 @@
 - [x] Transformar estados vazios passivos em estados guiados com CTA contextual.
 - [x] Unificar linguagem visual de icones e reduzir elementos com cara promocional.
 - [x] Refinar telas operacionais com contexto, resumos e leitura mais profissional.
+- [x] Migrar paleta para premium fintech escuro (indigo) e ativar Space Grotesk.
+- [x] Simplificar tela de Configuracoes removendo formularios de auth duplicados.
+- [x] Corrigir cashout — payout e transacao de retorno corretos no ledger.
+- [x] Adicionar validacao de odds minimas no registro de aposta.
 
 ## Prioridade 6 - Seguranca e governanca
 
-- [ ] Tirar chaves sensiveis de esportes/noticias do frontend e mover consumo para backend.
+- [x] Tirar chaves sensiveis de esportes/noticias do frontend e mover consumo para backend.
 - [ ] Ativar App Check em hosting, functions, firestore e storage.
 - [ ] Revisar regras de Firestore e Storage com casos de abuso e isolamento por usuario.
 - [ ] Padronizar secrets de producao e runbook de rotacao para Anthropic e provedores externos.

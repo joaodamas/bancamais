@@ -1,4 +1,10 @@
-import type { AppState, BookmakerAccount, Transaction } from "./types";
+import type { AppState, BookmakerAccount, Transaction, TransactionType } from "./types";
+
+export interface LedgerEntry {
+  transaction: Transaction;
+  runningBalance: number;
+  isVoided: boolean;
+}
 
 export interface LedgerBookBalance {
   bookmakerId: string;
@@ -109,3 +115,40 @@ export function hasLedgerMismatch(bookmaker: BookmakerAccount, balances: LedgerB
   if (!match || !match.hasTransactionHistory) return false;
   return Math.abs(match.delta) >= 0.01;
 }
+
+/**
+ * Builds a chronological ledger for a single bookmaker with computed running balance.
+ * Voided transactions still appear (marked `isVoided = true`) to preserve the immutable audit trail.
+ * Their void_entry counterpart also appears and reverts the balance.
+ */
+export function computeBookmakerLedger(bookmakerId: string, transactions: Transaction[]): LedgerEntry[] {
+  const voidedIds = new Set(
+    transactions.filter((t) => t.voidsCancelledId).map((t) => t.voidsCancelledId as string),
+  );
+
+  const relevant = transactions
+    .filter((t) => t.bookmakerId === bookmakerId || t.targetBookmakerId === bookmakerId)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  let running = 0;
+  return relevant.map((t) => {
+    const impact = transactionImpactForBookmaker(t, bookmakerId, transactions);
+    running = Number((running + impact).toFixed(2));
+    return {
+      transaction: t,
+      runningBalance: running,
+      isVoided: voidedIds.has(t.id),
+    };
+  });
+}
+
+export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
+  deposit: "Depósito",
+  withdrawal: "Saque",
+  transfer: "Transferência",
+  adjustment: "Ajuste",
+  bet_stake: "Stake",
+  bet_payout: "Liquidação",
+  bet_refund: "Estorno",
+  void_entry: "Anulação",
+};

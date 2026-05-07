@@ -1,9 +1,11 @@
 import {
+  GoogleAuthProvider,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   sendPasswordResetEmail,
   signInAnonymously,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut,
   updateProfile,
   type User,
@@ -42,6 +44,12 @@ export async function resetEmailPassword(email: string) {
   await sendPasswordResetEmail(auth, email);
 }
 
+export async function signInWithGoogle() {
+  const provider = new GoogleAuthProvider();
+  const credential = await signInWithPopup(auth, provider);
+  return credential.user;
+}
+
 export async function signOutDemoUser() {
   await signOut(auth);
 }
@@ -71,20 +79,3 @@ export async function loadCloudState(userId: string): Promise<AppState | null> {
   });
 }
 
-/** Salva estado parcial sem sobrescrever campos extras no Firestore */
-export async function saveCloudStateSafe(userId: string, state: AppState) {
-  await setDoc(
-    doc(db, "users", userId, "appStates", appStateDocumentId),
-    {
-      ...state,
-      updatedAt: serverTimestamp(),
-      schemaVersion: 1,
-    },
-    { merge: true }
-  );
-}
-
-export async function hasCloudState(userId: string): Promise<boolean> {
-  const snapshot = await getDoc(doc(db, "users", userId, "appStates", appStateDocumentId));
-  return snapshot.exists();
-}

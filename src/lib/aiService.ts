@@ -369,7 +369,9 @@ function parseAIResponse(text: string, state: AppState): AIAnalysis {
 // ---------------------------------------------------------------------------
 
 function currentLossStreak(bets: AppState["bets"]): number {
-  const settled = bets.filter((b) => b.status !== "pending");
+  const settled = bets
+    .filter((b) => b.status !== "pending")
+    .sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
   let streak = 0;
   for (const bet of settled) {
     if (bet.status === "lost") streak++;

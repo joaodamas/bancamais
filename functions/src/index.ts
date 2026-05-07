@@ -2,9 +2,20 @@ import { getApps, initializeApp } from "firebase-admin/app";
 import { logger } from "firebase-functions";
 import { defineSecret } from "firebase-functions/params";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
+import type {
+  EstimateEdgeRequest,
+  FetchTeamNewsRequest,
+  GetSportsFixtureResultRequest,
+  GetTeamContextRequest,
+  SearchSportsFixturesRequest,
+} from "./contracts/externalData.js";
 import type { ParseBetSlipRequest } from "./contracts/ocr.js";
 import { AnthropicOcrClient } from "./services/anthropicOcr.js";
 import { buildFailedResponse, buildNotConfiguredResponse, mapProviderPayload } from "./services/ocrMapper.js";
+import { fetchTeamNews } from "./services/teamNews.js";
+import { getSportsFixtureResult, searchSportsFixtures } from "./services/sportsData.js";
+import { getTeamContext } from "./services/teamContext.js";
+import { estimateEdge } from "./services/edgeEstimator.js";
 import { downloadUserSlip } from "./services/storage.js";
 
 if (getApps().length === 0) {
@@ -12,10 +23,13 @@ if (getApps().length === 0) {
 }
 
 const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
+const APISPORTS_API_KEY = defineSecret("APISPORTS_API_KEY");
+const GNEWS_API_KEY = defineSecret("GNEWS_API_KEY");
+const DEFAULT_REGION = "southamerica-east1";
 
 export const parseBetSlipFromStorage = onCall(
   {
-    region: "southamerica-east1",
+    region: DEFAULT_REGION,
     timeoutSeconds: 60,
     memory: "512MiB",
     secrets: [ANTHROPIC_API_KEY],
@@ -53,6 +67,152 @@ export const parseBetSlipFromStorage = onCall(
   },
 );
 
+export const searchSportsFixturesCallable = onCall(
+  {
+    region: DEFAULT_REGION,
+    timeoutSeconds: 15,
+    memory: "256MiB",
+    secrets: [APISPORTS_API_KEY],
+  },
+  async (request) => {
+    ensureAuthenticated(request.auth?.uid);
+    const payload = parseSearchSportsFixturesRequest(request.data);
+    const apiKey = APISPORTS_API_KEY.value();
+
+    if (!apiKey) {
+      logger.warn("APISPORTS_API_KEY is not configured.");
+      return [];
+    }
+
+    try {
+      return await searchSportsFixtures(apiKey, payload.query, payload.limit);
+    } catch (error) {
+      logger.error("Sports fixture search failed", {
+        query: payload.query,
+        error,
+      });
+      throw new HttpsError("internal", "Sports fixture search failed.");
+    }
+  },
+);
+
+export const getSportsFixtureResultCallable = onCall(
+  {
+    region: DEFAULT_REGION,
+    timeoutSeconds: 15,
+    memory: "256MiB",
+    secrets: [APISPORTS_API_KEY],
+  },
+  async (request) => {
+    ensureAuthenticated(request.auth?.uid);
+    const payload = parseGetSportsFixtureResultRequest(request.data);
+    const apiKey = APISPORTS_API_KEY.value();
+
+    if (!apiKey) {
+      logger.warn("APISPORTS_API_KEY is not configured.");
+      return null;
+    }
+
+    try {
+      return await getSportsFixtureResult(apiKey, payload.fixtureId);
+    } catch (error) {
+      logger.error("Sports fixture result lookup failed", {
+        fixtureId: payload.fixtureId,
+        error,
+      });
+      throw new HttpsError("internal", "Sports fixture result lookup failed.");
+    }
+  },
+);
+
+export const fetchTeamNewsCallable = onCall(
+  {
+    region: DEFAULT_REGION,
+    timeoutSeconds: 15,
+    memory: "256MiB",
+    secrets: [GNEWS_API_KEY],
+  },
+  async (request) => {
+    ensureAuthenticated(request.auth?.uid);
+    const payload = parseFetchTeamNewsRequest(request.data);
+    const apiKey = GNEWS_API_KEY.value();
+
+    if (!apiKey) {
+      logger.warn("GNEWS_API_KEY is not configured.");
+      return [];
+    }
+
+    try {
+      return await fetchTeamNews(apiKey, payload.teamName, payload.maxResults);
+    } catch (error) {
+      logger.error("Team news lookup failed", {
+        teamName: payload.teamName,
+        error,
+      });
+      throw new HttpsError("internal", "Team news lookup failed.");
+    }
+  },
+);
+
+export const getTeamContextCallable = onCall(
+  {
+    region: DEFAULT_REGION,
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    secrets: [APISPORTS_API_KEY],
+  },
+  async (request) => {
+    ensureAuthenticated(request.auth?.uid);
+    const payload = parseGetTeamContextRequest(request.data);
+    const apiKey = APISPORTS_API_KEY.value();
+
+    if (!apiKey) {
+      logger.warn("APISPORTS_API_KEY is not configured.");
+      throw new HttpsError("failed-precondition", "Sports API is not configured.");
+    }
+
+    try {
+      return await getTeamContext(apiKey, payload.fixtureId);
+    } catch (error) {
+      logger.error("Team context lookup failed", {
+        fixtureId: payload.fixtureId,
+        error,
+      });
+      throw new HttpsError("internal", "Team context lookup failed.");
+    }
+  },
+);
+
+export const estimateEdgeCallable = onCall(
+  {
+    region: DEFAULT_REGION,
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    secrets: [APISPORTS_API_KEY],
+  },
+  async (request) => {
+    ensureAuthenticated(request.auth?.uid);
+    const payload = parseEstimateEdgeRequest(request.data);
+    const apiKey = APISPORTS_API_KEY.value();
+
+    if (!apiKey) {
+      logger.warn("APISPORTS_API_KEY is not configured.");
+      throw new HttpsError("failed-precondition", "Sports API is not configured.");
+    }
+
+    try {
+      return await estimateEdge(apiKey, payload);
+    } catch (error) {
+      logger.error("Edge estimation failed", {
+        fixtureId: payload.fixtureId,
+        market: payload.market,
+        error,
+      });
+      throw new HttpsError("internal", "Edge estimation failed.");
+    }
+  },
+);
+
 function parseRequest(data: unknown): ParseBetSlipRequest {
   if (!data || typeof data !== "object") {
     throw new HttpsError("invalid-argument", "Request payload must be an object.");
@@ -78,5 +238,122 @@ function parseRequest(data: unknown): ParseBetSlipRequest {
     storagePath,
     mimeType: typeof mimeType === "string" ? mimeType : undefined,
     source: source as ParseBetSlipRequest["source"],
+  };
+}
+
+function ensureAuthenticated(uid: string | undefined) {
+  if (!uid) {
+    throw new HttpsError("unauthenticated", "Authentication is required.");
+  }
+}
+
+function parseSearchSportsFixturesRequest(data: unknown): Required<SearchSportsFixturesRequest> {
+  if (!data || typeof data !== "object") {
+    throw new HttpsError("invalid-argument", "Request payload must be an object.");
+  }
+
+  const query = Reflect.get(data, "query");
+  const limit = Reflect.get(data, "limit");
+
+  if (typeof query !== "string" || query.trim().length < 3 || query.trim().length > 80) {
+    throw new HttpsError("invalid-argument", "query must be a string between 3 and 80 characters.");
+  }
+
+  if (limit != null && (!Number.isInteger(limit) || Number(limit) < 1 || Number(limit) > 10)) {
+    throw new HttpsError("invalid-argument", "limit must be an integer between 1 and 10.");
+  }
+
+  return {
+    query: query.trim(),
+    limit: typeof limit === "number" ? limit : 8,
+  };
+}
+
+function parseGetSportsFixtureResultRequest(data: unknown): GetSportsFixtureResultRequest {
+  if (!data || typeof data !== "object") {
+    throw new HttpsError("invalid-argument", "Request payload must be an object.");
+  }
+
+  const fixtureId = Reflect.get(data, "fixtureId");
+
+  if (!Number.isInteger(fixtureId) || Number(fixtureId) <= 0) {
+    throw new HttpsError("invalid-argument", "fixtureId must be a positive integer.");
+  }
+
+  return {
+    fixtureId: Number(fixtureId),
+  };
+}
+
+function parseFetchTeamNewsRequest(data: unknown): Required<FetchTeamNewsRequest> {
+  if (!data || typeof data !== "object") {
+    throw new HttpsError("invalid-argument", "Request payload must be an object.");
+  }
+
+  const teamName = Reflect.get(data, "teamName");
+  const maxResults = Reflect.get(data, "maxResults");
+
+  if (typeof teamName !== "string" || teamName.trim().length < 2 || teamName.trim().length > 80) {
+    throw new HttpsError("invalid-argument", "teamName must be a string between 2 and 80 characters.");
+  }
+
+  if (
+    maxResults != null &&
+    (!Number.isInteger(maxResults) || Number(maxResults) < 1 || Number(maxResults) > 5)
+  ) {
+    throw new HttpsError("invalid-argument", "maxResults must be an integer between 1 and 5.");
+  }
+
+  return {
+    teamName: teamName.trim(),
+    maxResults: typeof maxResults === "number" ? maxResults : 3,
+  };
+}
+
+function parseGetTeamContextRequest(data: unknown): GetTeamContextRequest {
+  if (!data || typeof data !== "object") {
+    throw new HttpsError("invalid-argument", "Request payload must be an object.");
+  }
+
+  const fixtureId = Reflect.get(data, "fixtureId");
+
+  if (!Number.isInteger(fixtureId) || Number(fixtureId) <= 0) {
+    throw new HttpsError("invalid-argument", "fixtureId must be a positive integer.");
+  }
+
+  return { fixtureId: Number(fixtureId) };
+}
+
+function parseEstimateEdgeRequest(data: unknown): EstimateEdgeRequest {
+  if (!data || typeof data !== "object") {
+    throw new HttpsError("invalid-argument", "Request payload must be an object.");
+  }
+
+  const fixtureId = Reflect.get(data, "fixtureId");
+  const market = Reflect.get(data, "market");
+  const selection = Reflect.get(data, "selection");
+  const odds = Reflect.get(data, "odds");
+
+  if (!Number.isInteger(fixtureId) || Number(fixtureId) <= 0) {
+    throw new HttpsError("invalid-argument", "fixtureId must be a positive integer.");
+  }
+
+  if (typeof market !== "string" || market.trim().length === 0) {
+    throw new HttpsError("invalid-argument", "market must be a non-empty string.");
+  }
+
+  if (typeof selection !== "string" || selection.trim().length === 0) {
+    throw new HttpsError("invalid-argument", "selection must be a non-empty string.");
+  }
+
+  if (typeof odds !== "number" || odds <= 1) {
+    throw new HttpsError("invalid-argument", "odds must be a number greater than 1.");
+  }
+
+  return {
+    fixtureId: Number(fixtureId),
+    market: market.trim(),
+    selection: selection.trim(),
+    odds,
   };
 }

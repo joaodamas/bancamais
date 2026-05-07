@@ -8,8 +8,8 @@ export function BrandLogo({ compact = false }: BrandLogoProps) {
       <svg className="brand-symbol" viewBox="0 0 96 96" role="img" aria-hidden="true">
         <defs>
           <linearGradient id="brand-gradient" x1="16" y1="16" x2="80" y2="80" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#7CFFB2" />
-            <stop offset="1" stopColor="#5EE0FF" />
+            <stop stopColor="#9d8fff" />
+            <stop offset="1" stopColor="#7c6af7" />
           </linearGradient>
         </defs>
         <rect className="symbol-bg" x="8" y="8" width="80" height="80" rx="22" />

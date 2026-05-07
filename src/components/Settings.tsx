@@ -6,113 +6,134 @@ interface SettingsProps {
   state: AppState;
   reset: () => void;
   user: User | null;
-  syncStatus: string;
-  connectCloud: () => Promise<void>;
-  disconnectCloud: () => Promise<void>;
   pushCloud: () => Promise<void>;
   pullCloud: () => Promise<void>;
-  createAccount: (event: FormEvent<HTMLFormElement>) => Promise<void>;
-  signInAccount: (event: FormEvent<HTMLFormElement>) => Promise<void>;
-  sendReset: (event: FormEvent<HTMLFormElement>) => Promise<void>;
-  authMessage: string;
+  disconnectCloud: () => Promise<void>;
+  onGoToAuth: () => void;
   updateRiskSettings: (event: FormEvent<HTMLFormElement>) => void;
+}
+
+function SyncDot({ status }: { status: "online" | "temp" | "offline" }) {
+  return <span className={`sync-dot sync-dot-${status}`} aria-hidden="true" />;
 }
 
 export function Settings({
   state,
   reset,
   user,
-  syncStatus,
-  connectCloud,
-  disconnectCloud,
   pushCloud,
   pullCloud,
-  createAccount,
-  signInAccount,
-  sendReset,
-  authMessage,
+  disconnectCloud,
+  onGoToAuth,
   updateRiskSettings,
 }: SettingsProps) {
+  const isAnonymous = user?.isAnonymous ?? false;
+  const isAuthenticated = user !== null && !isAnonymous;
+
   return (
     <section className="page">
+      <div className="section-head">
+        <div>
+          <h1>Configurações</h1>
+          <p>Sincronização, limites de risco e dados da conta.</p>
+        </div>
+      </div>
+
       <div className="settings-layout">
-      <article className="panel">
-        <h2>Dados e sincronizacao</h2>
-        <p>
-          Mantenha sua base acessivel entre dispositivos e acompanhe o estado atual da conta conectada.
-        </p>
-        <p>
-          O aplicativo funciona localmente e pode sincronizar sua operacao quando houver uma conta conectada.
-        </p>
-        <div className="settings-grid">
-          <div>
-            <span>Status de sync</span>
-            <strong>{syncStatus}</strong>
-            <small>{user ? `Identificador: ${user.uid}` : "Nenhuma conta conectada"}</small>
+        <article className="panel">
+          <h2>Sincronização</h2>
+
+          {isAuthenticated && (
+            <>
+              <div className="sync-status-row">
+                <SyncDot status="online" />
+                <div>
+                  <strong>Sincronização automática ativa</strong>
+                  <small>{user.displayName || user.email}</small>
+                </div>
+              </div>
+              <p className="sync-description">
+                Seus dados são salvos automaticamente em até 3 segundos após cada alteração.
+              </p>
+              <div className="actions">
+                <button onClick={pushCloud}>Forçar sincronização</button>
+                <button onClick={pullCloud}>Restaurar da nuvem</button>
+                <button onClick={disconnectCloud}>Sair da conta</button>
+              </div>
+            </>
+          )}
+
+          {isAnonymous && (
+            <>
+              <div className="sync-status-row">
+                <SyncDot status="temp" />
+                <div>
+                  <strong>Conta temporária</strong>
+                  <small>Seus dados podem ser perdidos se você limpar o navegador</small>
+                </div>
+              </div>
+              <p className="sync-description">
+                Crie uma conta para sincronizar sua operação com segurança entre dispositivos.
+              </p>
+              <div className="actions">
+                <button className="primary" onClick={onGoToAuth}>Criar conta permanente</button>
+                <button onClick={pushCloud}>Salvar snapshot agora</button>
+              </div>
+            </>
+          )}
+
+          {!user && (
+            <>
+              <div className="sync-status-row">
+                <SyncDot status="offline" />
+                <div>
+                  <strong>Operação local</strong>
+                  <small>Dados salvos apenas neste dispositivo</small>
+                </div>
+              </div>
+              <p className="sync-description">
+                Entre com sua conta para ativar a sincronização automática entre dispositivos.
+              </p>
+              <div className="actions">
+                <button className="primary" onClick={onGoToAuth}>Criar conta ou entrar</button>
+              </div>
+            </>
+          )}
+        </article>
+
+        <form className="panel risk-settings-form" onSubmit={updateRiskSettings}>
+          <h2>Limites de risco</h2>
+          <p>
+            Defina os limites operacionais que orientam alertas e bloqueios de stake.
+          </p>
+          <div className="risk-settings-grid">
+            <label>
+              Unidade da banca (%)
+              <input defaultValue={state.riskSettings.unitPercent} min="0.1" name="unitPercent" required step="0.1" type="number" />
+            </label>
+            <label>
+              Stake máxima (unidades)
+              <input defaultValue={state.riskSettings.maxStakeUnits} min="0.5" name="maxStakeUnits" required step="0.5" type="number" />
+            </label>
+            <label>
+              Exposição aberta máxima (%)
+              <input defaultValue={state.riskSettings.maxOpenExposurePercent} min="1" name="maxOpenExposurePercent" required step="1" type="number" />
+            </label>
+            <label>
+              Alerta após perdas seguidas
+              <input defaultValue={state.riskSettings.lossStreakLimit} min="1" name="lossStreakLimit" required step="1" type="number" />
+            </label>
           </div>
+          <button className="primary" type="submit">Salvar limites</button>
+        </form>
+
+        <article className="panel danger-zone">
+          <h2>Zona de perigo</h2>
+          <p>Ações irreversíveis sobre os dados desta sessão.</p>
           <div className="actions">
-            {user ? (
-              <button onClick={disconnectCloud}>Desconectar</button>
-            ) : (
-              <button onClick={connectCloud}>Conectar Firebase</button>
-            )}
-            <button onClick={pushCloud}>Salvar na nuvem</button>
-            <button onClick={pullCloud}>Carregar da nuvem</button>
-            <button onClick={reset}>Restaurar demo</button>
+            <button className="btn-danger" onClick={reset}>Restaurar dados demo</button>
           </div>
-        </div>
-      </article>
-
-      <article className="panel auth-panel">
-        <h2>Conta Banca+</h2>
-        <p>
-          Crie uma conta para sincronizar sua operacao com seguranca e continuar de qualquer dispositivo.
-        </p>
-        <div className="auth-message">{authMessage}</div>
-
-        <div className="auth-grid">
-          <form onSubmit={createAccount}>
-            <h3>Criar conta</h3>
-            <label>Nome<input name="displayName" placeholder="Joao Damas" /></label>
-            <label>Email<input name="email" required type="email" placeholder="voce@email.com" /></label>
-            <label>Senha<input name="password" required minLength={6} type="password" placeholder="minimo 6 caracteres" /></label>
-            <button className="primary" type="submit">Criar e sincronizar</button>
-          </form>
-
-          <form onSubmit={signInAccount}>
-            <h3>Entrar</h3>
-            <label>Email<input name="email" required type="email" placeholder="voce@email.com" /></label>
-            <label>Senha<input name="password" required type="password" /></label>
-            <button className="primary" type="submit">Entrar</button>
-          </form>
-
-          <form onSubmit={sendReset}>
-            <h3>Recuperar senha</h3>
-            <label>Email<input name="email" required type="email" placeholder="voce@email.com" /></label>
-            <button type="submit">Enviar reset</button>
-          </form>
-        </div>
-      </article>
-
-      <form className="panel risk-settings-form" onSubmit={updateRiskSettings}>
-        <h2>Limites de risco</h2>
-        <p>
-          Defina os limites operacionais que orientam alertas e disciplina de stake.
-        </p>
-        <label>Unidade da banca (%)
-          <input defaultValue={state.riskSettings.unitPercent} min="0.1" name="unitPercent" required step="0.1" type="number" />
-        </label>
-        <label>Stake maxima (unidades)
-          <input defaultValue={state.riskSettings.maxStakeUnits} min="0.5" name="maxStakeUnits" required step="0.5" type="number" />
-        </label>
-        <label>Exposicao aberta maxima (%)
-          <input defaultValue={state.riskSettings.maxOpenExposurePercent} min="1" name="maxOpenExposurePercent" required step="1" type="number" />
-        </label>
-        <label>Alerta apos perdas seguidas
-          <input defaultValue={state.riskSettings.lossStreakLimit} min="1" name="lossStreakLimit" required step="1" type="number" />
-        </label>
-        <button className="primary" type="submit">Salvar limites</button>
-      </form>
+        </article>
       </div>
     </section>
   );

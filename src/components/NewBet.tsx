@@ -11,11 +11,20 @@ import {
 import type { AppState, NewBetPrefill } from "../lib/types";
 import { isSportsApiConfigured, searchFixtures, type FixtureSearchResult } from "../lib/sportsApi";
 
+interface CooldownInfo {
+  active: boolean;
+  until: Date | null;
+  reason: string;
+}
+
 interface NewBetProps {
   state: AppState;
   addBet: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   onClose: () => void;
   prefill?: NewBetPrefill | null;
+  cooldown?: CooldownInfo;
+  cooldownOverride?: boolean;
+  onCooldownOverride?: () => void;
 }
 
 interface BetFormValues {
@@ -107,7 +116,7 @@ function isReviewFlagForField(flag: OcrReviewFlag, field: OcrFieldName) {
   return flag.field === field;
 }
 
-export function NewBet({ state, addBet, onClose, prefill }: NewBetProps) {
+export function NewBet({ state, addBet, onClose, prefill, cooldown, cooldownOverride, onCooldownOverride }: NewBetProps) {
   const [formValues, setFormValues] = useState<BetFormValues>(initialFormValues);
   const [fixtureSuggestions, setFixtureSuggestions] = useState<FixtureSearchResult[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -456,6 +465,24 @@ export function NewBet({ state, addBet, onClose, prefill }: NewBetProps) {
       <div className="modal-panel" onClick={(event) => event.stopPropagation()}>
         <button className="modal-close" onClick={onClose} type="button">×</button>
         <h2>Nova Aposta</h2>
+        {cooldown?.active && !cooldownOverride && (
+          <div className="newbet-cooldown-block" role="alert">
+            <strong>Cooldown de risco ativo</strong>
+            <p>{cooldown.reason}</p>
+            <p className="newbet-cooldown-until">
+              Bloqueio até {cooldown.until?.toLocaleString("pt-BR") ?? "—"}
+            </p>
+            {onCooldownOverride && (
+              <button
+                className="newbet-cooldown-override-btn"
+                type="button"
+                onClick={onCooldownOverride}
+              >
+                Entendo o risco — prosseguir mesmo assim
+              </button>
+            )}
+          </div>
+        )}
         <form className="form" onSubmit={handleSubmit}>
           <input type="hidden" name="uploadedSlipImagePath" value={uploadedSlip?.path ?? ""} />
           <input type="hidden" name="uploadedSlipImageUrl" value={uploadedSlip?.url ?? ""} />
@@ -638,11 +665,19 @@ export function NewBet({ state, addBet, onClose, prefill }: NewBetProps) {
             <span>
               {state.bookmakers.length === 0
                 ? "Cadastre uma casa em Bancas & Casas antes de registrar apostas."
-                : pendingReviewCount > 0
-                  ? `OCR marcou ${pendingReviewCount} campo(s) para revisao antes do submit.`
-                  : "Revise os dados antes de confirmar a entrada."}
+                : cooldown?.active && !cooldownOverride
+                  ? "Cooldown de risco ativo — confirme que entende o risco para liberar."
+                  : pendingReviewCount > 0
+                    ? `OCR marcou ${pendingReviewCount} campo(s) para revisao antes do submit.`
+                    : "Revise os dados antes de confirmar a entrada."}
             </span>
-            <button className="primary" type="submit" disabled={state.bookmakers.length === 0}>Salvar aposta</button>
+            <button
+              className="primary"
+              type="submit"
+              disabled={state.bookmakers.length === 0 || (cooldown?.active && !cooldownOverride)}
+            >
+              Salvar aposta
+            </button>
           </div>
         </form>
       </div>
