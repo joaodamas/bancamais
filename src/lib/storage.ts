@@ -10,6 +10,7 @@ export function emptyState(): AppState {
     bankrollName: "Minha Banca",
     currency: "BRL",
     startingBalance: 0,
+    lastModifiedAt: null,
     riskSettings: { unitPercent: 1, maxStakeUnits: 2, maxOpenExposurePercent: 5, lossStreakLimit: 3 },
     bookmakers: [],
     strategies: [],
@@ -58,6 +59,7 @@ export function loadState(): AppState {
       bookmakers: cleanedBooks,
       // Resetar saldo inicial se era o valor mock
       startingBalance: parsed.startingBalance === 13264.2 ? 0 : parsed.startingBalance,
+      lastModifiedAt: parsed.lastModifiedAt ?? null,
     };
 
     return cleaned;
@@ -74,11 +76,11 @@ export function normalizeState(state: Partial<AppState>): AppState {
       ...initialState.riskSettings,
       ...state.riskSettings,
     },
+    lastModifiedAt: state.lastModifiedAt ?? initialState.lastModifiedAt ?? null,
     bookmakers: state.bookmakers ?? initialState.bookmakers,
     strategies: state.strategies ?? initialState.strategies,
     bets: state.bets ?? initialState.bets,
     transactions: state.transactions ?? initialState.transactions,
-    cooldownUntil: state.cooldownUntil ?? null,
   };
 }
 

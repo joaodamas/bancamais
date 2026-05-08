@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { auth } from "../lib/firebase";
 import {
   buildOcrSubmissionMetadata,
@@ -8,56 +9,31 @@ import {
   type OcrReviewFlag,
   type ParseBetSlipResponse,
 } from "../lib/ocr";
-import type { AppState, NewBetPrefill } from "../lib/types";
+import { LoadingSkeleton } from "./LoadingSkeleton";
+import type {
+  AppState,
+  NewBetDraft,
+  NewBetFormValues,
+  NewBetOcrFieldMeta,
+  NewBetOcrFieldMetaMap,
+  NewBetPrefill,
+} from "../lib/types";
 import { isSportsApiConfigured, searchFixtures, type FixtureSearchResult } from "../lib/sportsApi";
-
-interface CooldownInfo {
-  active: boolean;
-  until: Date | null;
-  reason: string;
-}
 
 interface NewBetProps {
   state: AppState;
   addBet: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   onClose: () => void;
   prefill?: NewBetPrefill | null;
-  cooldown?: CooldownInfo;
-  cooldownOverride?: boolean;
-  onCooldownOverride?: () => void;
+  draft?: NewBetDraft | null;
+  onDraftChange?: (draft: NewBetDraft | null) => void;
 }
 
-interface BetFormValues {
-  eventName: string;
-  eventAt: string;
-  sport: string;
-  league: string;
-  market: string;
-  selection: string;
-  bookmakerId: string;
-  strategyId: string;
-  stake: string;
-  odds: string;
-  closingOdds: string;
-  mode: "prelive" | "live";
-  tags: string;
-}
+type FormFieldName = keyof NewBetFormValues;
+type OcrFieldMeta = NewBetOcrFieldMeta;
+type OcrFieldMetaMap = NewBetOcrFieldMetaMap;
 
-type FormFieldName = keyof BetFormValues;
-
-interface OcrFieldMeta {
-  ocrField: OcrFieldName;
-  confidence: number | null;
-  sourceText: string | null;
-  extractedValue: string | number | null;
-  warnings: string[];
-  requiresReview: boolean;
-  reviewedManually: boolean;
-}
-
-type OcrFieldMetaMap = Partial<Record<FormFieldName, OcrFieldMeta>>;
-
-const initialFormValues: BetFormValues = {
+const initialFormValues: NewBetFormValues = {
   eventName: "",
   eventAt: "",
   sport: "",
@@ -116,8 +92,8 @@ function isReviewFlagForField(flag: OcrReviewFlag, field: OcrFieldName) {
   return flag.field === field;
 }
 
-export function NewBet({ state, addBet, onClose, prefill, cooldown, cooldownOverride, onCooldownOverride }: NewBetProps) {
-  const [formValues, setFormValues] = useState<BetFormValues>(initialFormValues);
+export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange }: NewBetProps) {
+  const [formValues, setFormValues] = useState<NewBetFormValues>(initialFormValues);
   const [fixtureSuggestions, setFixtureSuggestions] = useState<FixtureSearchResult[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -128,11 +104,24 @@ export function NewBet({ state, addBet, onClose, prefill, cooldown, cooldownOver
   const [ocrResult, setOcrResult] = useState<ParseBetSlipResponse | null>(null);
   const [fieldOcrMeta, setFieldOcrMeta] = useState<OcrFieldMetaMap>({});
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastHydratedDraftSignature = useRef<string | null>(null);
 
   const selectedBookmakerName = useMemo(() => {
     const selectedBookmaker = state.bookmakers.find((book) => book.id === formValues.bookmakerId);
     return selectedBookmaker?.name ?? null;
   }, [formValues.bookmakerId, state.bookmakers]);
+
+  const baselineFormValues = useMemo<NewBetFormValues>(() => ({
+    ...initialFormValues,
+    ...(prefill ?? {}),
+    bookmakerId: prefill?.bookmakerId ?? "",
+    strategyId: prefill?.strategyId ?? "",
+    stake: prefill?.stake ?? "",
+    odds: prefill?.odds ?? "",
+    closingOdds: prefill?.closingOdds ?? "",
+    mode: prefill?.mode ?? "prelive",
+    tags: prefill?.tags ?? "",
+  }), [prefill]);
 
   const reviewedOcrFields = useMemo(() => {
     return Object.values(fieldOcrMeta).reduce<Partial<Record<OcrFieldName, boolean>>>((acc, meta) => {
@@ -169,9 +158,61 @@ export function NewBet({ state, addBet, onClose, prefill, cooldown, cooldownOver
     return Object.values(fieldOcrMeta).filter((meta) => meta && meta.requiresReview && !meta.reviewedManually).length;
   }, [fieldOcrMeta]);
 
+  const hasUnsavedProgress = useMemo(() => {
+    const changedFields = (Object.keys(initialFormValues) as FormFieldName[]).some(
+      (field) => formValues[field] !== baselineFormValues[field],
+    );
+
+    return (
+      changedFields ||
+      uploadedSlip !== null ||
+      ocrResult !== null ||
+      Object.keys(fieldOcrMeta).length > 0 ||
+      ocrStatus !== "idle"
+    );
+  }, [baselineFormValues, fieldOcrMeta, formValues, ocrResult, ocrStatus, uploadedSlip]);
+
+  const currentDraft = useMemo<NewBetDraft>(() => ({
+    formValues,
+    ocrStatus,
+    ocrMessage,
+    ocrWarnings,
+    uploadedSlip,
+    ocrResult,
+    fieldOcrMeta,
+  }), [fieldOcrMeta, formValues, ocrMessage, ocrResult, ocrStatus, ocrWarnings, uploadedSlip]);
+
+  const currentDraftSignature = useMemo(() => JSON.stringify(currentDraft), [currentDraft]);
+
   useEffect(() => {
+    if (draft) {
+      const incomingSignature = JSON.stringify(draft);
+      if (incomingSignature === currentDraftSignature) return;
+      if (incomingSignature === lastHydratedDraftSignature.current) return;
+
+      lastHydratedDraftSignature.current = incomingSignature;
+      setFormValues(draft.formValues);
+      setUploadedSlip(draft.uploadedSlip);
+      setOcrResult(draft.ocrResult);
+      setFieldOcrMeta(draft.fieldOcrMeta);
+      setOcrStatus(draft.ocrStatus);
+      setOcrWarnings(draft.ocrWarnings);
+      setOcrMessage(draft.ocrMessage);
+      setShowSuggestions(false);
+      setFixtureSuggestions([]);
+      return;
+    }
+
     if (!prefill) {
       setFormValues(initialFormValues);
+      setShowSuggestions(false);
+      setFixtureSuggestions([]);
+      setUploadedSlip(null);
+      setOcrResult(null);
+      setFieldOcrMeta({});
+      setOcrStatus("idle");
+      setOcrWarnings([]);
+      setOcrMessage("Selecione um print para tentar o preenchimento automatico.");
       return;
     }
 
@@ -193,8 +234,25 @@ export function NewBet({ state, addBet, onClose, prefill, cooldown, cooldownOver
     setFieldOcrMeta({});
     setOcrStatus("idle");
     setOcrWarnings([]);
-    setOcrMessage("Sugestao aplicada. Revise stake, casa e contexto antes de salvar.");
-  }, [prefill]);
+      setOcrMessage("Sugestao aplicada. Revise stake, casa e contexto antes de salvar.");
+  }, [draft, prefill]);
+
+  useEffect(() => {
+    if (formValues.bookmakerId || state.bookmakers.length !== 1) return;
+
+    setFormValues((current) => (
+      current.bookmakerId
+        ? current
+        : { ...current, bookmakerId: state.bookmakers[0].id }
+    ));
+  }, [formValues.bookmakerId, state.bookmakers]);
+
+  useEffect(() => {
+    if (!onDraftChange) return;
+    if (draft && JSON.stringify(draft) === currentDraftSignature) return;
+
+    onDraftChange(currentDraft);
+  }, [currentDraft, currentDraftSignature, draft, onDraftChange]);
 
   function setFieldValue(field: FormFieldName, value: string, options?: { markReviewed?: boolean }) {
     setFormValues((current) => ({ ...current, [field]: value }));
@@ -329,7 +387,7 @@ export function NewBet({ state, addBet, onClose, prefill, cooldown, cooldownOver
 
     try {
       const { upload, ocr } = await uploadAndParseBetSlip(user.uid, file);
-      const nextValues: Partial<BetFormValues> = {};
+      const nextValues: Partial<NewBetFormValues> = {};
       const extraWarnings: Partial<Record<FormFieldName, string[]>> = {};
       const generalWarnings = ocr.reviewFlags.filter((flag) => !flag.field).map((flag) => flag.message);
       const fieldsFilled: string[] = [];
@@ -455,34 +513,47 @@ export function NewBet({ state, addBet, onClose, prefill, cooldown, cooldownOver
     );
   }
 
+  function getFieldStateClass(field: FormFieldName) {
+    const meta = fieldOcrMeta[field];
+    if (!meta) return "";
+    if (meta.reviewedManually) return " nb-field-reviewed";
+    if (!meta.requiresReview) return " nb-field-autofilled";
+    return " nb-field-warning";
+  }
+
+  function renderFieldLabel(label: string, field?: FormFieldName) {
+    const meta = field ? fieldOcrMeta[field] : undefined;
+    const showSuccess = meta ? (!meta.requiresReview || meta.reviewedManually) : false;
+
+    return (
+      <span className="nb-label-row">
+        <span>{label}</span>
+        {showSuccess && <CheckCircle2 size={12} className="nb-label-check" aria-hidden="true" />}
+      </span>
+    );
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     setShowSuggestions(false);
     await addBet(event);
   }
 
+  function handleCloseRequest() {
+    if (
+      hasUnsavedProgress &&
+      !window.confirm("Existem dados preenchidos neste modal, incluindo leitura de OCR. Fechar agora descartara esse progresso. Deseja continuar?")
+    ) {
+      return;
+    }
+
+    onClose();
+  }
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-panel" onClick={(event) => event.stopPropagation()}>
-        <button className="modal-close" onClick={onClose} type="button">×</button>
+    <div className="modal-overlay">
+      <div className="modal-panel modal-wide" onClick={(event) => event.stopPropagation()}>
+        <button className="modal-close" onClick={handleCloseRequest} type="button">×</button>
         <h2>Nova Aposta</h2>
-        {cooldown?.active && !cooldownOverride && (
-          <div className="newbet-cooldown-block" role="alert">
-            <strong>Cooldown de risco ativo</strong>
-            <p>{cooldown.reason}</p>
-            <p className="newbet-cooldown-until">
-              Bloqueio até {cooldown.until?.toLocaleString("pt-BR") ?? "—"}
-            </p>
-            {onCooldownOverride && (
-              <button
-                className="newbet-cooldown-override-btn"
-                type="button"
-                onClick={onCooldownOverride}
-              >
-                Entendo o risco — prosseguir mesmo assim
-              </button>
-            )}
-          </div>
-        )}
         <form className="form" onSubmit={handleSubmit}>
           <input type="hidden" name="uploadedSlipImagePath" value={uploadedSlip?.path ?? ""} />
           <input type="hidden" name="uploadedSlipImageUrl" value={uploadedSlip?.url ?? ""} />
@@ -496,185 +567,216 @@ export function NewBet({ state, addBet, onClose, prefill, cooldown, cooldownOver
           <input type="hidden" name="estimatedEdge" value={prefill?.estimatedEdge ?? ""} />
           <input type="hidden" name="suggestionConfidenceScore" value={prefill?.confidenceScore ?? ""} />
 
-          <div className="form-section-title full">
-            <span>Entrada</span>
-            <strong>Comprovante e leitura do evento</strong>
-          </div>
-
-          <div className="dropzone full">
-            <strong>Cole, arraste ou selecione o print do bilhete</strong>
-            <span>Anexe o comprovante para manter o registro completo da entrada.</span>
-            <input accept="image/*" name="slip" type="file" onChange={handleSlipChange} />
-            <div className={`ocr-feedback ocr-feedback-${ocrStatus}`} role="status" aria-live="polite">
-              <strong>{ocrStatus === "loading" ? "Leitura em andamento" : "Leitura do bilhete"}</strong>
-              <span>{ocrMessage}</span>
-              {(ocrResult || Object.keys(fieldOcrMeta).length > 0) && (
-                <div className="ocr-feedback-summary">
-                  <span>{Object.keys(fieldOcrMeta).length} campo(s) sinalizado(s) pelo OCR</span>
-                  <span>{pendingReviewCount} pendente(s) de revisao</span>
-                  <span>{reviewedFieldCount} revisado(s) manualmente</span>
+          <div className="nb-section nb-ocr-section full">
+            <div className="nb-section-head">
+              <span className="nb-section-label">Bilhete</span>
+              <span className="nb-section-title">Comprovante e leitura automática</span>
+            </div>
+            <div className="nb-section-body nb-row-1">
+              <div className="dropzone">
+                <strong>Cole, arraste ou selecione o print do bilhete</strong>
+                <span>Anexe o comprovante para manter o registro completo da entrada.</span>
+                <input accept="image/*" name="slip" type="file" onChange={handleSlipChange} />
+                <div className={`ocr-feedback ocr-feedback-${ocrStatus}`} role="status" aria-live="polite">
+                  <strong>{ocrStatus === "loading" ? "Leitura em andamento" : "Leitura do bilhete"}</strong>
+                  <span>{ocrMessage}</span>
+                  {ocrStatus === "loading" && (
+                    <div className="ocr-skeleton-grid" aria-hidden="true">
+                      <LoadingSkeleton lines={1} height={14} />
+                      <LoadingSkeleton lines={3} height={12} />
+                    </div>
+                  )}
+                  {(ocrResult || Object.keys(fieldOcrMeta).length > 0) && (
+                    <div className="ocr-feedback-summary">
+                      <span>{Object.keys(fieldOcrMeta).length} campo(s) sinalizado(s) pelo OCR</span>
+                      <span>{pendingReviewCount} pendente(s) de revisao</span>
+                      <span>{reviewedFieldCount} revisado(s) manualmente</span>
+                    </div>
+                  )}
+                  {ocrWarnings.length > 0 && (
+                    <ul className="ocr-feedback-list">
+                      {ocrWarnings.map((warning) => <li key={warning}>{warning}</li>)}
+                    </ul>
+                  )}
                 </div>
-              )}
-              {ocrWarnings.length > 0 && (
-                <ul className="ocr-feedback-list">
-                  {ocrWarnings.map((warning) => <li key={warning}>{warning}</li>)}
-                </ul>
-              )}
+              </div>
             </div>
           </div>
 
-          <label className="full" style={{ position: "relative" }}>
-            Evento
-            {isSportsApiConfigured() && (
-              <span className="fixture-search-hint">
-                {isSearching ? "Buscando..." : "Digite o nome de um time para sugestões"}
-              </span>
-            )}
-            <input
-              name="eventName"
-              required
-              placeholder="Real Madrid x Manchester City"
-              value={formValues.eventName}
-              onChange={(event) => handleEventSearch(event.target.value)}
-              onFocus={() => fixtureSuggestions.length > 0 && setShowSuggestions(true)}
-              autoComplete="off"
-            />
-            {showSuggestions && fixtureSuggestions.length > 0 && (
-              <ul className="fixture-suggestions">
-                {fixtureSuggestions.map((result) => (
-                  <li key={result.fixture.id} onClick={() => selectFixture(result)}>
-                    <div className="fixture-suggestion-teams">
-                      {result.fixture.homeLogo && (
-                        <img src={result.fixture.homeLogo} alt="" width={16} height={16} />
-                      )}
-                      <span>{result.fixture.homeTeam} x {result.fixture.awayTeam}</span>
-                      {result.fixture.awayLogo && (
-                        <img src={result.fixture.awayLogo} alt="" width={16} height={16} />
-                      )}
-                    </div>
-                    <div className="fixture-suggestion-meta">
-                      {result.fixture.league} ·{" "}
-                      {new Date(result.fixture.date).toLocaleDateString("pt-BR", {
-                        day: "2-digit",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {renderOcrFieldMeta("eventName")}
-          </label>
-
-          <div className="form-section-title full">
-            <span>Mercado</span>
-            <strong>Dados principais da aposta</strong>
+          <div className="nb-section full">
+            <div className="nb-section-head">
+              <span className="nb-section-label">Evento</span>
+              <span className="nb-section-title">Partida e contexto esportivo</span>
+            </div>
+            <div className="nb-section-body nb-row-1">
+              <label className="nb-event-search">
+                {renderFieldLabel("Evento", "eventName")}
+                {isSportsApiConfigured() && (
+                  <span className="fixture-search-hint">
+                    {isSearching ? "Buscando..." : "Digite o nome de um time para sugestões"}
+                  </span>
+                )}
+                <input
+                  className={getFieldStateClass("eventName")}
+                  name="eventName"
+                  required
+                  placeholder="Real Madrid x Manchester City"
+                  value={formValues.eventName}
+                  onChange={(event) => handleEventSearch(event.target.value)}
+                  onFocus={() => fixtureSuggestions.length > 0 && setShowSuggestions(true)}
+                  autoComplete="off"
+                />
+                {showSuggestions && fixtureSuggestions.length > 0 && (
+                  <ul className="fixture-suggestions">
+                    {fixtureSuggestions.map((result) => (
+                      <li key={result.fixture.id} onClick={() => selectFixture(result)}>
+                        <div className="fixture-suggestion-teams">
+                          {result.fixture.homeLogo && (
+                            <img src={result.fixture.homeLogo} alt="" width={16} height={16} />
+                          )}
+                          <span>{result.fixture.homeTeam} x {result.fixture.awayTeam}</span>
+                          {result.fixture.awayLogo && (
+                            <img src={result.fixture.awayLogo} alt="" width={16} height={16} />
+                          )}
+                        </div>
+                        <div className="fixture-suggestion-meta">
+                          {result.fixture.league} ·{" "}
+                          {new Date(result.fixture.date).toLocaleDateString("pt-BR", {
+                            day: "2-digit",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {renderOcrFieldMeta("eventName")}
+              </label>
+              <div className="nb-inline-grid nb-inline-grid-3">
+                <label>
+                  {renderFieldLabel("Data do evento", "eventAt")}
+                  <input className={getFieldStateClass("eventAt")} name="eventAt" required type="datetime-local" value={formValues.eventAt} onChange={handleTextInput("eventAt")} />
+                  {renderOcrFieldMeta("eventAt")}
+                </label>
+                <label>
+                  {renderFieldLabel("Esporte", "sport")}
+                  <input className={getFieldStateClass("sport")} name="sport" required placeholder="Futebol" value={formValues.sport} onChange={handleTextInput("sport")} />
+                  {renderOcrFieldMeta("sport")}
+                </label>
+                <label>
+                  {renderFieldLabel("Liga", "league")}
+                  <input className={getFieldStateClass("league")} name="league" required placeholder="UCL" value={formValues.league} onChange={handleTextInput("league")} />
+                  {renderOcrFieldMeta("league")}
+                </label>
+              </div>
+            </div>
           </div>
 
-          <label>
-            Data do evento
-            <input name="eventAt" required type="datetime-local" value={formValues.eventAt} onChange={handleTextInput("eventAt")} />
-            {renderOcrFieldMeta("eventAt")}
-          </label>
-          <label>
-            Esporte
-            <input name="sport" required placeholder="Futebol" value={formValues.sport} onChange={handleTextInput("sport")} />
-            {renderOcrFieldMeta("sport")}
-          </label>
-          <label>
-            Liga
-            <input name="league" required placeholder="UCL" value={formValues.league} onChange={handleTextInput("league")} />
-            {renderOcrFieldMeta("league")}
-          </label>
-          <label>
-            Mercado
-            <input name="market" required placeholder="Total de gols" value={formValues.market} onChange={handleTextInput("market")} />
-            {renderOcrFieldMeta("market")}
-          </label>
-          <label>
-            Selecao
-            <input name="selection" required placeholder="Over 2.5 gols" value={formValues.selection} onChange={handleTextInput("selection")} />
-            {renderOcrFieldMeta("selection")}
-          </label>
-
-          <div className="form-section-title full">
-            <span>Execucao</span>
-            <strong>Casa, stake e precificacao</strong>
+          <div className="nb-section full">
+            <div className="nb-section-head">
+              <span className="nb-section-label">Mercado</span>
+              <span className="nb-section-title">Tipo de aposta e seleção</span>
+            </div>
+            <div className="nb-section-body nb-row-2">
+              <label>
+                {renderFieldLabel("Mercado", "market")}
+                <input className={getFieldStateClass("market")} name="market" required placeholder="Total de gols" value={formValues.market} onChange={handleTextInput("market")} />
+                {renderOcrFieldMeta("market")}
+              </label>
+              <label>
+                {renderFieldLabel("Seleção", "selection")}
+                <input className={getFieldStateClass("selection")} name="selection" required placeholder="Over 2.5 gols" value={formValues.selection} onChange={handleTextInput("selection")} />
+                {renderOcrFieldMeta("selection")}
+              </label>
+            </div>
           </div>
 
-          <label>
-            Casa
-            <select name="bookmakerId" required value={formValues.bookmakerId} onChange={handleTextInput("bookmakerId")}>
-              <option value="" disabled={state.bookmakers.length > 0}>Selecione uma casa</option>
-              {state.bookmakers.length === 0 && <option value="">Cadastre uma casa primeiro</option>}
-              {state.bookmakers.map((book) => <option key={book.id} value={book.id}>{book.name}</option>)}
-            </select>
-            {renderOcrFieldMeta("bookmakerId")}
-          </label>
-          <label>
-            Estrategia
-            <select name="strategyId" value={formValues.strategyId} onChange={handleTextInput("strategyId")}>
-              <option value="">Sem estrategia</option>
-              {state.strategies.map((strategy) => <option key={strategy.id} value={strategy.id}>{strategy.name}</option>)}
-            </select>
-          </label>
-          <label>
-            Stake
-            <input name="stake" required min="1" step="0.01" type="number" placeholder="250" value={formValues.stake} onChange={handleTextInput("stake")} />
-            {renderOcrFieldMeta("stake")}
-          </label>
-          <label>
-            Odd
-            <input name="odds" required min="1.01" step="0.01" type="number" placeholder="1.92" value={formValues.odds} onChange={handleTextInput("odds")} />
-            {renderOcrFieldMeta("odds")}
-          </label>
-          <label>
-            Odd fechamento
-            <input
-              name="closingOdds"
-              min="1.01"
-              step="0.01"
-              type="number"
-              placeholder="1.83"
-              value={formValues.closingOdds}
-              onChange={handleTextInput("closingOdds")}
-            />
-          </label>
-
-          <div className="form-section-title full">
-            <span>Contexto</span>
-            <strong>Classificacao e analise posterior</strong>
+          <div className="nb-section full">
+            <div className="nb-section-head">
+              <span className="nb-section-label">Execução</span>
+              <span className="nb-section-title">Casa, stake e precificação</span>
+            </div>
+            <div className="nb-section-body nb-row-1">
+              <div className="nb-inline-grid nb-inline-grid-2">
+                <label>
+                  {renderFieldLabel("Casa", "bookmakerId")}
+                  <select className={getFieldStateClass("bookmakerId")} name="bookmakerId" required value={formValues.bookmakerId} onChange={handleTextInput("bookmakerId")}>
+                    <option value="" disabled={state.bookmakers.length > 0}>Selecione uma casa</option>
+                    {state.bookmakers.length === 0 && <option value="">Cadastre uma casa primeiro</option>}
+                    {state.bookmakers.map((book) => <option key={book.id} value={book.id}>{book.name}</option>)}
+                  </select>
+                  {renderOcrFieldMeta("bookmakerId")}
+                </label>
+                <label>
+                  {renderFieldLabel("Estratégia")}
+                  <select name="strategyId" value={formValues.strategyId} onChange={handleTextInput("strategyId")}>
+                    <option value="">Sem estrategia</option>
+                    {state.strategies.map((strategy) => <option key={strategy.id} value={strategy.id}>{strategy.name}</option>)}
+                  </select>
+                </label>
+              </div>
+              <div className="nb-inline-grid nb-inline-grid-3">
+                <label>
+                  {renderFieldLabel("Stake", "stake")}
+                  <input className={getFieldStateClass("stake")} name="stake" required min="1" step="0.01" type="number" placeholder="250" value={formValues.stake} onChange={handleTextInput("stake")} />
+                  {renderOcrFieldMeta("stake")}
+                </label>
+                <label>
+                  {renderFieldLabel("Odd", "odds")}
+                  <input className={getFieldStateClass("odds")} name="odds" required min="1.01" step="0.01" type="number" placeholder="1.92" value={formValues.odds} onChange={handleTextInput("odds")} />
+                  {renderOcrFieldMeta("odds")}
+                </label>
+                <label>
+                  {renderFieldLabel("Odd fechamento")}
+                  <input
+                    name="closingOdds"
+                    min="1.01"
+                    step="0.01"
+                    type="number"
+                    placeholder="1.83"
+                    value={formValues.closingOdds}
+                    onChange={handleTextInput("closingOdds")}
+                  />
+                </label>
+              </div>
+            </div>
           </div>
 
-          <label>
-            Modo
-            <select name="mode" value={formValues.mode} onChange={handleTextInput("mode")}>
-              <option value="prelive">Pre-live</option>
-              <option value="live">Live</option>
-            </select>
-            {renderOcrFieldMeta("mode")}
-          </label>
-          <label className="full">
-            Tags
-            <input name="tags" placeholder="euro, overgols, prelive" value={formValues.tags} onChange={handleTextInput("tags")} />
-          </label>
+          <div className="nb-section full">
+            <div className="nb-section-head">
+              <span className="nb-section-label">Contexto</span>
+              <span className="nb-section-title">Modo e classificação</span>
+            </div>
+            <div className="nb-section-body nb-row-2">
+              <label>
+                {renderFieldLabel("Modo", "mode")}
+                <select className={getFieldStateClass("mode")} name="mode" value={formValues.mode} onChange={handleTextInput("mode")}>
+                  <option value="prelive">Pre-live</option>
+                  <option value="live">Live</option>
+                </select>
+                {renderOcrFieldMeta("mode")}
+              </label>
+              <label>
+                {renderFieldLabel("Tags")}
+                <input name="tags" placeholder="euro, overgols, prelive" value={formValues.tags} onChange={handleTextInput("tags")} />
+              </label>
+            </div>
+          </div>
 
           <div className="form-actions">
             <span>
               {state.bookmakers.length === 0
                 ? "Cadastre uma casa em Bancas & Casas antes de registrar apostas."
-                : cooldown?.active && !cooldownOverride
-                  ? "Cooldown de risco ativo — confirme que entende o risco para liberar."
-                  : pendingReviewCount > 0
+                : pendingReviewCount > 0
                     ? `OCR marcou ${pendingReviewCount} campo(s) para revisao antes do submit.`
                     : "Revise os dados antes de confirmar a entrada."}
             </span>
             <button
               className="primary"
               type="submit"
-              disabled={state.bookmakers.length === 0 || (cooldown?.active && !cooldownOverride)}
+              disabled={state.bookmakers.length === 0}
             >
               Salvar aposta
             </button>

@@ -31,9 +31,11 @@ function cacheSet<T>(key: string, data: T, ttlMs: number): void {
 }
 
 const TTL = {
-  fixtures: 24 * 60 * 60 * 1000,    // 24h — fixtures do dia não mudam muito
-  results:  60 * 60 * 1000,           // 1h — resultados mudam durante o jogo
-  teams:    7 * 24 * 60 * 60 * 1000, // 7 dias — dados de times são estáticos
+  fixtures:    24 * 60 * 60 * 1000, // 24h — fixtures do dia não mudam muito
+  results:     60 * 60 * 1000,       // 1h — resultados mudam durante o jogo
+  teams:       7 * 24 * 60 * 60 * 1000, // 7 dias — dados de times são estáticos
+  teamContext: 30 * 60 * 1000,       // 30 min — últimos 5 jogos e standings
+  edge:        15 * 60 * 1000,       // 15 min — estimativa de edge
 };
 
 export interface Fixture {
@@ -56,6 +58,43 @@ export interface FixtureSearchResult {
   displayLabel: string;
 }
 
+export interface MatchResult {
+  date: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeGoals: number;
+  awayGoals: number;
+}
+
+export interface WinLossRecord {
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsFor: number;
+  goalsAgainst: number;
+}
+
+export interface TeamStats {
+  name: string;
+  last5: MatchResult[];
+  homeRecord: WinLossRecord;
+  position?: number;
+}
+
+export interface TeamContext {
+  homeTeam: TeamStats;
+  awayTeam: TeamStats;
+  headToHead: MatchResult[];
+}
+
+export interface EdgeEstimate {
+  estimatedProbability: number;
+  impliedProbability: number;
+  edge: number;
+  confidence: "high" | "medium" | "low";
+  reasoning: string;
+}
+
 const functions = getFunctions(firebaseApp, "southamerica-east1");
 const searchSportsFixturesCallable = httpsCallable<
   { query: string; limit?: number },
@@ -65,6 +104,14 @@ const getSportsFixtureResultCallable = httpsCallable<
   { fixtureId: number },
   { homeGoals: number; awayGoals: number; status: string } | null
 >(functions, "getSportsFixtureResultCallable");
+const getTeamContextCallable = httpsCallable<
+  { fixtureId: number },
+  TeamContext | null
+>(functions, "getTeamContextCallable");
+const estimateEdgeCallable = httpsCallable<
+  { fixtureId: number; market: string; selection: string; odds: number },
+  EdgeEstimate | null
+>(functions, "estimateEdgeCallable");
 
 export async function searchFixtures(query: string): Promise<FixtureSearchResult[]> {
   if (query.trim().length < 3) return [];
@@ -104,6 +151,43 @@ export async function getFixtureResult(
       cacheSet(cacheKey, result, TTL.results);
     }
 
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+export async function getTeamContext(fixtureId: number): Promise<TeamContext | null> {
+  const cacheKey = `team_context_${fixtureId}`;
+  const cached = cacheGet<TeamContext>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const response = await getTeamContextCallable({ fixtureId });
+    const result = response.data;
+    if (!result) return null;
+    cacheSet(cacheKey, result, TTL.teamContext);
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+export async function estimateEdge(
+  fixtureId: number,
+  market: string,
+  selection: string,
+  odds: number
+): Promise<EdgeEstimate | null> {
+  const cacheKey = `edge_${fixtureId}_${market}_${selection}_${odds}`;
+  const cached = cacheGet<EdgeEstimate>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const response = await estimateEdgeCallable({ fixtureId, market, selection, odds });
+    const result = response.data;
+    if (!result) return null;
+    cacheSet(cacheKey, result, TTL.edge);
     return result;
   } catch {
     return null;

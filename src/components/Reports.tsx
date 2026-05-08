@@ -23,11 +23,41 @@ export function Reports({ state, metrics }: ReportsProps) {
 
   return (
     <section className="page">
+      <div className="dashboard-command panel report-command">
+        <div className="dashboard-command-copy">
+          <span className="dashboard-kicker">Central analítica</span>
+          <h1>Relatórios executivos da operação</h1>
+          <p>Consolide resultados, base fiscal e movimentação financeira com uma leitura mais clara para decisão e prestação de contas.</p>
+        </div>
+        <div className="dashboard-command-actions">
+          <button className="primary" onClick={() => downloadTextFile("bancamais-relatorio-operacional.csv", csv)}>Exportar base</button>
+          <button onClick={() => downloadTextFile("bancamais-fiscal-base.csv", csv)}>Base fiscal</button>
+        </div>
+      </div>
+
       <div className="page-actions">
         <div className="page-actions-copy">
           <strong>Relatórios operacionais</strong>
           <span>Consolide performance, fiscal e movimentação com uma leitura menos provisória e mais acionável.</span>
         </div>
+      </div>
+
+      <div className="dashboard-mini-grid">
+        <article className="panel dashboard-mini-card">
+          <span>Lucro liquidado</span>
+          <strong className={metrics.profit >= 0 ? "pos" : "neg"}>{money.format(metrics.profit)}</strong>
+          <small>Resultado financeiro confirmado até agora.</small>
+        </article>
+        <article className="panel dashboard-mini-card">
+          <span>Yield</span>
+          <strong>{percent.format(metrics.yield)}</strong>
+          <small>Eficiência sobre o volume efetivamente apostado.</small>
+        </article>
+        <article className="panel dashboard-mini-card">
+          <span>Fluxo lançado</span>
+          <strong className={transactionBalance >= 0 ? "pos" : "neg"}>{money.format(transactionBalance)}</strong>
+          <small>Leitura bruta de entradas e saídas registradas.</small>
+        </article>
       </div>
 
       <div className="report-grid">
@@ -58,7 +88,9 @@ export function Reports({ state, metrics }: ReportsProps) {
             Base pronta para mostrar ROI, yield e histórico sem expor valores absolutos.
             Publicação fica para a etapa de auth/perfil.
           </p>
-          <button disabled>Preparar perfil público</button>
+          <div className="report-placeholder-state">
+            <span>Disponível na próxima etapa de produto</span>
+          </div>
         </article>
       </div>
 

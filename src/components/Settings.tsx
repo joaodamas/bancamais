@@ -10,6 +10,7 @@ interface SettingsProps {
   pullCloud: () => Promise<void>;
   disconnectCloud: () => Promise<void>;
   onGoToAuth: () => void;
+  updateBankrollSettings: (event: FormEvent<HTMLFormElement>) => void;
   updateRiskSettings: (event: FormEvent<HTMLFormElement>) => void;
 }
 
@@ -25,6 +26,7 @@ export function Settings({
   pullCloud,
   disconnectCloud,
   onGoToAuth,
+  updateBankrollSettings,
   updateRiskSettings,
 }: SettingsProps) {
   const isAnonymous = user?.isAnonymous ?? false;
@@ -32,15 +34,34 @@ export function Settings({
 
   return (
     <section className="page">
-      <div className="section-head">
-        <div>
-          <h1>Configurações</h1>
-          <p>Sincronização, limites de risco e dados da conta.</p>
+      <div className="dashboard-command panel settings-command">
+        <div className="dashboard-command-copy">
+          <span className="dashboard-kicker">Governanca operacional</span>
+          <h1>Configuracoes, sincronizacao e risco</h1>
+          <p>Gerencie conta, persistencia e limites operacionais em uma camada unica de controle.</p>
         </div>
       </div>
 
+      <div className="ops-summary-grid settings-summary-grid">
+        <article className="ops-summary-card">
+          <span>Status da conta</span>
+          <strong>{isAuthenticated ? "Sincronizada" : isAnonymous ? "Temporaria" : "Local"}</strong>
+          <small>{isAuthenticated ? "Operacao vinculada a conta permanente." : "Persistencia depende deste dispositivo."}</small>
+        </article>
+        <article className="ops-summary-card">
+          <span>Unidade da banca</span>
+          <strong>{state.riskSettings.unitPercent.toFixed(1)}%</strong>
+          <small>Base usada para alertas, stake e governanca.</small>
+        </article>
+        <article className="ops-summary-card">
+          <span>Exposicao maxima</span>
+          <strong>{state.riskSettings.maxOpenExposurePercent.toFixed(0)}%</strong>
+          <small>Teto atual para risco aberto simultaneo.</small>
+        </article>
+      </div>
+
       <div className="settings-layout">
-        <article className="panel">
+        <article className="panel settings-panel">
           <h2>Sincronização</h2>
 
           {isAuthenticated && (
@@ -69,11 +90,11 @@ export function Settings({
                 <SyncDot status="temp" />
                 <div>
                   <strong>Conta temporária</strong>
-                  <small>Seus dados podem ser perdidos se você limpar o navegador</small>
+                  <small>Sessão anônima vinculada ao ambiente atual</small>
                 </div>
               </div>
               <p className="sync-description">
-                Crie uma conta para sincronizar sua operação com segurança entre dispositivos.
+                Crie uma conta permanente para vincular esta operação de forma estável ao seu email.
               </p>
               <div className="actions">
                 <button className="primary" onClick={onGoToAuth}>Criar conta permanente</button>
@@ -87,12 +108,12 @@ export function Settings({
               <div className="sync-status-row">
                 <SyncDot status="offline" />
                 <div>
-                  <strong>Operação local</strong>
-                  <small>Dados salvos apenas neste dispositivo</small>
+                  <strong>Sem sessão autenticada</strong>
+                  <small>Entre para ativar sincronização e recuperação de acesso</small>
                 </div>
               </div>
               <p className="sync-description">
-                Entre com sua conta para ativar a sincronização automática entre dispositivos.
+                Use conta permanente ou sessão temporária para começar a operar.
               </p>
               <div className="actions">
                 <button className="primary" onClick={onGoToAuth}>Criar conta ou entrar</button>
@@ -101,7 +122,26 @@ export function Settings({
           )}
         </article>
 
-        <form className="panel risk-settings-form" onSubmit={updateRiskSettings}>
+        <form className="panel settings-panel risk-settings-form" onSubmit={updateBankrollSettings}>
+          <h2>Banca base</h2>
+          <p>
+            Ajuste o nome operacional da banca e o saldo inicial de referência. Quando você opera com casas cadastradas,
+            o saldo corrente continua vindo do ledger e das movimentações.
+          </p>
+          <div className="risk-settings-grid">
+            <label>
+              Nome da banca
+              <input defaultValue={state.bankrollName} maxLength={60} name="bankrollName" required type="text" />
+            </label>
+            <label>
+              Saldo inicial de referência
+              <input defaultValue={state.startingBalance} min="0" name="startingBalance" required step="0.01" type="number" />
+            </label>
+          </div>
+          <button className="primary" type="submit">Salvar banca</button>
+        </form>
+
+        <form className="panel risk-settings-form settings-panel" onSubmit={updateRiskSettings}>
           <h2>Limites de risco</h2>
           <p>
             Defina os limites operacionais que orientam alertas e bloqueios de stake.
@@ -127,7 +167,7 @@ export function Settings({
           <button className="primary" type="submit">Salvar limites</button>
         </form>
 
-        <article className="panel danger-zone">
+        <article className="panel danger-zone settings-panel">
           <h2>Zona de perigo</h2>
           <p>Ações irreversíveis sobre os dados desta sessão.</p>
           <div className="actions">

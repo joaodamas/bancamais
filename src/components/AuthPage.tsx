@@ -113,8 +113,8 @@ export function AuthPage({ onSignIn, onSignUp, onReset, onDemoMode, onGoogleSign
         </div>
 
         <button className="auth-demo-btn" onClick={onDemoMode}>
-          Usar modo demo local
-          <small>Sem cadastro — dados salvos apenas neste dispositivo</small>
+          Usar sessão temporária
+          <small>Sem cadastro — cria uma sessão anônima com sincronização básica</small>
         </button>
       </div>
 

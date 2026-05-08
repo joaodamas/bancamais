@@ -71,12 +71,12 @@ export async function loadCloudState(userId: string): Promise<AppState | null> {
     bankrollName: data.bankrollName,
     currency: data.currency,
     startingBalance: data.startingBalance,
+    lastModifiedAt: data.lastModifiedAt ?? null,
     riskSettings: data.riskSettings,
     bookmakers: data.bookmakers,
     strategies: data.strategies,
     bets: data.bets,
     transactions: data.transactions,
-    cooldownUntil: data.cooldownUntil ?? null,
   });
 }
 

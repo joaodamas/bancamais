@@ -1,6 +1,33 @@
 # Banca+ — Auditoria de Plataforma
 _Data: 2026-05-07_
 
+## Adendo UI/UX Premium
+
+### Diagnóstico visual
+
+- A base estava coerente, mas ainda não parecia um produto premium. O principal problema era sistêmico: shell, topbar, page actions, cards, tabelas e painéis compartilhavam quase o mesmo peso visual, achatando hierarquia.
+- A sidebar tinha boa organização funcional, mas pouco contraste operacional e pouco senso de produto high-end.
+- Dashboard, Intelligence e Reports tinham leitura correta, porém mais próxima de um MVP sólido do que de uma plataforma analítica premium.
+- Apostas e Bancas & Casas concentravam a operação, mas ainda com cara de CRUD denso em vez de console profissional.
+- Auth e NewBet já tinham uma boa base de fluxo, mas sem acabamento visual suficiente para elevar percepção de valor.
+
+### Problemas centrais
+
+1. Hierarquia insuficiente entre navegação, contexto e conteúdo.
+2. Repetição excessiva da mesma linguagem de card.
+3. Contraste funcional fraco entre risco, performance, IA e contexto.
+4. Tabelas legíveis, porém sem o refinamento visual esperado de um produto premium.
+5. Topbar e sidebar com pouca distinção estrutural do conteúdo principal.
+
+### Ação executada
+
+- Override sistêmico do design system para linguagem premium 2026.
+- Nova paleta escura de fintech/trading com indigo, azul frio e feedbacks mais elegantes.
+- Shell principal elevado com mais profundidade, blur, camadas e melhor leitura.
+- Reforço visual em cards, métricas, tabelas, heatmaps, auth e modal NewBet.
+- Code splitting para reduzir o bootstrap inicial e melhorar percepção de velocidade.
+- Reestruturação de Dashboard, Apostas, Relatórios, Bancas & Casas e Configurações com barras de comando, KPIs secundários e hierarquia operacional mais forte.
+
 ## Sumário
 - **13 issues encontrados**: 2 críticos, 4 altos, 5 médios, 2 baixos
 - **9 issues corrigidos diretamente** nesta sessão

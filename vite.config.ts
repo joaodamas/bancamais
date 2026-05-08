@@ -6,8 +6,11 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          firebase: ["firebase/app", "firebase/auth", "firebase/firestore", "firebase/storage", "firebase/analytics"],
+        manualChunks(id) {
+          if (id.includes("node_modules/recharts")) return "charts";
+          if (id.includes("node_modules/firebase")) return "firebase";
+          if (id.includes("node_modules/react-hot-toast")) return "feedback";
+          if (id.includes("node_modules/lucide-react")) return "icons";
         },
       },
     },

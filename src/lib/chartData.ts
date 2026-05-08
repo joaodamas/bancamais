@@ -4,6 +4,8 @@ import { buildLedgerTimeline, deriveBookmakerBalances } from "./ledger";
 
 export interface TimeSeriesPoint {
   label: string;
+  axisLabel: string;
+  tooltipLabel: string;
   balance: number;
   date: string;
 }
@@ -44,17 +46,35 @@ export function buildBankrollTimeSeries(state: AppState): TimeSeriesPoint[] {
 
   let balance = Math.max(0, state.startingBalance - openingFunding);
   const points: TimeSeriesPoint[] = [
-    { label: "Início", balance, date: "" },
+    { label: "Início", axisLabel: "Início", tooltipLabel: "Início da série", balance, date: "" },
   ];
+
+  const validEvents = events
+    .map((event) => ({ event, parsed: new Date(event.date) }))
+    .filter(({ parsed }) => !Number.isNaN(parsed.getTime()));
+  const uniqueDays = new Set(validEvents.map(({ parsed }) => parsed.toISOString().slice(0, 10)));
+  const intradayView = uniqueDays.size <= 1;
 
   for (const event of events) {
     balance = Math.max(0, balance + event.amount);
     const d = new Date(event.date);
-    const label = d.toLocaleDateString("pt-BR", {
+    const axisLabel = intradayView
+      ? d.toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : d.toLocaleDateString("pt-BR", {
+          day: "2-digit",
+          month: "short",
+        });
+    const tooltipLabel = d.toLocaleString("pt-BR", {
       day: "2-digit",
       month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
-    points.push({ label, balance, date: event.date });
+    points.push({ label: axisLabel, axisLabel, tooltipLabel, balance, date: event.date });
   }
 
   return points.length > 1 ? points : [];

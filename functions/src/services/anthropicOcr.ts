@@ -1,56 +1,50 @@
-import type { ProviderOcrPayload, SlipImagePayload } from "../contracts/ocr.js";
+import type { SlipImagePayload } from "../contracts/ocr.js";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
 const DEFAULT_MODEL = "claude-sonnet-4-6";
 
+// Flat schema — zero union types (API limit: 16, this uses 0)
 const OUTPUT_SCHEMA = {
   type: "object",
   properties: {
-    rawText: { type: ["string", "null"] },
-    fields: {
-      type: "object",
-      properties: {
-        eventName: fieldSchema("string"),
-        eventAtIso: fieldSchema("string"),
-        sport: fieldSchema("string"),
-        league: fieldSchema("string"),
-        market: fieldSchema("string"),
-        selection: fieldSchema("string"),
-        bookmakerName: fieldSchema("string"),
-        stake: fieldSchema("number"),
-        odds: fieldSchema("number"),
-        mode: {
-          type: "object",
-          properties: {
-            value: {
-              anyOf: [{ type: "string", enum: ["prelive", "live"] }, { type: "null" }],
-            },
-            confidence: { type: ["number", "null"] },
-            sourceText: { type: ["string", "null"] },
-          },
-          required: ["value", "confidence", "sourceText"],
-          additionalProperties: false,
-        },
-      },
-      required: [
-        "eventName",
-        "eventAtIso",
-        "sport",
-        "league",
-        "market",
-        "selection",
-        "bookmakerName",
-        "stake",
-        "odds",
-        "mode",
-      ],
-      additionalProperties: false,
-    },
+    rawText:       { type: "string" },
+    eventName:     { type: "string" },
+    eventAt:       { type: "string" },
+    sport:         { type: "string" },
+    league:        { type: "string" },
+    market:        { type: "string" },
+    selection:     { type: "string" },
+    bookmakerName: { type: "string" },
+    stake:         { type: "number" },
+    odds:          { type: "number" },
+    mode:          { type: "string" },
+    missingFields:  { type: "array", items: { type: "string" } },
+    uncertainFields: { type: "array", items: { type: "string" } },
   },
-  required: ["rawText", "fields"],
+  required: [
+    "rawText", "eventName", "eventAt", "sport", "league",
+    "market", "selection", "bookmakerName", "stake", "odds",
+    "mode", "missingFields", "uncertainFields",
+  ],
   additionalProperties: false,
 } as const;
+
+export interface FlatOcrPayload {
+  rawText: string;
+  eventName: string;
+  eventAt: string;
+  sport: string;
+  league: string;
+  market: string;
+  selection: string;
+  bookmakerName: string;
+  stake: number;
+  odds: number;
+  mode: string;
+  missingFields: string[];
+  uncertainFields: string[];
+}
 
 export class AnthropicOcrClient {
   constructor(
@@ -62,7 +56,7 @@ export class AnthropicOcrClient {
     return Boolean(this.apiKey && this.model);
   }
 
-  async extractSlip(image: SlipImagePayload): Promise<{ requestId: string; payload: ProviderOcrPayload }> {
+  async extractSlip(image: SlipImagePayload): Promise<{ requestId: string; payload: FlatOcrPayload }> {
     if (!this.apiKey) {
       throw new Error("ANTHROPIC_API_KEY is not configured.");
     }
@@ -78,6 +72,14 @@ export class AnthropicOcrClient {
         model: this.model,
         max_tokens: 1200,
         temperature: 0,
+        tools: [
+          {
+            name: "extract_bet_slip",
+            description: "Extrai campos estruturados de um bilhete de aposta esportiva.",
+            input_schema: OUTPUT_SCHEMA,
+          },
+        ],
+        tool_choice: { type: "tool", name: "extract_bet_slip" },
         messages: [
           {
             role: "user",
@@ -97,12 +99,6 @@ export class AnthropicOcrClient {
             ],
           },
         ],
-        output_config: {
-          format: {
-            type: "json_schema",
-            schema: OUTPUT_SCHEMA,
-          },
-        },
       }),
     });
 
@@ -112,51 +108,42 @@ export class AnthropicOcrClient {
     }
 
     const body = (await response.json()) as AnthropicMessagesResponse;
-    const textBlock = body.content.find(isTextBlock);
-    if (!textBlock?.text) {
-      throw new Error("Anthropic response did not contain a text block.");
+    const toolUse = body.content.find(isToolUseBlock);
+
+    if (!toolUse) {
+      throw new Error("Anthropic response did not contain a tool_use block.");
     }
 
     return {
       requestId: body.id,
-      payload: JSON.parse(textBlock.text) as ProviderOcrPayload,
+      payload: toolUse.input as FlatOcrPayload,
     };
   }
 }
 
 function buildPrompt() {
   return [
-    "Leia o bilhete de aposta da imagem e extraia os campos estruturados.",
-    "Use null quando um campo nao estiver legivel ou nao existir.",
-    "Retorne datas em ISO 8601 quando for possivel inferir ano, mes, dia e horario.",
-    "Se o bilhete indicar aposta ao vivo, use mode=live; caso contrario use prelive.",
-    "Nao invente bookmaker, stake ou odd quando estiver ambiguo.",
+    "Leia o bilhete de aposta da imagem e extraia os campos.",
+    "Para campos nao encontrados ou ilegíveis, retorne string vazia ou 0 para numeros,",
+    "e inclua o nome do campo em missingFields.",
+    "Para campos encontrados mas com baixa certeza, inclua o nome em uncertainFields.",
+    "eventAt deve ser ISO 8601 (ex: 2025-05-10T20:00:00). mode deve ser 'prelive' ou 'live'.",
+    "Nao invente stake ou odds quando estiver ambiguo.",
   ].join(" ");
 }
 
-function fieldSchema(type: "string" | "number") {
-  return {
-    type: "object",
-    properties: {
-      value: { type: [type, "null"] },
-      confidence: { type: ["number", "null"] },
-      sourceText: { type: ["string", "null"] },
-    },
-    required: ["value", "confidence", "sourceText"],
-    additionalProperties: false,
-  };
-}
-
-interface AnthropicTextBlock {
-  type: "text";
-  text: string;
+interface AnthropicToolUseBlock {
+  type: "tool_use";
+  id: string;
+  name: string;
+  input: unknown;
 }
 
 interface AnthropicMessagesResponse {
   id: string;
-  content: Array<AnthropicTextBlock | { type: string }>;
+  content: Array<AnthropicToolUseBlock | { type: string }>;
 }
 
-function isTextBlock(block: AnthropicTextBlock | { type: string }): block is AnthropicTextBlock {
-  return block.type === "text";
+function isToolUseBlock(block: AnthropicToolUseBlock | { type: string }): block is AnthropicToolUseBlock {
+  return block.type === "tool_use";
 }

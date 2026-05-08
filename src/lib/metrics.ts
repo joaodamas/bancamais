@@ -135,37 +135,3 @@ export function riskAlerts(state: AppState) {
   return alerts;
 }
 
-/**
- * Computes whether a cooldown is currently active.
- * A danger-level loss streak triggers a 24-hour cooldown anchored
- * to the most recent settled bet in the streak.
- * Returns null when no cooldown applies.
- */
-export function computeCooldown(state: AppState): { active: boolean; until: Date | null; reason: string } {
-  const alerts = riskAlerts(state);
-  const hasDanger = alerts.some((alert) => alert.level === "danger");
-
-  if (!hasDanger) return { active: false, until: null, reason: "" };
-
-  const lastBets = [...state.bets]
-    .filter((bet) => bet.status === "lost")
-    .sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
-
-  const triggerBet = lastBets[0];
-  if (!triggerBet) return { active: false, until: null, reason: "" };
-
-  // Use stored cooldownUntil if set and still in the future, otherwise compute from last bet
-  const storedUntil = state.cooldownUntil ? new Date(state.cooldownUntil) : null;
-  const computedUntil = new Date(new Date(triggerBet.placedAt).getTime() + 24 * 60 * 60 * 1000);
-  const until = storedUntil && storedUntil > computedUntil ? storedUntil : computedUntil;
-  const now = new Date();
-
-  if (until <= now) return { active: false, until, reason: "" };
-
-  const dangerAlert = alerts.find((alert) => alert.level === "danger");
-  return {
-    active: true,
-    until,
-    reason: dangerAlert?.detail ?? "Limite de risco atingido.",
-  };
-}

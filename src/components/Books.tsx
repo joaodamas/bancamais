@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { money } from "../lib/metrics";
-import { calculateLedgerTotalBalance, computeBookmakerLedger, TRANSACTION_TYPE_LABELS } from "../lib/ledger";
+import { calculateLedgerTotalBalance, computeBookmakerLedger, deriveBookmakerBalances, TRANSACTION_TYPE_LABELS } from "../lib/ledger";
 import type { AppState, BookmakerStatus, Transaction } from "../lib/types";
 
 interface BooksProps {
@@ -27,6 +27,11 @@ export function Books({
   const [voidReason, setVoidReason] = useState("");
 
   const totalBalance = useMemo(() => calculateLedgerTotalBalance(state), [state]);
+  const derivedBalances = useMemo(() => deriveBookmakerBalances(state), [state]);
+  const derivedBalanceMap = useMemo(
+    () => new Map(derivedBalances.map((entry) => [entry.bookmakerId, entry])),
+    [derivedBalances],
+  );
   const linkedBooksCount = state.bookmakers.filter(
     (book) =>
       state.bets.some((bet) => bet.bookmakerId === book.id) ||
@@ -59,6 +64,14 @@ export function Books({
 
   return (
     <section className="page">
+      <div className="dashboard-command panel">
+        <div className="dashboard-command-copy">
+          <span className="dashboard-kicker">Console financeiro</span>
+          <h1>Bancas, saldos e ledger operacional</h1>
+          <p>Centralize cadastro, movimentações e auditoria por casa com rastreabilidade preservada.</p>
+        </div>
+      </div>
+
       <div className="page-actions">
         <div className="page-actions-copy">
           <strong>{state.bookmakers.length} casas monitoradas</strong>
@@ -70,7 +83,7 @@ export function Books({
         <article className="ops-summary-card">
           <span>Saldo consolidado</span>
           <strong>{money.format(totalBalance)}</strong>
-          <small>Soma dos saldos atualmente atribuídos às casas.</small>
+          <small>Soma reconciliada pelo ledger das casas atualmente cadastradas.</small>
         </article>
         <article className="ops-summary-card">
           <span>Casas com histórico</span>
@@ -84,8 +97,28 @@ export function Books({
         </article>
       </div>
 
-      <div className="cards">
+      <div className="books-command-grid">
+        <article className="panel books-command-card">
+          <span className="dashboard-kicker">Carteira operacional</span>
+          <strong>{state.bookmakers.length === 0 ? "Configure as casas da operacao" : "Saldos reconciliados por casa"}</strong>
+          <small>
+            {state.bookmakers.length === 0
+              ? "Cadastre a primeira casa e defina um saldo inicial para iniciar o ledger."
+              : "Cada card abaixo usa o saldo derivado do ledger como fonte principal de leitura."}
+          </small>
+        </article>
+        <article className="panel books-command-card">
+          <span className="dashboard-kicker">Governanca</span>
+          <strong>{linkedBooksCount} conta(s) com historico protegido</strong>
+          <small>Casas com apostas ou movimentacoes vinculadas nao podem ser removidas sem preservar o historico.</small>
+        </article>
+      </div>
+
+      <div className="cards books-grid">
         {state.bookmakers.map((book) => {
+          const balanceEntry = derivedBalanceMap.get(book.id);
+          const displayBalance = balanceEntry?.derivedBalance ?? book.balance;
+          const hasLegacyMismatch = Boolean(balanceEntry?.hasTransactionHistory) && Math.abs(balanceEntry?.delta ?? 0) >= 0.01;
           const hasLinks =
             state.bets.some((bet) => bet.bookmakerId === book.id) ||
             state.transactions.some(
@@ -94,10 +127,13 @@ export function Books({
 
           return (
             <article
-              className={`panel book${selectedBookmakerId === book.id ? " book-selected" : ""}`}
+              className={`panel book premium-book-card${selectedBookmakerId === book.id ? " book-selected" : ""}`}
               key={book.id}
             >
-              <span>{statusLabel[book.status]}</span>
+              <div className="book-card-head">
+                <span>{statusLabel[book.status]}</span>
+                <em className="book-card-flag">Ledger</em>
+              </div>
               {editingId === book.id ? (
                 <form
                   className="book-edit-form"
@@ -106,7 +142,8 @@ export function Books({
                     setEditingId(null);
                   }}
                 >
-                  <label className="sr-only">
+                  <span className="dashboard-kicker">Manual</span>
+                  <label className="book-edit-label">
                     Nome da casa
                     <input name="name" defaultValue={book.name} required />
                   </label>
@@ -118,8 +155,19 @@ export function Books({
               ) : (
                 <>
                   <h2>{book.name}</h2>
-                  <strong>{money.format(book.balance)}</strong>
+                  <strong className="text-mono">{money.format(displayBalance)}</strong>
                   <small>Atualização: {book.lastSyncLabel}</small>
+                  {hasLegacyMismatch && (
+                    <small className="book-card-warning">Foi encontrada divergência legada e o saldo foi reconciliado pelo ledger.</small>
+                  )}
+                  <div className="book-inline-metrics">
+                    <span>{state.bets.filter((bet) => bet.bookmakerId === book.id).length} apostas vinculadas</span>
+                    <span>
+                      {state.transactions.filter(
+                        (t) => t.bookmakerId === book.id || t.targetBookmakerId === book.id,
+                      ).length} lancamentos
+                    </span>
+                  </div>
                   <div className="book-actions">
                     <button
                       type="button"
@@ -147,7 +195,7 @@ export function Books({
           );
         })}
         {state.bookmakers.length === 0 && (
-          <article className="panel book">
+          <article className="panel book premium-book-card">
             <span>Configuração inicial</span>
             <h2>Nenhuma casa cadastrada</h2>
             <small>Adicione ao menos uma casa para operar stakes, saldos e movimentações.</small>
@@ -163,6 +211,20 @@ export function Books({
               Registro imutável. Para corrigir um lançamento incorreto, crie uma anulação com
               descrição da razão. O histórico original é sempre preservado.
             </small>
+          </div>
+          <div className="ledger-summary-strip">
+            <div>
+              <span className="dashboard-kicker">Saldo reconciliado</span>
+              <strong className="text-mono">
+                {money.format(
+                  derivedBalanceMap.get(selectedBook.id)?.derivedBalance ?? selectedBook.balance,
+                )}
+              </strong>
+            </div>
+            <div>
+              <span className="dashboard-kicker">Lancamentos</span>
+              <strong className="text-mono">{ledgerEntries.length}</strong>
+            </div>
           </div>
 
           {ledgerEntries.length === 0 ? (
@@ -299,7 +361,7 @@ export function Books({
       )}
 
       <div className="grid two report-section">
-        <form className="panel transaction-form" onSubmit={addBookmaker}>
+        <form className="panel transaction-form books-form-panel" onSubmit={addBookmaker}>
           <h2>Adicionar casa</h2>
           <p className="panel-intro full">
             Cadastre a conta com o saldo inicial para manter a base operacional consistente desde o
@@ -318,7 +380,7 @@ export function Books({
           </button>
         </form>
 
-        <form className="panel transaction-form" onSubmit={addTransaction}>
+        <form className="panel transaction-form books-form-panel" onSubmit={addTransaction}>
           <h2>Registrar movimentação</h2>
           <p className="panel-intro full">
             Use esta fila para depósitos, saques, transferências e ajustes manuais entre casas.

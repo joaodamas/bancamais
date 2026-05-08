@@ -1,4 +1,4 @@
-import type { OcrSubmissionMetadata } from "./ocr";
+import type { OcrFieldName, OcrSubmissionMetadata, ParseBetSlipResponse } from "./ocr";
 
 export type BetStatus = "pending" | "won" | "lost" | "cashout" | "void";
 
@@ -81,6 +81,44 @@ export interface NewBetPrefill {
   confidenceScore?: number;
 }
 
+export interface NewBetFormValues {
+  eventName: string;
+  eventAt: string;
+  sport: string;
+  league: string;
+  market: string;
+  selection: string;
+  bookmakerId: string;
+  strategyId: string;
+  stake: string;
+  odds: string;
+  closingOdds: string;
+  mode: Bet["mode"];
+  tags: string;
+}
+
+export interface NewBetOcrFieldMeta {
+  ocrField: OcrFieldName;
+  confidence: number | null;
+  sourceText: string | null;
+  extractedValue: string | number | null;
+  warnings: string[];
+  requiresReview: boolean;
+  reviewedManually: boolean;
+}
+
+export type NewBetOcrFieldMetaMap = Partial<Record<keyof NewBetFormValues, NewBetOcrFieldMeta>>;
+
+export interface NewBetDraft {
+  formValues: NewBetFormValues;
+  ocrStatus: "idle" | "loading" | "done" | "error";
+  ocrMessage: string;
+  ocrWarnings: string[];
+  uploadedSlip: { path: string; url: string } | null;
+  ocrResult: ParseBetSlipResponse | null;
+  fieldOcrMeta: NewBetOcrFieldMetaMap;
+}
+
 export interface Transaction {
   id: string;
   date: string;
@@ -101,13 +139,12 @@ export interface AppState {
   bankrollName: string;
   currency: "BRL";
   startingBalance: number;
+  lastModifiedAt?: string | null;
   riskSettings: RiskSettings;
   bookmakers: BookmakerAccount[];
   strategies: Strategy[];
   bets: Bet[];
   transactions: Transaction[];
-  /** ISO string: if set and in the future, "Nova Aposta" is blocked unless overridden */
-  cooldownUntil?: string | null;
 }
 
 export interface RiskSettings {

@@ -282,20 +282,18 @@ export function buildSuggestionsWorkspace(state: AppState): SuggestionsWorkspace
     feeds: [
       {
         label: "Fixtures futuros",
-        status: "online",
-        detail: `${fixtures.length} jogos scaffoldados para plugar feed real.`,
+        status: "offline" as const,
+        detail: `${fixtures.length} partidas carregadas da API`,
       },
       {
-        label: "Odds monitoradas",
-        status: state.bookmakers.length > 0 ? "degraded" : "offline",
-        detail: state.bookmakers.length > 0
-          ? "UI pronta; falta orquestrar captura por casa e persistencia."
-          : "Cadastre casas para destravar roteamento real de precos.",
+        label: "Edge estimado",
+        status: "offline" as const,
+        detail: `${suggestions.length} oportunidades analisadas`,
       },
       {
-        label: "Publicacao IA",
-        status: "degraded",
-        detail: "Fila pronta para backend, sem disparo automatico nesta etapa.",
+        label: "Publicação IA",
+        status: "offline" as const,
+        detail: "Sugestões geradas automaticamente",
       },
     ],
     readiness: [

@@ -19,15 +19,16 @@ import {
   signOutDemoUser,
   watchAuth,
 } from "./lib/cloudRepository";
+import { useFirestoreSync } from "./lib/useFirestoreSync";
 import {
   calculateMetrics,
-  computeCooldown,
   money,
   potentialReturn,
 } from "./lib/metrics";
+import { getDerivedBookmakerBalance, reconcileBookmakerBalances } from "./lib/ledger";
 import { createBetId, createBookmakerId, createStrategyId, createTransactionId, emptyState, isFirstRun, loadStateForUser, resetState, saveState, saveStateForUser } from "./lib/storage";
 import { uploadBetSlip } from "./lib/storageRepository";
-import type { AppState, Bet, BookmakerAccount, NewBetPrefill, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
+import type { AppState, Bet, BookmakerAccount, NewBetDraft, NewBetPrefill, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
 import type { OcrSubmissionMetadata } from "./lib/ocr";
 
 type View = "dashboard" | "bets" | "new-bet" | "import" | "intelligence" | "reports" | "clv" | "books" | "strategies" | "settings";
@@ -73,6 +74,26 @@ function isSuccessfulOcr(metadata: OcrSubmissionMetadata | undefined) {
   return metadata?.status === "success" || metadata?.status === "needs_review";
 }
 
+function withStateTimestamp(state: AppState): AppState {
+  return {
+    ...state,
+    lastModifiedAt: new Date().toISOString(),
+  };
+}
+
+function getStateTimestamp(state: AppState | null): number {
+  if (!state?.lastModifiedAt) return 0;
+  const time = new Date(state.lastModifiedAt).getTime();
+  return Number.isFinite(time) ? time : 0;
+}
+
+function formatSyncTimestamp(value: string | null | undefined) {
+  if (!value) return "sem registro";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "sem registro";
+  return date.toLocaleString("pt-BR");
+}
+
 const navGroups: Array<{ label: string; items: NavItem[] }> = [
   {
     label: "Inicio",
@@ -104,45 +125,56 @@ export function App() {
   const [view, setView] = useState<View>("dashboard");
   const [state, setState] = useState<AppState>(() => emptyState());
   const [newBetPrefill, setNewBetPrefill] = useState<NewBetPrefill | null>(null);
+  const [newBetDraft, setNewBetDraft] = useState<NewBetDraft | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [syncStatus, setSyncStatus] = useState("Modo demo local");
+  const [syncStatus, setSyncStatus] = useState("Sem sessao autenticada");
   const [authMessage, setAuthMessage] = useState("Entre para sincronizar seus dados em nuvem.");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const metrics = useMemo(() => calculateMetrics(state), [state]);
-  const cooldown = useMemo(() => computeCooldown(state), [state]);
-  const [cooldownOverride, setCooldownOverride] = useState(false);
+  const hydratedUserRef = useRef<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = watchAuth(async (nextUser) => {
       if (!nextUser) {
         setUser(null);
+        hydratedUserRef.current = null;
         setState(emptyState());
-        setSyncStatus("Modo demo local");
+        setShowOnboarding(false);
+        setSyncStatus("Sem sessao autenticada");
         setAuthLoading(false);
         return;
       }
       setUser(nextUser);
-      const label = nextUser.isAnonymous ? "usuario anonimo" : nextUser.email ?? "usuario autenticado";
+      const label = nextUser.isAnonymous ? `sessao temporaria ${nextUser.uid.slice(0, 8)}` : nextUser.email ?? "usuario autenticado";
       setSyncStatus(`Conectado como ${label}`);
       let loadedState: AppState;
       try {
+        const localState = loadStateForUser(nextUser.uid);
         const cloudState = await loadCloudState(nextUser.uid);
         if (cloudState) {
-          loadedState = cloudState;
-          saveStateForUser(nextUser.uid, cloudState);
+          loadedState = getStateTimestamp(localState) > getStateTimestamp(cloudState)
+            ? localState
+            : cloudState;
+          saveStateForUser(nextUser.uid, loadedState);
+          if (loadedState === localState && getStateTimestamp(localState) > getStateTimestamp(cloudState)) {
+            saveCloudState(nextUser.uid, loadedState).catch(console.error);
+          }
         } else {
-          loadedState = loadStateForUser(nextUser.uid);
+          loadedState = localState;
+          if (getStateTimestamp(localState) > 0) {
+            saveCloudState(nextUser.uid, localState).catch(console.error);
+          }
         }
       } catch {
         loadedState = loadStateForUser(nextUser.uid);
       }
-      setState(loadedState);
-      setShowOnboarding(isFirstRun(loadedState));
+      hydratedUserRef.current = nextUser.uid;
+      applyHydratedState(loadedState, nextUser.uid);
       setAuthLoading(false);
     });
     return unsubscribe;
@@ -221,21 +253,59 @@ export function App() {
   }, []);
 
   function updateState(next: AppState) {
-    setState(next);
+    const reconciled = reconcileBookmakerBalances(next);
+    const stamped = withStateTimestamp(reconciled);
+    setState(stamped);
+    setShowOnboarding(isFirstRun(stamped));
     if (user) {
-      saveStateForUser(user.uid, next);
+      saveStateForUser(user.uid, stamped);
     } else {
-      saveState(next);
+      saveState(stamped);
     }
   }
 
-  function openNewBet(prefill: NewBetPrefill | null = null) {
-    if (cooldown.active && !cooldownOverride) {
-      toast.error(
-        `Nova aposta bloqueada — cooldown ativo até ${cooldown.until?.toLocaleString("pt-BR") ?? "?"}. Revise seus limites de risco.`,
-        { duration: 5000 },
-      );
+  function applyHydratedState(next: AppState, targetUid?: string | null) {
+    const reconciled = reconcileBookmakerBalances(next);
+    setState(reconciled);
+    setShowOnboarding(isFirstRun(reconciled));
+    if (targetUid) {
+      saveStateForUser(targetUid, reconciled);
+    } else {
+      saveState(reconciled);
+    }
+  }
+
+  const handleRemoteSyncUpdate = useCallback((remoteState: AppState) => {
+    if (!user || user.isAnonymous || authLoading) return;
+    if (hydratedUserRef.current !== user.uid) return;
+
+    const localTimestamp = getStateTimestamp(state);
+    const remoteTimestamp = getStateTimestamp(remoteState);
+
+    if (remoteTimestamp === 0 || remoteTimestamp <= localTimestamp) {
       return;
+    }
+
+    applyHydratedState(remoteState, user.uid);
+    setSyncStatus(`Snapshot remoto aplicado em ${new Date().toLocaleTimeString("pt-BR")}`);
+  }, [authLoading, state, user]);
+
+  const realtimeSync = useFirestoreSync(user, state, handleRemoteSyncUpdate);
+
+  useEffect(() => {
+    if (!user || user.isAnonymous || authLoading) return;
+    if (realtimeSync.status === "error" && realtimeSync.error) {
+      setSyncStatus(`Sync realtime com erro: ${realtimeSync.error}`);
+      return;
+    }
+    if (realtimeSync.status === "synced" && realtimeSync.lastSyncAt) {
+      setSyncStatus(`Sync realtime ativo - ultimo check ${realtimeSync.lastSyncAt.toLocaleTimeString("pt-BR")}`);
+    }
+  }, [authLoading, realtimeSync.error, realtimeSync.lastSyncAt, realtimeSync.status, user]);
+
+  function openNewBet(prefill: NewBetPrefill | null = null) {
+    if (prefill) {
+      setNewBetDraft(null);
     }
     setNewBetPrefill(prefill);
     setView("new-bet");
@@ -271,8 +341,8 @@ export function App() {
     setSyncStatus("Conectando ao Firebase...");
     try {
       const signedUser = await signInDemoUser();
-      setSyncStatus(`Conectado anonimamente: ${signedUser.uid.slice(0, 8)}`);
-      toast.success("Conectado ao Firebase!");
+      setSyncStatus(`Sessao temporaria iniciada: ${signedUser.uid.slice(0, 8)}`);
+      toast.success("Sessão temporária iniciada.");
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Falha ao conectar";
       setSyncStatus(msg);
@@ -311,7 +381,8 @@ export function App() {
       const signedUser = await signInEmailUser(email, password);
       const cloudState = await loadCloudState(signedUser.uid);
       if (cloudState) {
-        updateState(cloudState);
+        hydratedUserRef.current = signedUser.uid;
+        applyHydratedState(cloudState, signedUser.uid);
         setAuthMessage("Login feito. Snapshot carregado da nuvem.");
         toast.success("Login feito. Dados carregados da nuvem!");
         return;
@@ -350,7 +421,8 @@ export function App() {
       const googleUser = await signInWithGoogle();
       const cloudState = await loadCloudState(googleUser.uid);
       if (cloudState) {
-        updateState(cloudState);
+        hydratedUserRef.current = googleUser.uid;
+        applyHydratedState(cloudState, googleUser.uid);
         setAuthMessage("Login feito. Dados carregados da nuvem.");
         toast.success("Login com Google! Dados carregados da nuvem.");
         return;
@@ -367,9 +439,11 @@ export function App() {
 
   async function disconnectCloud() {
     await signOutDemoUser();
+    hydratedUserRef.current = null;
     setState(emptyState());
+    setShowOnboarding(false);
     setUser(null);
-    setSyncStatus("Modo demo local");
+    setSyncStatus("Sem sessao autenticada");
   }
 
   async function pushCloud() {
@@ -403,7 +477,28 @@ export function App() {
         return;
       }
 
-      updateState(cloudState);
+      const localTimestamp = getStateTimestamp(state);
+      const remoteTimestamp = getStateTimestamp(cloudState);
+
+      if (localTimestamp > 0 && remoteTimestamp > 0 && remoteTimestamp < localTimestamp) {
+        const shouldOverwrite = window.confirm(
+          [
+            "O snapshot local e mais recente do que o snapshot salvo na nuvem.",
+            "",
+            `Local: ${formatSyncTimestamp(state.lastModifiedAt)}`,
+            `Nuvem: ${formatSyncTimestamp(cloudState.lastModifiedAt)}`,
+            "",
+            "Se continuar, o estado local atual sera substituido pelo snapshot remoto.",
+          ].join("\n"),
+        );
+
+        if (!shouldOverwrite) {
+          setSyncStatus("Restauracao cancelada: o estado local continua preservado.");
+          return;
+        }
+      }
+
+      applyHydratedState(cloudState, user.uid);
       setSyncStatus(`Snapshot carregado do Firestore em ${new Date().toLocaleTimeString("pt-BR")}`);
       toast.success("Dados carregados da nuvem!");
     } catch (error) {
@@ -449,7 +544,8 @@ export function App() {
       return;
     }
 
-    if (stake > selectedBookmaker.balance) {
+    const availableBalance = getDerivedBookmakerBalance(state, bookmakerId);
+    if (stake > availableBalance) {
       toast.error(`Saldo insuficiente na ${selectedBookmaker.name}.`);
       return;
     }
@@ -510,12 +606,9 @@ export function App() {
       referenceType: "bet",
       referenceId: bet.id,
     };
-    const bookmakers = state.bookmakers.map((book) => (
-      book.id === bookmakerId ? { ...book, balance: book.balance - stake } : book
-    ));
-
-    updateState({ ...state, bookmakers, bets: [bet, ...state.bets], transactions: [transaction, ...state.transactions] });
+    updateState({ ...state, bets: [bet, ...state.bets], transactions: [transaction, ...state.transactions] });
     setNewBetPrefill(null);
+    setNewBetDraft(null);
     form.reset();
     setView("bets");
     toast.success("Aposta registrada com sucesso!");
@@ -547,13 +640,8 @@ export function App() {
       referenceType: "bet" as const,
       referenceId: currentBet.id,
     }] : [];
-    const bookmakers = state.bookmakers.map((book) => (
-      book.id === currentBet.bookmakerId ? { ...book, balance: book.balance + payout } : book
-    ));
-
     updateState({
       ...state,
-      bookmakers,
       transactions: [...transaction, ...state.transactions],
       bets: state.bets.map((bet) => (
         bet.id === id ? { ...bet, status, payout, settlementSource: "manual" } : bet
@@ -564,6 +652,18 @@ export function App() {
       void: "Aposta cancelada", pending: "Pendente"
     };
     toast.success(labels[status] ?? "Status atualizado");
+  }
+
+  function deleteBet(id: string) {
+    const bet = state.bets.find((b) => b.id === id);
+    if (!bet) return;
+
+    updateState({
+      ...state,
+      bets: state.bets.filter((b) => b.id !== id),
+      transactions: state.transactions.filter((t) => t.referenceId !== id),
+    });
+    toast.success("Aposta excluída");
   }
 
   function importBets(bets: Bet[]) {
@@ -612,16 +712,8 @@ export function App() {
 
       return items;
     });
-    const bookmakers = state.bookmakers.map((book) => {
-      const balanceDelta = importTransactions.reduce((sum, transaction) => (
-        transaction.bookmakerId === book.id ? sum + transaction.amount : sum
-      ), 0);
-      return balanceDelta !== 0 ? { ...book, balance: book.balance + balanceDelta } : book;
-    });
-
     updateState({
       ...state,
-      bookmakers,
       bets: [...uniqueBets, ...state.bets],
       transactions: [...importTransactions.reverse(), ...state.transactions],
     });
@@ -763,7 +855,8 @@ export function App() {
       }
     }
 
-    if ((type === "withdrawal" || type === "transfer") && rawAmount > sourceBookmaker.balance) {
+    const sourceAvailableBalance = getDerivedBookmakerBalance(state, bookmakerId);
+    if ((type === "withdrawal" || type === "transfer") && rawAmount > sourceAvailableBalance) {
       toast.error(`Saldo insuficiente na ${sourceBookmaker.name}.`);
       return;
     }
@@ -805,19 +898,7 @@ export function App() {
         referenceType: "manual",
       }];
 
-    const bookmakers = state.bookmakers.map((book) => {
-      if (book.id === bookmakerId) {
-        return { ...book, balance: book.balance + signedAmount };
-      }
-
-      if (type === "transfer" && book.id === targetBookmakerId) {
-        return { ...book, balance: book.balance + rawAmount };
-      }
-
-      return book;
-    });
-
-    updateState({ ...state, bookmakers, transactions: [...transactions.reverse(), ...state.transactions] });
+    updateState({ ...state, transactions: [...transactions.reverse(), ...state.transactions] });
     event.currentTarget.reset();
     toast.success("Transação registrada!");
   }
@@ -844,15 +925,10 @@ export function App() {
       voidsCancelledId: transactionId,
     };
     const patchedOriginal: Transaction = { ...original, voidedById: voidId };
-    const updatedBookmakers = state.bookmakers.map((book) =>
-      book.id === bookmakerId
-        ? { ...book, balance: Number((book.balance - original.amount).toFixed(2)) }
-        : book,
-    );
     const updatedTransactions = state.transactions.map((t) =>
       t.id === transactionId ? patchedOriginal : t,
     );
-    updateState({ ...state, bookmakers: updatedBookmakers, transactions: [voidEntry, ...updatedTransactions] });
+    updateState({ ...state, transactions: [voidEntry, ...updatedTransactions] });
     toast.success("Transação anulada. Lançamento de anulação criado no ledger.");
   }
 
@@ -899,6 +975,30 @@ export function App() {
     toast.success("Limites de risco atualizados.");
   }
 
+  function updateBankrollSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const bankrollName = String(data.get("bankrollName") || "").trim();
+    const startingBalance = Number(data.get("startingBalance"));
+
+    if (!bankrollName) {
+      toast.error("Informe o nome da banca.");
+      return;
+    }
+
+    if (!Number.isFinite(startingBalance) || startingBalance < 0) {
+      toast.error("Informe um saldo inicial valido.");
+      return;
+    }
+
+    updateState({
+      ...state,
+      bankrollName,
+      startingBalance,
+    });
+    toast.success("Dados da banca atualizados.");
+  }
+
   if (authLoading) return <LoadingScreen />;
 
   if (!user) {
@@ -935,9 +1035,8 @@ export function App() {
           setView("bets");
         }}
         prefill={newBetPrefill}
-        cooldown={cooldown}
-        cooldownOverride={cooldownOverride}
-        onCooldownOverride={() => setCooldownOverride(true)}
+        draft={newBetDraft}
+        onDraftChange={setNewBetDraft}
       />
     </Suspense>
   ) : null;
@@ -1055,7 +1154,7 @@ export function App() {
           </div>
           <div className="topbar-meta">
             <strong>{viewTitle(view)}</strong>
-            <span>{user ? accountLabel(user) : `Operação local · ${state.bookmakers.length} ${state.bookmakers.length === 1 ? "casa" : "casas"}`}</span>
+            <span>{user ? accountLabel(user) : `Sem sessao · ${state.bookmakers.length} ${state.bookmakers.length === 1 ? "casa" : "casas"}`}</span>
           </div>
           <div className="topbar-actions">
             <button title="Notificações"><Bell size={18} /></button>
@@ -1074,35 +1173,6 @@ export function App() {
             </button>
           </div>
         </header>
-
-        {cooldown.active && (
-          <div className={`cooldown-banner${cooldownOverride ? " cooldown-banner-overridden" : ""}`}>
-            <div className="cooldown-banner-body">
-              <strong>Cooldown de risco ativo</strong>
-              <span>{cooldown.reason}</span>
-              <span className="cooldown-banner-until">
-                Bloqueio até {cooldown.until?.toLocaleString("pt-BR") ?? "—"}
-              </span>
-            </div>
-            {!cooldownOverride ? (
-              <button
-                className="cooldown-override-btn"
-                type="button"
-                onClick={() => setCooldownOverride(true)}
-              >
-                Entendo o risco — desbloquear sessão
-              </button>
-            ) : (
-              <button
-                className="cooldown-relock-btn"
-                type="button"
-                onClick={() => setCooldownOverride(false)}
-              >
-                Rebloquear
-              </button>
-            )}
-          </div>
-        )}
 
         <Suspense fallback={<ViewFallback title={`Carregando ${viewTitle(view).toLowerCase()}...`} />}>
           {currentView}
@@ -1142,7 +1212,7 @@ export function App() {
           />
         );
       case "bets":
-        return <Bets state={state} settleBet={settleBet} />;
+        return <Bets state={state} settleBet={settleBet} deleteBet={deleteBet} />;
       case "import":
         return <Import state={state} importBets={importBets} onOpenBets={() => setView("bets")} />;
       case "intelligence":
@@ -1174,6 +1244,7 @@ export function App() {
             pullCloud={pullCloud}
             disconnectCloud={disconnectCloud}
             onGoToAuth={() => { /* auth is now the gate — logging out redirects automatically */ }}
+            updateBankrollSettings={updateBankrollSettings}
             updateRiskSettings={updateRiskSettings}
           />
         );

@@ -78,6 +78,25 @@ export function calculateLedgerTotalBalance(state: AppState): number {
   return balances.reduce((sum, balance) => sum + balance.derivedBalance, 0);
 }
 
+export function getDerivedBookmakerBalance(state: AppState, bookmakerId: string): number {
+  const match = deriveBookmakerBalances(state).find((entry) => entry.bookmakerId === bookmakerId);
+  if (!match) return 0;
+  return match.derivedBalance;
+}
+
+export function reconcileBookmakerBalances(state: AppState): AppState {
+  const derivedBalances = deriveBookmakerBalances(state);
+  const balanceMap = new Map(derivedBalances.map((entry) => [entry.bookmakerId, entry.derivedBalance]));
+
+  return {
+    ...state,
+    bookmakers: state.bookmakers.map((book) => ({
+      ...book,
+      balance: balanceMap.get(book.id) ?? book.balance,
+    })),
+  };
+}
+
 export function buildLedgerTimeline(state: AppState): LedgerTimelineEvent[] {
   const events = state.transactions.flatMap((transaction) => {
     if (

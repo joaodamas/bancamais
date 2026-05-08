@@ -5,10 +5,9 @@ import {
   type OcrFieldName,
   type OcrReviewFlag,
   type ParseBetSlipResponse,
-  type ProviderExtractedField,
-  type ProviderOcrPayload,
   type SlipImagePayload,
 } from "../contracts/ocr.js";
+import type { FlatOcrPayload } from "./anthropicOcr.js";
 
 const LOW_CONFIDENCE_THRESHOLD = 0.8;
 
@@ -57,20 +56,22 @@ export function buildFailedResponse(
 export function mapProviderPayload(
   slip: SlipImagePayload,
   requestId: string,
-  payload: ProviderOcrPayload,
+  payload: FlatOcrPayload,
 ): ParseBetSlipResponse {
   const fields = emptyFields();
+  const missing = new Set(payload.missingFields ?? []);
+  const uncertain = new Set(payload.uncertainFields ?? []);
 
-  fields.eventName = normalizeField(payload.fields.eventName, "string");
-  fields.eventAtIso = normalizeField(payload.fields.eventAtIso, "string", normaliseIsoDate);
-  fields.sport = normalizeField(payload.fields.sport, "string");
-  fields.league = normalizeField(payload.fields.league, "string");
-  fields.market = normalizeField(payload.fields.market, "string");
-  fields.selection = normalizeField(payload.fields.selection, "string");
-  fields.bookmakerName = normalizeField(payload.fields.bookmakerName, "string");
-  fields.stake = normalizeField(payload.fields.stake, "number");
-  fields.odds = normalizeField(payload.fields.odds, "number");
-  fields.mode = normalizeField(payload.fields.mode, "string", normaliseMode);
+  fields.eventName     = flatToField(payload.eventName, "string", missing, uncertain, "eventName");
+  fields.eventAtIso    = flatToStringField(payload.eventAt, missing, uncertain, "eventAt", normaliseIsoDate);
+  fields.sport         = flatToField(payload.sport, "string", missing, uncertain, "sport");
+  fields.league        = flatToField(payload.league, "string", missing, uncertain, "league");
+  fields.market        = flatToField(payload.market, "string", missing, uncertain, "market");
+  fields.selection     = flatToField(payload.selection, "string", missing, uncertain, "selection");
+  fields.bookmakerName = flatToField(payload.bookmakerName, "string", missing, uncertain, "bookmakerName");
+  fields.stake         = flatToNumberField(payload.stake, missing, uncertain);
+  fields.odds          = flatToNumberField(payload.odds, missing, uncertain, "odds");
+  fields.mode          = flatToStringField(payload.mode, missing, uncertain, "mode", normaliseMode);
 
   const reviewFlags = collectReviewFlags(fields);
 
@@ -81,9 +82,52 @@ export function mapProviderPayload(
     extractedAt: new Date().toISOString(),
     slip: toSlipSummary(slip),
     fields,
-    rawText: payload.rawText ?? null,
+    rawText: payload.rawText || null,
     reviewFlags,
   };
+}
+
+function confidenceFor(fieldName: string, missing: Set<string>, uncertain: Set<string>): number {
+  if (missing.has(fieldName)) return 0;
+  if (uncertain.has(fieldName)) return 0.55;
+  return 0.92;
+}
+
+function flatToField(
+  value: string,
+  _type: "string",
+  missing: Set<string>,
+  uncertain: Set<string>,
+  fieldName = "",
+): ExtractedField<string> {
+  const str = String(value ?? "").trim();
+  const conf = confidenceFor(fieldName, missing, uncertain);
+  return { value: str || null, confidence: conf, sourceText: str || null };
+}
+
+function flatToStringField<T>(
+  value: string,
+  missing: Set<string>,
+  uncertain: Set<string>,
+  fieldName: string,
+  transform: (v: string) => T | null,
+): ExtractedField<T> {
+  const str = String(value ?? "").trim();
+  const conf = confidenceFor(fieldName, missing, uncertain);
+  if (!str) return emptyField<T>();
+  const transformed = transform(str);
+  return { value: transformed, confidence: conf, sourceText: str };
+}
+
+function flatToNumberField(
+  value: number,
+  missing: Set<string>,
+  uncertain: Set<string>,
+  fieldName = "",
+): ExtractedField<number> {
+  const num = Number(value);
+  const conf = confidenceFor(fieldName, missing, uncertain);
+  return { value: num > 0 ? num : null, confidence: conf, sourceText: num > 0 ? String(num) : null };
 }
 
 function toSlipSummary(slip: SlipImagePayload) {
@@ -94,48 +138,6 @@ function toSlipSummary(slip: SlipImagePayload) {
   };
 }
 
-function normalizeField<TInput, TOutput = TInput>(
-  field: ProviderExtractedField<TInput> | undefined,
-  expectedType: "string" | "number",
-  transformer?: (value: TInput) => TOutput | null,
-): ExtractedField<TOutput> {
-  if (!field) {
-    return emptyField<TOutput>();
-  }
-
-  const rawValue = field.value;
-  if (rawValue == null) {
-    return {
-      value: null,
-      confidence: normaliseConfidence(field.confidence),
-      sourceText: field.sourceText ?? null,
-    };
-  }
-
-  if (expectedType === "number" && typeof rawValue !== "number") {
-    return {
-      value: null,
-      confidence: normaliseConfidence(field.confidence),
-      sourceText: field.sourceText ?? null,
-    };
-  }
-
-  if (expectedType === "string" && typeof rawValue !== "string") {
-    return {
-      value: null,
-      confidence: normaliseConfidence(field.confidence),
-      sourceText: field.sourceText ?? null,
-    };
-  }
-
-  const transformedValue = transformer ? transformer(rawValue) : (rawValue as unknown as TOutput);
-
-  return {
-    value: transformedValue,
-    confidence: normaliseConfidence(field.confidence),
-    sourceText: field.sourceText ?? null,
-  };
-}
 
 function collectReviewFlags(fields: ParseBetSlipResponse["fields"]): OcrReviewFlag[] {
   const flags: OcrReviewFlag[] = [];

@@ -1,14 +1,15 @@
-import { BrainCircuit, DatabaseZap, Radar, Target } from "lucide-react";
+import { BrainCircuit, DatabaseZap, Radar, RefreshCw, Target } from "lucide-react";
 import { EmptyState } from "./EmptyState";
+import { LoadingSkeleton } from "./LoadingSkeleton";
 import { percent } from "../lib/metrics";
 import {
-  buildSuggestionsWorkspace,
   formatCoverage,
   formatFeedStatus,
   formatFixtureStatus,
   formatProfit,
   formatSuggestionStatus,
 } from "../lib/suggestions";
+import { useSuggestions } from "../lib/useSuggestions";
 import type { AppState, NewBetPrefill } from "../lib/types";
 
 interface SuggestionsProps {
@@ -17,13 +18,22 @@ interface SuggestionsProps {
 }
 
 export function Suggestions({ state, onOpenNewBet }: SuggestionsProps) {
-  const workspace = buildSuggestionsWorkspace(state);
+  const { workspace, loading, error, source, usingCache, note, lastUpdatedAt, refresh } = useSuggestions(state);
   const readySuggestions = workspace.suggestions.filter((item) => item.status === "ready").length;
   const queuedSuggestions = workspace.suggestions.filter((item) => item.status === "queued").length;
   const pricedFixtures = workspace.fixtures.filter((item) => item.status !== "monitoring").length;
   const performanceReady = workspace.performance.settledSuggestions > 0;
   const operationalReady = workspace.readiness.every((item) => item.ready);
   const firstReadySuggestion = workspace.suggestions.find((item) => item.status === "ready") ?? workspace.suggestions[0];
+  const runtimeModeLabel = source === "live" ? "Ao vivo" : "Demonstracao";
+  const runtimeModeDescription =
+    source === "live"
+      ? "Fixtures, odds e fila vieram do backend configurado."
+      : "Fixtures, odds e fila vieram do scaffold local para demonstracao operacional.";
+  const cacheLabel = usingCache ? "Cache operacional" : source === "live" ? "Atualizacao recente" : "Fallback local";
+  const cacheDescription = lastUpdatedAt
+    ? new Date(lastUpdatedAt).toLocaleString("pt-BR")
+    : "Sem coleta recente";
 
   function toDatetimeLocal(value: string) {
     const date = new Date(value);
@@ -63,31 +73,85 @@ export function Suggestions({ state, onOpenNewBet }: SuggestionsProps) {
     };
   }
 
+  if (loading) {
+    return (
+      <section className="suggestions-section">
+        <div className="section-head suggestions-head">
+          <div>
+            <h2>Sugestões IA</h2>
+            <p>Buscando partidas e estimando edge via API…</p>
+          </div>
+        </div>
+        <div className="suggestions-loading-layout" aria-hidden="true">
+          <div className="ops-summary-grid">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <article key={index} className="ops-summary-card">
+                <LoadingSkeleton lines={3} height={index === 1 ? 24 : 20} />
+              </article>
+            ))}
+          </div>
+          <div className="grid two suggestions-grid">
+            <article className="panel">
+              <LoadingSkeleton lines={6} height={16} />
+            </article>
+            <article className="panel">
+              <LoadingSkeleton lines={6} height={16} />
+            </article>
+          </div>
+          <div className="table-card suggestions-table-card">
+            <LoadingSkeleton lines={7} height={18} />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="suggestions-section">
+      {error && (
+        <div className="suggestions-api-warning">
+          <span>{error}</span>
+        </div>
+      )}
+
       <div className="section-head suggestions-head">
         <div>
           <h2>Sugestões IA</h2>
           <p>Workspace operacional para jogos futuros, preços capturados, fila de publicação e leitura de performance.</p>
         </div>
-        <div className="suggestions-stage">Scaffold local · pronto para backend</div>
+        <button type="button" className="btn-ghost suggestions-refresh-button" onClick={refresh}>
+          <RefreshCw size={14} />
+          Atualizar
+        </button>
       </div>
 
       <div className="ops-summary-grid">
         <article className="ops-summary-card">
+          <span>Modo da superfície</span>
+          <strong>{runtimeModeLabel}</strong>
+          <small>{runtimeModeDescription}</small>
+        </article>
+        <article className="ops-summary-card">
+          <span>Origem ativa</span>
+          <strong>{cacheLabel}</strong>
+          <small>{note ?? cacheDescription}</small>
+        </article>
+        <article className="ops-summary-card">
           <span>Jogos futuros</span>
           <strong>{workspace.fixtures.length}</strong>
-          <small>{pricedFixtures} com precificação inicial e cobertura pronta para ingestão real.</small>
+          <small>
+            {source === "live"
+              ? `${pricedFixtures} com precificacao inicial vinda dos feeds ativos.`
+              : `${pricedFixtures} com precificacao demonstrativa para validar a experiencia.`}
+          </small>
         </article>
         <article className="ops-summary-card">
           <span>Odds monitoradas</span>
           <strong>{workspace.odds.length}</strong>
-          <small>{workspace.odds.map((item) => item.bookmakerName).filter((value, index, list) => list.indexOf(value) === index).length} casas mapeadas no scaffold atual.</small>
-        </article>
-        <article className="ops-summary-card">
-          <span>Fila de sugestões</span>
-          <strong>{readySuggestions + queuedSuggestions}</strong>
-          <small>{readySuggestions} pronta(s) para publicação e {queuedSuggestions} em revisão.</small>
+          <small>
+            {workspace.odds.map((item) => item.bookmakerName).filter((value, index, list) => list.indexOf(value) === index).length} casa(s) mapeada(s)
+            {source === "live" ? " no feed ativo." : " no fallback local."}
+          </small>
         </article>
       </div>
 
@@ -106,7 +170,10 @@ export function Suggestions({ state, onOpenNewBet }: SuggestionsProps) {
               <div key={feed.label} className="suggestions-feed-item">
                 <div>
                   <strong>{feed.label}</strong>
-                  <p>{feed.detail}</p>
+                  <p>
+                    {feed.detail}
+                    {source === "fallback" ? " · leitura demonstrativa" : ""}
+                  </p>
                 </div>
                 <span className={`suggestions-status-chip ${feed.status}`}>{formatFeedStatus(feed.status)}</span>
               </div>
@@ -157,7 +224,13 @@ export function Suggestions({ state, onOpenNewBet }: SuggestionsProps) {
 
           <div className="suggestions-performance-note">
             <span>Fonte de performance</span>
-            <strong>{workspace.performance.trackedSuggestions > 0 ? `${workspace.performance.trackedSuggestions} aposta(s) com source ai_suggestion` : "Aguardando integração com backend de publicação"}</strong>
+            <strong>
+              {workspace.performance.trackedSuggestions > 0
+                ? `${workspace.performance.trackedSuggestions} aposta(s) com source ai_suggestion`
+                : source === "live"
+                  ? "Aguardando primeiras sugestoes adotadas nesta operacao"
+                  : "Aguardando sugestoes adotadas; o workspace atual esta em demonstracao"}
+            </strong>
           </div>
         </article>
       </div>
@@ -166,7 +239,11 @@ export function Suggestions({ state, onOpenNewBet }: SuggestionsProps) {
         <div className="suggestions-table-head">
           <div>
             <strong>Jogos em monitoramento</strong>
-            <span>Fixtures futuros com estrutura de preço e cobertura pronta para sincronizar feeds externos.</span>
+            <span>
+              {source === "live"
+                ? "Fixtures futuros com estrutura de preco vinda dos feeds externos."
+                : "Fixtures futuros demonstrativos para validar a experiencia enquanto os feeds externos estao indisponiveis."}
+            </span>
           </div>
           <DatabaseZap size={16} />
         </div>
@@ -209,7 +286,11 @@ export function Suggestions({ state, onOpenNewBet }: SuggestionsProps) {
         <div className="suggestions-table-head">
           <div>
             <strong>Fila de recomendação</strong>
-            <span>Modelo de payload para backend de sugestão, publicação e rastreio de execução.</span>
+            <span>
+              {source === "live"
+                ? "Sugestoes calculadas para revisao e execucao operacional."
+                : "Payload demonstrativo para validar UX e rastreio antes da publicacao automatica."}
+            </span>
           </div>
           <BrainCircuit size={16} />
         </div>
@@ -232,7 +313,10 @@ export function Suggestions({ state, onOpenNewBet }: SuggestionsProps) {
                 <tr key={item.id}>
                   <td>
                     <strong>{item.title}</strong>
-                    <small>{item.linkedBookmakers.join(", ")} · {new Date(item.generatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</small>
+                    <small>
+                      {item.linkedBookmakers.join(", ")} · {new Date(item.generatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      {source === "fallback" ? " · demonstracao" : ""}
+                    </small>
                   </td>
                   <td>
                     {item.selectionLabel}
@@ -248,7 +332,7 @@ export function Suggestions({ state, onOpenNewBet }: SuggestionsProps) {
                       className="btn-ghost suggestions-use-button"
                       onClick={() => onOpenNewBet(buildSuggestionPrefill(item.id))}
                     >
-                      Usar
+                      {source === "live" ? "Usar" : "Usar demo"}
                     </button>
                   </td>
                 </tr>
@@ -268,7 +352,11 @@ export function Suggestions({ state, onOpenNewBet }: SuggestionsProps) {
           <EmptyState
             icon={<Radar size={20} />}
             title="Ambiente ainda incompleto para publicação automática"
-            description="A UI já está pronta para consumo, mas a operação fica mais útil quando houver casas, estratégias ativas e histórico mínimo para calibrar os scores."
+            description={
+              source === "live"
+                ? "A UI ja esta pronta para consumo, mas a operacao fica mais util quando houver casas, estrategias ativas e historico minimo para calibrar os scores."
+                : "A superficie esta funcional para demonstracao, mas a publicacao automatica ganha valor real quando os feeds externos, casas e historico operacional estiverem completos."
+            }
           />
         </article>
       )}

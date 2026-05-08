@@ -22,7 +22,14 @@ export function useFirestoreSync(
   const [status, setStatus] = useState<SyncStatus>("idle");
   const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const isFirstLoad = useRef(true);
+  const isFirstSnapshot = useRef(true);
+  const localTimestampRef = useRef(0);
+  const lastAppliedRemoteTimestampRef = useRef(0);
+
+  useEffect(() => {
+    const time = localState.lastModifiedAt ? new Date(localState.lastModifiedAt).getTime() : 0;
+    localTimestampRef.current = Number.isFinite(time) ? time : 0;
+  }, [localState]);
 
   useEffect(() => {
     if (!user || user.isAnonymous) {
@@ -31,7 +38,8 @@ export function useFirestoreSync(
     }
 
     setStatus("syncing");
-    isFirstLoad.current = true;
+    isFirstSnapshot.current = true;
+    lastAppliedRemoteTimestampRef.current = 0;
 
     const docRef = doc(db, "users", user.uid, "appStates", "default");
 
@@ -40,37 +48,17 @@ export function useFirestoreSync(
       (snapshot) => {
         if (!snapshot.exists()) {
           setStatus("synced");
-          isFirstLoad.current = false;
+          isFirstSnapshot.current = false;
           return;
         }
 
         const data = snapshot.data();
-
-        // Na primeira carga, oferece ao App.tsx para carregar do Firestore
-        if (isFirstLoad.current) {
-          isFirstLoad.current = false;
-          const remoteState = normalizeState({
-            bankrollName: data["bankrollName"],
-            currency: data["currency"],
-            startingBalance: data["startingBalance"],
-            riskSettings: data["riskSettings"],
-            bookmakers: data["bookmakers"],
-            strategies: data["strategies"],
-            bets: data["bets"],
-            transactions: data["transactions"],
-          });
-          onRemoteUpdate(remoteState);
-          setStatus("synced");
-          setLastSyncAt(new Date());
-          return;
-        }
-
-        // Mudança vinda de outro dispositivo — atualiza
         if (snapshot.metadata.hasPendingWrites) return; // ignorar writes locais
 
         const remoteState = normalizeState({
           bankrollName: data["bankrollName"],
           currency: data["currency"],
+          lastModifiedAt: data["lastModifiedAt"],
           startingBalance: data["startingBalance"],
           riskSettings: data["riskSettings"],
           bookmakers: data["bookmakers"],
@@ -79,7 +67,31 @@ export function useFirestoreSync(
           transactions: data["transactions"],
         });
 
+        const remoteTimestamp = remoteState.lastModifiedAt
+          ? new Date(remoteState.lastModifiedAt).getTime()
+          : 0;
+        const safeRemoteTimestamp = Number.isFinite(remoteTimestamp) ? remoteTimestamp : 0;
+
+        if (isFirstSnapshot.current) {
+          isFirstSnapshot.current = false;
+          lastAppliedRemoteTimestampRef.current = safeRemoteTimestamp;
+          setStatus("synced");
+          setLastSyncAt(new Date());
+          return;
+        }
+
+        if (
+          safeRemoteTimestamp === 0 ||
+          safeRemoteTimestamp <= localTimestampRef.current ||
+          safeRemoteTimestamp <= lastAppliedRemoteTimestampRef.current
+        ) {
+          setStatus("synced");
+          setLastSyncAt(new Date());
+          return;
+        }
+
         onRemoteUpdate(remoteState);
+        lastAppliedRemoteTimestampRef.current = safeRemoteTimestamp;
         setStatus("synced");
         setLastSyncAt(new Date());
       },
@@ -92,9 +104,8 @@ export function useFirestoreSync(
 
     return () => {
       unsubscribe();
-      isFirstLoad.current = true;
+      isFirstSnapshot.current = true;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
 
   return { status, lastSyncAt, error };
