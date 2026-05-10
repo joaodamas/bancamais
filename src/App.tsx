@@ -40,6 +40,7 @@ const Onboarding = lazy(() => import("./components/Onboarding").then((module) =>
 const Dashboard = lazy(() => import("./components/Dashboard").then((module) => ({ default: module.Dashboard })));
 const Bets = lazy(() => import("./components/Bets").then((module) => ({ default: module.Bets })));
 const NewBet = lazy(() => import("./components/NewBet").then((module) => ({ default: module.NewBet })));
+const QuickBet = lazy(() => import("./components/QuickBet").then((module) => ({ default: module.QuickBet })));
 const Import = lazy(() => import("./components/Import").then((module) => ({ default: module.Import })));
 const Intelligence = lazy(() => import("./components/Intelligence").then((module) => ({ default: module.Intelligence })));
 const ClvEdge = lazy(() => import("./components/ClvEdge").then((module) => ({ default: module.ClvEdge })));
@@ -127,6 +128,7 @@ export function App() {
   const [state, setState] = useState<AppState>(() => emptyState());
   const [newBetPrefill, setNewBetPrefill] = useState<NewBetPrefill | null>(null);
   const [newBetDraft, setNewBetDraft] = useState<NewBetDraft | null>(null);
+  const [betMode, setBetMode] = useState<"quick" | "full">("quick");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -1067,19 +1069,31 @@ export function App() {
 
   const currentView = renderCurrentView();
   const newBetModal = view === "new-bet" ? (
-    <Suspense fallback={<ModalFallback />}>
-      <NewBet
-        state={state}
-        addBet={addBet}
-        onClose={() => {
-          setNewBetPrefill(null);
-          setView("bets");
-        }}
-        prefill={newBetPrefill}
-        draft={newBetDraft}
-        onDraftChange={setNewBetDraft}
-      />
-    </Suspense>
+    betMode === "quick" && !newBetPrefill ? (
+      <Suspense fallback={<ModalFallback />}>
+        <QuickBet
+          state={state}
+          onSubmit={addBet}
+          onClose={() => { setNewBetPrefill(null); setView("bets"); }}
+          onSwitchToFull={() => setBetMode("full")}
+        />
+      </Suspense>
+    ) : (
+      <Suspense fallback={<ModalFallback />}>
+        <NewBet
+          state={state}
+          addBet={addBet}
+          onClose={() => {
+            setNewBetPrefill(null);
+            setBetMode("quick");
+            setView("bets");
+          }}
+          prefill={newBetPrefill}
+          draft={newBetDraft}
+          onDraftChange={setNewBetDraft}
+        />
+      </Suspense>
+    )
   ) : null;
 
   return (

@@ -7134,3 +7134,186 @@ button.danger:hover {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* =========================================================
+   QUICK BET — Modo Rápido de entrada
+   ========================================================= */
+
+.quick-bet-panel {
+  max-width: 480px;
+  padding: 20px;
+}
+
+.quick-bet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.quick-bet-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.quick-bet-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quick-bet-switch {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: color var(--transition), border-color var(--transition);
+  min-height: auto;
+}
+
+.quick-bet-switch:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.quick-bet-close {
+  position: static;
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+  min-height: auto;
+}
+
+.quick-bet-hint {
+  font-size: 11px;
+  color: var(--soft);
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.quick-bet-hint kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  background: var(--panel-3);
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+
+.quick-bet-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quick-bet-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.quick-bet-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.quick-bet-field span {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.quick-bet-required {
+  color: var(--accent);
+  font-style: normal;
+  margin-left: 2px;
+}
+
+.quick-bet-event {
+  grid-column: 1;
+}
+
+.quick-bet-date {
+  grid-column: 2;
+}
+
+.quick-bet-full {
+  grid-column: 1 / -1;
+}
+
+.quick-bet-return {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(139, 124, 246, 0.07);
+  border: 1px solid rgba(139, 124, 246, 0.20);
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.quick-bet-return strong {
+  font-family: var(--font-mono);
+  font-size: 15px;
+}
+
+.quick-bet-gain {
+  font-size: 11px;
+}
+
+.quick-bet-gain b {
+  font-family: var(--font-mono);
+}
+
+.quick-bet-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.quick-bet-warning {
+  font-size: 11px;
+  color: var(--warning);
+  flex: 1;
+}
+
+.quick-bet-submit {
+  min-width: 140px;
+  padding: 10px 20px;
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .quick-bet-panel {
+    max-width: 100%;
+  }
+
+  .quick-bet-row {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-bet-event,
+  .quick-bet-date {
+    grid-column: 1;
+  }
+}
