@@ -258,7 +258,7 @@ export function Books({
                         key={t.id}
                         className={`ledger-row${isVoided ? " ledger-row-voided" : ""}${isVoidEntry ? " ledger-row-void-entry" : ""}`}
                       >
-                        <td className="ledger-date">
+                        <td className="ledger-date" data-label="Data">
                           {new Date(t.date).toLocaleDateString("pt-BR", {
                             day: "2-digit",
                             month: "short",
@@ -271,12 +271,12 @@ export function Books({
                             })}
                           </span>
                         </td>
-                        <td>
+                        <td data-label="Tipo">
                           <span className={`ledger-type-badge ledger-type-${t.type}`}>
                             {TRANSACTION_TYPE_LABELS[t.type]}
                           </span>
                         </td>
-                        <td className="ledger-desc">
+                        <td className="ledger-desc" data-label="Descrição">
                           {t.description}
                           {isVoided && <span className="ledger-voided-tag">Anulado</span>}
                           {isVoidEntry && t.voidsCancelledId && (
@@ -285,7 +285,7 @@ export function Books({
                             </span>
                           )}
                         </td>
-                        <td className={`ledger-col-num ledger-amount ${t.amount >= 0 ? "pos" : "neg"}`}>
+                        <td className={`ledger-col-num ledger-amount ${t.amount >= 0 ? "pos" : "neg"}`} data-label="Valor">
                           {t.amount >= 0 ? "+" : ""}
                           {money.format(t.amount)}
                         </td>

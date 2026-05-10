@@ -188,22 +188,22 @@ export function Bets({ state, settleBet, deleteBet }: BetsProps) {
                       {bet.slipImageUrl && <a className="bet-meta-chip bet-meta-chip-link" href={bet.slipImageUrl} rel="noreferrer" target="_blank">Ver print</a>}
                     </div>
                   </td>
-                  <td className="bet-cell">
+                  <td className="bet-cell" data-label="Mercado">
                     <strong className="bet-primary-text">{bet.market}</strong>
                     <small>{bet.selection}</small>
                   </td>
-                  <td className="bet-cell">
+                  <td className="bet-cell" data-label="Execução">
                     <strong className="bet-primary-text">{bookmakerById.get(bet.bookmakerId) ?? "-"}</strong>
                     <small>{bet.strategyId ? strategyById.get(bet.strategyId) ?? "Com estrategia" : "Sem estrategia"}</small>
                     <div className="bet-inline-stats">
                       <span>{bet.status === "pending" ? "Em risco" : "Executada"}</span>
                     </div>
                   </td>
-                  <td className="bet-cell bet-cell-money">
+                  <td className="bet-cell bet-cell-money" data-label="Stake">
                     <strong className="bet-primary-text text-mono">{money.format(bet.stake)}</strong>
                     <small>{bet.status === "pending" ? "Capital em risco" : "Stake liquidada"}</small>
                   </td>
-                  <td className="bet-cell">
+                  <td className="bet-cell" data-label="Odd">
                     <strong className="bet-primary-text text-mono">@ {bet.odds.toFixed(2)}</strong>
                     <small>{bet.closingOdds ? `Fechamento ${bet.closingOdds.toFixed(2)}` : "Sem fechamento"}</small>
                   </td>
@@ -227,7 +227,7 @@ export function Bets({ state, settleBet, deleteBet }: BetsProps) {
                       <span className="text-mono">{clvPercent(bet) === null ? "Sem CLV" : percent.format(clvPercent(bet)!)}</span>
                     </div>
                   </td>
-                  <td className="bet-status-cell">
+                  <td className="bet-status-cell" data-label="Status">
                     <span className={`pill ${bet.status}`}>{statusLabel[bet.status]}</span>
                     {bet.status !== "pending" && (
                       <div className="settlement-value">

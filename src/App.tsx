@@ -30,6 +30,7 @@ import { createBetId, createBookmakerId, createStrategyId, createTransactionId, 
 import { uploadBetSlip } from "./lib/storageRepository";
 import type { AppState, Bet, BookmakerAccount, NewBetDraft, NewBetPrefill, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
 import type { OcrSubmissionMetadata } from "./lib/ocr";
+import { checkHardStop } from "./lib/riskGuard";
 
 type View = "dashboard" | "bets" | "new-bet" | "import" | "intelligence" | "reports" | "clv" | "books" | "strategies" | "settings";
 
@@ -137,6 +138,10 @@ export function App() {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const metrics = useMemo(() => calculateMetrics(state), [state]);
   const hydratedUserRef = useRef<string | null>(null);
+  const latestStateRef = useRef<AppState>(state);
+  const latestUserRef = useRef<User | null>(user);
+  latestStateRef.current = state;
+  latestUserRef.current = user;
 
   useEffect(() => {
     const unsubscribe = watchAuth(async (nextUser) => {
@@ -188,11 +193,27 @@ export function App() {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(() => {
       saveCloudState(user.uid, state).catch(console.error);
-    }, 3000);
+    }, 1500);
     return () => {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     };
   }, [state, user, authLoading]);
+
+  // Flush imediato quando o app vai para segundo plano (troca de aba, lock screen, fechar)
+  useEffect(() => {
+    function onVisibilityChange() {
+      const u = latestUserRef.current;
+      const s = latestStateRef.current;
+      if (document.visibilityState !== "hidden" || !u || u.isAnonymous) return;
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+      saveCloudState(u.uid, s).catch(console.error);
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, []);
 
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -252,7 +273,7 @@ export function App() {
     if (searchInputRef.current) searchInputRef.current.value = "";
   }, []);
 
-  function updateState(next: AppState) {
+  function updateState(next: AppState): AppState {
     const reconciled = reconcileBookmakerBalances(next);
     const stamped = withStateTimestamp(reconciled);
     setState(stamped);
@@ -262,6 +283,16 @@ export function App() {
     } else {
       saveState(stamped);
     }
+    return stamped;
+  }
+
+  function syncToCloud(stamped: AppState) {
+    if (!user || user.isAnonymous) return;
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+    saveCloudState(user.uid, stamped).catch(console.error);
   }
 
   function applyHydratedState(next: AppState, targetUid?: string | null) {
@@ -533,6 +564,12 @@ export function App() {
       return;
     }
 
+    const hardStop = checkHardStop(state);
+    if (hardStop?.blocked) {
+      toast.error(`Hard Stop ativo: ${hardStop.reason}`, { duration: 6000 });
+      return;
+    }
+
     if (!Number.isFinite(stake) || stake <= 0) {
       toast.error("Informe uma stake valida.");
       return;
@@ -606,7 +643,7 @@ export function App() {
       referenceType: "bet",
       referenceId: bet.id,
     };
-    updateState({ ...state, bets: [bet, ...state.bets], transactions: [transaction, ...state.transactions] });
+    syncToCloud(updateState({ ...state, bets: [bet, ...state.bets], transactions: [transaction, ...state.transactions] }));
     setNewBetPrefill(null);
     setNewBetDraft(null);
     form.reset();
@@ -640,13 +677,13 @@ export function App() {
       referenceType: "bet" as const,
       referenceId: currentBet.id,
     }] : [];
-    updateState({
+    syncToCloud(updateState({
       ...state,
       transactions: [...transaction, ...state.transactions],
       bets: state.bets.map((bet) => (
         bet.id === id ? { ...bet, status, payout, settlementSource: "manual" } : bet
       )),
-    });
+    }));
     const labels: Record<Bet["status"], string> = {
       won: "Ganha! 🎯", lost: "Perdida", cashout: "Cashout registrado",
       void: "Aposta cancelada", pending: "Pendente"
@@ -658,11 +695,11 @@ export function App() {
     const bet = state.bets.find((b) => b.id === id);
     if (!bet) return;
 
-    updateState({
+    syncToCloud(updateState({
       ...state,
       bets: state.bets.filter((b) => b.id !== id),
       transactions: state.transactions.filter((t) => t.referenceId !== id),
-    });
+    }));
     toast.success("Aposta excluída");
   }
 
@@ -756,11 +793,11 @@ export function App() {
       referenceId: bookmaker.id,
     }] : [];
 
-    updateState({
+    syncToCloud(updateState({
       ...state,
       bookmakers: [...state.bookmakers, bookmaker],
       transactions: [...transaction, ...state.transactions],
-    });
+    }));
     event.currentTarget.reset();
     toast.success("Casa adicionada.");
   }
@@ -898,7 +935,7 @@ export function App() {
         referenceType: "manual",
       }];
 
-    updateState({ ...state, transactions: [...transactions.reverse(), ...state.transactions] });
+    syncToCloud(updateState({ ...state, transactions: [...transactions.reverse(), ...state.transactions] }));
     event.currentTarget.reset();
     toast.success("Transação registrada!");
   }
@@ -928,7 +965,7 @@ export function App() {
     const updatedTransactions = state.transactions.map((t) =>
       t.id === transactionId ? patchedOriginal : t,
     );
-    updateState({ ...state, transactions: [voidEntry, ...updatedTransactions] });
+    syncToCloud(updateState({ ...state, transactions: [voidEntry, ...updatedTransactions] }));
     toast.success("Transação anulada. Lançamento de anulação criado no ledger.");
   }
 
@@ -969,6 +1006,10 @@ export function App() {
       maxStakeUnits: Number(data.get("maxStakeUnits")),
       maxOpenExposurePercent: Number(data.get("maxOpenExposurePercent")),
       lossStreakLimit: Number(data.get("lossStreakLimit")),
+      hardStopEnabled: data.get("hardStopEnabled") === "on",
+      dailyLossLimitPercent: Number(data.get("dailyLossLimitPercent")),
+      weeklyLossLimitPercent: Number(data.get("weeklyLossLimitPercent")),
+      monthlyDrawdownPercent: Number(data.get("monthlyDrawdownPercent")),
     };
 
     updateState({ ...state, riskSettings });
@@ -1169,7 +1210,7 @@ export function App() {
             )}
             <button className="primary btn-nova-aposta" onClick={() => openNewBet()}>
               <Plus size={16} />
-              Nova aposta
+              <span>Nova aposta</span>
             </button>
           </div>
         </header>

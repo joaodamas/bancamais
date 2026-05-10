@@ -12,11 +12,12 @@ import {
   Cell,
   ReferenceLine,
 } from "recharts";
-import { calculateMetrics, groupProfitBySport, riskAlerts, money, percent } from "../lib/metrics";
+import { calculateMetrics, groupProfitBySport, money, percent } from "../lib/metrics";
 import { buildBankrollTimeSeries, buildMonthlyData } from "../lib/chartData";
 import type { AppState } from "../lib/types";
 import { EmptyState } from "./EmptyState";
 import { Metric } from "./Metric";
+import { RiskAdvisor } from "./RiskAdvisor";
 
 // Cores do design system Banca+ (hex direto — Recharts não lê CSS vars)
 const COLORS = {
@@ -91,7 +92,6 @@ export function Dashboard({
   onOpenNewBet: () => void;
   onOpenBooks: () => void;
 }) {
-  const alerts = riskAlerts(state);
   const timeSeries = useMemo(() => buildBankrollTimeSeries(state), [state]);
   const monthlyData = useMemo(() => buildMonthlyData(state), [state]);
   const monitoredCapital = metrics.totalBalance + metrics.openExposure;
@@ -366,25 +366,11 @@ export function Dashboard({
         </article>
       </div>
 
-      {/* Risk alerts */}
-      <div className="risk-grid">
-        {alerts.length > 0 ? (
-          alerts.map((alert) => (
-            <article className={`panel risk-card ${alert.level}`} key={alert.title}>
-              <span>{alert.level === "danger" ? "Risco alto" : "Atenção"}</span>
-              <strong>{alert.title}</strong>
-              <p>{alert.detail}</p>
-            </article>
-          ))
-        ) : (
-          <article className="panel risk-card">
-            <span>Status</span>
-            <strong>Risco controlado</strong>
-            <p>
-              Nenhum alerta crítico. A banca está dentro dos parâmetros configurados.
-            </p>
-          </article>
-        )}
+      {/* Risk Advisor */}
+      <div className="dashboard-risk-row">
+        <article className="panel dashboard-risk-panel">
+          <RiskAdvisor state={state} metrics={metrics} />
+        </article>
       </div>
     </section>
   );

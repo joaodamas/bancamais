@@ -164,6 +164,52 @@ export function Settings({
               <input defaultValue={state.riskSettings.lossStreakLimit} min="1" name="lossStreakLimit" required step="1" type="number" />
             </label>
           </div>
+
+          <div className="settings-hardstop">
+            <div className="settings-hardstop-header">
+              <div>
+                <strong>Hard Stop automático</strong>
+                <p>Bloqueia novas apostas quando os limites de perda são atingidos.</p>
+              </div>
+              <label className="settings-toggle">
+                <input
+                  type="checkbox"
+                  name="hardStopEnabled"
+                  defaultChecked={state.riskSettings.hardStopEnabled}
+                />
+                <span className="settings-toggle-track">
+                  <span className="settings-toggle-thumb" />
+                </span>
+              </label>
+            </div>
+            <div className="risk-settings-grid">
+              <label>
+                Limite diário de perda (%)
+                <input
+                  defaultValue={state.riskSettings.dailyLossLimitPercent}
+                  min="1" max="100" name="dailyLossLimitPercent" required step="1" type="number"
+                />
+                <small>% da banca perdida em 24h para bloquear</small>
+              </label>
+              <label>
+                Limite semanal de perda (%)
+                <input
+                  defaultValue={state.riskSettings.weeklyLossLimitPercent}
+                  min="1" max="100" name="weeklyLossLimitPercent" required step="1" type="number"
+                />
+                <small>% da banca perdida em 7 dias para bloquear</small>
+              </label>
+              <label>
+                Drawdown mensal máximo (%)
+                <input
+                  defaultValue={state.riskSettings.monthlyDrawdownPercent}
+                  min="1" max="100" name="monthlyDrawdownPercent" required step="1" type="number"
+                />
+                <small>% da banca perdida em 30 dias para bloquear</small>
+              </label>
+            </div>
+          </div>
+
           <button className="primary" type="submit">Salvar limites</button>
         </form>
 

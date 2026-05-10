@@ -152,6 +152,10 @@ export interface RiskSettings {
   maxStakeUnits: number;
   maxOpenExposurePercent: number;
   lossStreakLimit: number;
+  hardStopEnabled: boolean;
+  dailyLossLimitPercent: number;
+  weeklyLossLimitPercent: number;
+  monthlyDrawdownPercent: number;
 }
 
 export interface DashboardMetrics {

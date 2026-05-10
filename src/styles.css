@@ -5835,3 +5835,866 @@ button.danger:hover {
     border-radius: 18px;
   }
 }
+
+/* =========================================================
+   RISK ADVISOR
+   ========================================================= */
+
+.risk-advisor {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.risk-advisor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.risk-advisor-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.risk-advisor-grade {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.risk-grade-letter {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.risk-grade-score {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+.risk-hard-stop-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(248, 113, 113, 0.10);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: var(--radius);
+  color: var(--negative);
+}
+
+.risk-hard-stop-banner > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.risk-hard-stop-banner strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+.risk-hard-stop-banner p {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.risk-alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.risk-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+}
+
+.risk-alert > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.risk-alert strong {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.risk-alert p {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.risk-alert-metric {
+  display: inline-block;
+  margin-left: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 0 5px;
+  border-radius: var(--radius-sm);
+  vertical-align: middle;
+}
+
+.risk-alert-danger {
+  background: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.28);
+  color: var(--negative);
+}
+
+.risk-alert-danger .risk-alert-metric {
+  background: rgba(248, 113, 113, 0.15);
+  color: var(--negative);
+}
+
+.risk-alert-warning {
+  background: rgba(251, 191, 36, 0.08);
+  border-color: rgba(251, 191, 36, 0.25);
+  color: var(--warning);
+}
+
+.risk-alert-warning .risk-alert-metric {
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--warning);
+}
+
+.risk-alert-info {
+  background: rgba(96, 165, 250, 0.06);
+  border-color: rgba(96, 165, 250, 0.20);
+  color: var(--info);
+}
+
+.risk-dimensions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+}
+
+.risk-dimension-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 28px;
+  align-items: center;
+  gap: 8px;
+}
+
+.risk-dimension-label {
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.risk-dimension-bar {
+  flex: 1;
+}
+
+.risk-dimension-score {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--soft);
+  text-align: right;
+}
+
+.risk-progress-track {
+  height: 4px;
+  background: var(--panel-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.risk-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.risk-tilt-card {
+  padding: 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.risk-tilt-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+}
+
+.risk-tilt-header strong {
+  font-size: 12px;
+  flex: 1;
+}
+
+.risk-tilt-score {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.risk-tilt-recommendation {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+
+.risk-tilt-signals {
+  margin: 0;
+  padding-left: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.risk-tilt-signals li {
+  font-size: 11px;
+  color: var(--soft);
+  line-height: 1.4;
+}
+
+.risk-section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.risk-hardstop-progress {
+  padding: 12px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+}
+
+.risk-hardstop-row {
+  margin-bottom: 10px;
+}
+
+.risk-hardstop-row:last-child {
+  margin-bottom: 0;
+}
+
+.risk-hardstop-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.risk-hardstop-meta span:first-child {
+  font-family: var(--font-mono);
+}
+
+.risk-hardstop-row small {
+  display: block;
+  font-size: 10px;
+  color: var(--soft);
+  margin-top: 3px;
+}
+
+.risk-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--soft);
+  line-height: 1.5;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--panel-3);
+}
+
+.risk-tip svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--accent);
+}
+
+.risk-ok-message {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.dashboard-risk-row {
+  margin-top: 0;
+}
+
+.dashboard-risk-panel {
+  padding: 18px;
+}
+
+/* Hard Stop toggle */
+.settings-hardstop {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.settings-hardstop-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.settings-hardstop-header strong {
+  display: block;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+
+.settings-hardstop-header p {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.settings-toggle input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.settings-toggle-track {
+  width: 36px;
+  height: 20px;
+  background: var(--panel-3);
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  position: relative;
+  transition: background var(--transition), border-color var(--transition);
+  display: block;
+}
+
+.settings-toggle input:checked + .settings-toggle-track {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+.settings-toggle-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--muted);
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform var(--transition), background var(--transition);
+  display: block;
+}
+
+.settings-toggle input:checked ~ .settings-toggle-track .settings-toggle-thumb,
+.settings-toggle input:checked + .settings-toggle-track .settings-toggle-thumb {
+  transform: translateX(16px);
+  background: var(--accent);
+}
+
+.risk-settings-grid label small {
+  display: block;
+  font-size: 10px;
+  color: var(--soft);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* =========================================================
+   RESPONSIVIDADE MOBILE (≤ 640px)
+   ========================================================= */
+
+/* ── Dashboard mini grid: definição base ── */
+.dashboard-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+@keyframes sheetIn {
+  from { transform: translateY(48px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  /* ── iOS zoom fix: font-size < 16px dispara zoom automático no Safari ── */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* ── Touch targets: mínimo de 44px ── */
+  input,
+  select {
+    min-height: 44px;
+  }
+
+  .modal-close {
+    width: 44px;
+    height: 44px;
+    top: 10px;
+    right: 10px;
+  }
+
+  /* ── App shell: coluna única ── */
+  .app-shell {
+    grid-template-columns: 1fr;
+    min-height: 100dvh;
+  }
+
+  /* ── Sidebar → bottom nav fixo ── */
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    height: auto;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    padding: 0;
+    border-right: 0;
+    border-top: 1px solid var(--line);
+    background: rgba(16, 15, 13, 0.97);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    z-index: var(--z-sticky);
+    overflow: visible;
+    gap: 0;
+  }
+
+  .sidebar .brand-logo,
+  .sidebar .bank-pill {
+    display: none;
+  }
+
+  .sidebar nav {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    width: 100%;
+    gap: 0;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-group {
+    display: flex;
+    flex-direction: row;
+    flex-shrink: 0;
+  }
+
+  .nav-group > span {
+    display: none;
+  }
+
+  nav button {
+    flex: 1 0 auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 52px;
+    min-height: 56px;
+    padding: 6px 4px;
+    border-left: 0;
+    border-bottom: 0;
+    border-top: 2px solid transparent;
+    border-radius: 0;
+    font-size: 9px;
+  }
+
+  nav button.active {
+    border-bottom-color: transparent;
+    border-top-color: var(--accent);
+  }
+
+  .nav-icon-label {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  nav button em {
+    display: none;
+  }
+
+  /* Espaço para a bottom nav */
+  .main {
+    padding-bottom: 62px;
+  }
+
+  /* ── Topbar compacto em mobile ── */
+  .topbar {
+    flex-direction: row;
+    align-items: center;
+    padding: 8px 14px;
+    gap: 8px;
+  }
+
+  .search-wrapper {
+    display: none;
+  }
+
+  .topbar-meta {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .topbar-meta strong {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .topbar-meta > span {
+    display: none;
+  }
+
+  .topbar-actions {
+    justify-content: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .btn-nova-aposta > span {
+    display: none;
+  }
+
+  .sync-btn > span {
+    display: none;
+  }
+
+  /* ── FAB: acima da bottom nav ── */
+  .fab {
+    bottom: calc(56px + 16px);
+    right: 16px;
+  }
+
+  /* ── Padding da página ── */
+  .page {
+    padding: 12px;
+  }
+
+  /* ── Hero grid ── */
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .balance-card strong {
+    font-size: 26px;
+  }
+
+  .balance-breakdown {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* ── Grids gerais ── */
+  .grid.two {
+    grid-template-columns: 1fr;
+  }
+
+  .insight-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-list.compact {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Dashboard mini grid: 2 colunas em mobile ── */
+  .dashboard-mini-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* ── Filter tabs: scroll horizontal ── */
+  .filter-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+
+  .filter-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-tab {
+    flex-shrink: 0;
+  }
+
+  /* ── Page actions ── */
+  .page-actions-controls input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* ── Bets toolbar ── */
+  .bets-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  /* ── Bar row (distribuição por variável) ── */
+  .bar-row {
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 4px 8px;
+  }
+
+  .bar-row meter {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  /* ── CLV row ── */
+  .clv-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .clv-row > :nth-child(2) {
+    display: none;
+  }
+
+  /* ── Tabela de apostas → cards ── */
+  .bets-table-wrapper {
+    overflow: visible;
+  }
+
+  .bets-table thead {
+    display: none;
+  }
+
+  .bets-table tbody {
+    display: block;
+  }
+
+  .bets-table tr {
+    display: block;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    background: var(--panel);
+    overflow: hidden;
+  }
+
+  .bets-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+
+  .bets-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .bets-table .bet-cell-event {
+    display: block;
+    background: var(--panel-2);
+    padding: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .bets-table td[data-label]::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 10px;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    flex: 0 0 76px;
+    padding-top: 2px;
+    white-space: nowrap;
+  }
+
+  .bets-table .bet-cell-performance {
+    display: none;
+  }
+
+  /* ── Tabela ledger → cards ── */
+  .ledger-table-wrapper {
+    overflow: visible;
+  }
+
+  .ledger-table thead {
+    display: none;
+  }
+
+  .ledger-table tbody {
+    display: block;
+  }
+
+  .ledger-table tr {
+    display: block;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    background: var(--panel);
+    overflow: hidden;
+  }
+
+  .ledger-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+
+  .ledger-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .ledger-table td[data-label]::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 10px;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    flex: 0 0 70px;
+    padding-top: 2px;
+    white-space: nowrap;
+  }
+
+  .ledger-col-num.ledger-balance {
+    display: none;
+  }
+
+  /* ── Books: ações do card ── */
+  .book-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .book-actions button {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  /* ── Modal → sheet (sobe da base da tela) ── */
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal-panel,
+  .modal-panel.modal-wide {
+    max-height: 92dvh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    overflow-y: auto;
+    padding: 16px;
+    margin: 0;
+    animation: sheetIn 0.22s ease-out;
+  }
+
+  /* NewBet: colapsar grids internos */
+  .nb-row-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .nb-inline-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .nb-inline-grid-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .form-actions .primary {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  /* ── Heatmap ── */
+  .heatmap span,
+  .heatmap b {
+    font-size: 9px;
+    padding: 5px 2px;
+  }
+}
+
+/* =========================================================
+   PREFERS REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

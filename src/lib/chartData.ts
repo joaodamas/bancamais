@@ -40,11 +40,11 @@ export interface ClvPoint {
 
 export function buildBankrollTimeSeries(state: AppState): TimeSeriesPoint[] {
   const events = buildLedgerTimeline(state);
-  const openingFunding = state.transactions
-    .filter((transaction) => transaction.referenceType === "bookmaker" && transaction.amount > 0)
-    .reduce((sum, transaction) => sum + transaction.amount, 0);
 
-  let balance = Math.max(0, state.startingBalance - openingFunding);
+  // Parte do 0: o saldo inicial vem das transações de depósito,
+  // não do startingBalance (que não entra no ledger de bookmakers).
+  // Isso mantém consistência com calculateLedgerTotalBalance().
+  let balance = 0;
   const points: TimeSeriesPoint[] = [
     { label: "Início", axisLabel: "Início", tooltipLabel: "Início da série", balance, date: "" },
   ];

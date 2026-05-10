@@ -105,6 +105,9 @@ export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange }
   const [fieldOcrMeta, setFieldOcrMeta] = useState<OcrFieldMetaMap>({});
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastHydratedDraftSignature = useRef<string | null>(null);
+  const draftSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onDraftChangeRef = useRef(onDraftChange);
+  const currentDraftRef = useRef<typeof currentDraft | null>(null);
 
   const selectedBookmakerName = useMemo(() => {
     const selectedBookmaker = state.bookmakers.find((book) => book.id === formValues.bookmakerId);
@@ -184,6 +187,9 @@ export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange }
 
   const currentDraftSignature = useMemo(() => JSON.stringify(currentDraft), [currentDraft]);
 
+  onDraftChangeRef.current = onDraftChange;
+  currentDraftRef.current = currentDraft;
+
   useEffect(() => {
     if (draft) {
       const incomingSignature = JSON.stringify(draft);
@@ -249,10 +255,16 @@ export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange }
 
   useEffect(() => {
     if (!onDraftChange) return;
-    if (draft && JSON.stringify(draft) === currentDraftSignature) return;
 
-    onDraftChange(currentDraft);
-  }, [currentDraft, currentDraftSignature, draft, onDraftChange]);
+    if (draftSyncTimerRef.current) clearTimeout(draftSyncTimerRef.current);
+    draftSyncTimerRef.current = setTimeout(() => {
+      onDraftChangeRef.current?.(currentDraftRef.current!);
+    }, 250);
+
+    return () => {
+      if (draftSyncTimerRef.current) clearTimeout(draftSyncTimerRef.current);
+    };
+  }, [currentDraft, onDraftChange]);
 
   function setFieldValue(field: FormFieldName, value: string, options?: { markReviewed?: boolean }) {
     setFormValues((current) => ({ ...current, [field]: value }));
