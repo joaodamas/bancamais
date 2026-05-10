@@ -2,6 +2,9 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
     function signedIn() {
       return request.auth != null;
     }
@@ -10,14 +13,60 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == userId;
     }
 
-    match /users/{userId}/{document=**} {
-      allow read, write: if owns(userId);
+    function isAnonymous() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous';
     }
+
+    // Verifica que o payload não tem campos além dos esperados
+    function appStateHasValidKeys() {
+      return request.resource.data.keys().hasOnly([
+        'bankrollName', 'currency', 'startingBalance', 'lastModifiedAt',
+        'riskSettings', 'bookmakers', 'strategies', 'bets', 'transactions',
+        'updatedAt', 'schemaVersion'
+      ]);
+    }
+
+    // Impede que lastModifiedAt regride (proteção contra sobrescrita antiga)
+    function timestampNotRegressed() {
+      return !('lastModifiedAt' in resource.data) ||
+             resource.data.lastModifiedAt == null ||
+             !('lastModifiedAt' in request.resource.data) ||
+             request.resource.data.lastModifiedAt == null ||
+             request.resource.data.lastModifiedAt >= resource.data.lastModifiedAt;
+    }
+
+    // ── Estado principal do app ───────────────────────────────────────────────
+
+    match /users/{userId}/appStates/{stateId} {
+      allow read: if owns(userId);
+      allow create: if owns(userId) && appStateHasValidKeys();
+      allow update: if owns(userId) && appStateHasValidKeys() && timestampNotRegressed();
+      allow delete: if false; // Estado nunca é apagado, apenas sobrescrito
+    }
+
+    // ── Audit logs — append-only ──────────────────────────────────────────────
+
+    match /users/{userId}/auditLogs/{logId} {
+      allow read: if owns(userId);
+      allow create: if owns(userId);
+      allow update, delete: if false; // Imutável após criação
+    }
+
+    // ── Sessões anônimas — leitura/escrita livre do próprio documento ─────────
+    // (Usuários anônimos podem usar o app mas não têm auditoria)
+
+    match /users/{userId}/{document=**} {
+      allow read, write: if owns(userId) && isAnonymous();
+    }
+
+    // ── Páginas públicas ──────────────────────────────────────────────────────
 
     match /publicPages/{pageId} {
       allow read: if resource.data.isPublic == true;
       allow write: if signedIn() && request.auth.uid == request.resource.data.ownerId;
     }
+
+    // ── Fallback — nega tudo o que não foi explicitamente permitido ───────────
 
     match /{document=**} {
       allow read, write: if false;

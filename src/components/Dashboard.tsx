@@ -12,7 +12,8 @@ import {
   Cell,
   ReferenceLine,
 } from "recharts";
-import { calculateMetrics, groupProfitBySport, money, percent } from "../lib/metrics";
+import { AlertTriangle, TrendingUp, Clock, Target } from "lucide-react";
+import { calculateMetrics, groupProfitBySport, money, percent, riskAlerts } from "../lib/metrics";
 import { buildBankrollTimeSeries, buildMonthlyData } from "../lib/chartData";
 import type { AppState } from "../lib/types";
 import { EmptyState } from "./EmptyState";
@@ -95,6 +96,13 @@ export function Dashboard({
   const timeSeries = useMemo(() => buildBankrollTimeSeries(state), [state]);
   const monthlyData = useMemo(() => buildMonthlyData(state), [state]);
   const monitoredCapital = metrics.totalBalance + metrics.openExposure;
+  const alerts = useMemo(() => riskAlerts(state), [state]);
+
+  // Apostas pendentes há mais de 48h
+  const stalePendingBets = useMemo(() => {
+    const cutoff = Date.now() - 48 * 60 * 60 * 1000;
+    return state.bets.filter((b) => b.status === "pending" && new Date(b.eventAt).getTime() < cutoff);
+  }, [state.bets]);
   const bySport = useMemo(
     () =>
       groupProfitBySport(state)
@@ -207,6 +215,37 @@ export function Dashboard({
           <small>Base pronta para revisar resultado e performance.</small>
         </article>
       </div>
+
+      {/* Bloco "Atenção hoje" — só aparece quando há itens */}
+      {(alerts.length > 0 || stalePendingBets.length > 0) && (
+        <div className="dashboard-attention-grid">
+          {alerts.map((alert) => (
+            <article key={alert.title} className={`dashboard-attention-card dashboard-attention-${alert.level}`}>
+              <div className="dashboard-attention-icon">
+                <AlertTriangle size={14} />
+              </div>
+              <div>
+                <strong>{alert.title}</strong>
+                <p>{alert.detail}</p>
+              </div>
+            </article>
+          ))}
+          {stalePendingBets.length > 0 && (
+            <article className="dashboard-attention-card dashboard-attention-info">
+              <div className="dashboard-attention-icon">
+                <Clock size={14} />
+              </div>
+              <div>
+                <strong>{stalePendingBets.length} aposta(s) sem resultado</strong>
+                <p>
+                  {stalePendingBets.slice(0, 2).map((b) => b.eventName).join(", ")}
+                  {stalePendingBets.length > 2 ? ` e mais ${stalePendingBets.length - 2}` : ""} — o evento já passou. Liquide os resultados.
+                </p>
+              </div>
+            </article>
+          )}
+        </div>
+      )}
 
       {/* Bankroll evolution chart */}
       <article className="panel chart-panel">

@@ -10,6 +10,7 @@
     "lint": "tsc --noEmit --pretty false"
   },
   "dependencies": {
+    "@tanstack/react-table": "^8.21.3",
     "@vitejs/plugin-react": "^5.1.1",
     "firebase": "^12.6.0",
     "lucide-react": "^1.14.0",
