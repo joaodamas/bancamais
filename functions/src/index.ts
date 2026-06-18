@@ -1,4 +1,7 @@
 import { getApps, initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import { logger } from "firebase-functions";
 import { defineSecret } from "firebase-functions/params";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
@@ -212,6 +215,77 @@ export const estimateEdgeCallable = onCall(
     }
   },
 );
+
+// ── LGPD — exportação e exclusão de dados do usuário ─────────────────────────
+
+export const exportUserData = onCall(
+  { region: DEFAULT_REGION, timeoutSeconds: 60, memory: "256MiB" },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError("unauthenticated", "Authentication is required.");
+
+    const db = getFirestore();
+    const bucket = getStorage().bucket();
+
+    const [appStatesSnap, auditLogsSnap] = await Promise.all([
+      db.collection(`users/${uid}/appStates`).get(),
+      db.collection(`users/${uid}/auditLogs`).get(),
+    ]);
+
+    const [storageFiles] = await bucket.getFiles({ prefix: `users/${uid}/bet-slips/` });
+
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      uid,
+      appStates: appStatesSnap.docs.map((d) => ({ id: d.id, ...d.data() })),
+      auditLogs: auditLogsSnap.docs.map((d) => ({ id: d.id, ...d.data() })),
+      betSlipFiles: storageFiles.map((f) => f.name),
+    };
+
+    logger.info("exportUserData", { uid, appStatesDocs: appStatesSnap.size, auditLogDocs: auditLogsSnap.size, files: storageFiles.length });
+
+    return payload;
+  },
+);
+
+export const deleteUserData = onCall(
+  { region: DEFAULT_REGION, timeoutSeconds: 120, memory: "256MiB" },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError("unauthenticated", "Authentication is required.");
+
+    const data = request.data as { confirmText?: string };
+    if (data?.confirmText !== "EXCLUIR") {
+      throw new HttpsError("invalid-argument", "confirmText deve ser exatamente 'EXCLUIR'.");
+    }
+
+    const db = getFirestore();
+    const bucket = getStorage().bucket();
+
+    const deleteCollection = async (path: string) => {
+      const snap = await db.collection(path).get();
+      const batch = db.batch();
+      snap.docs.forEach((d) => batch.delete(d.ref));
+      if (snap.size > 0) await batch.commit();
+    };
+
+    await Promise.all([
+      deleteCollection(`users/${uid}/appStates`),
+      deleteCollection(`users/${uid}/auditLogs`),
+    ]);
+
+    const [files] = await bucket.getFiles({ prefix: `users/${uid}/bet-slips/` });
+    await Promise.all(files.map((f) => f.delete()));
+
+    await getAuth().deleteUser(uid);
+
+    logger.info("deleteUserData", { uid });
+
+    return { deleted: true };
+  },
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function parseRequest(data: unknown): ParseBetSlipRequest {
   if (!data || typeof data !== "object") {

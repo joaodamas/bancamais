@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { BarChart3, Brain, Cloud, TrendingUp } from "lucide-react";
+import { ShieldCheck, TrendingUp, Brain, CloudUpload } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 
 type AuthMode = "signin" | "signup" | "reset";
@@ -12,6 +12,35 @@ interface AuthPageProps {
   onGoogleSignIn: () => Promise<void>;
   message: string;
 }
+
+const FEATURES = [
+  {
+    Icon: TrendingUp,
+    title: "CLV & Edge tracking",
+    description: "Meça se você está batendo a linha de fechamento em cada aposta.",
+  },
+  {
+    Icon: Brain,
+    title: "Análise de portfólio",
+    description: "Insights automáticos sobre risco, estratégia e eficiência de execução.",
+  },
+  {
+    Icon: ShieldCheck,
+    title: "Hard stops e limites de risco",
+    description: "Trava automática diária, semanal e mensal para proteger a banca.",
+  },
+  {
+    Icon: CloudUpload,
+    title: "Sincronização em nuvem",
+    description: "Seus dados em qualquer dispositivo, sempre atualizados.",
+  },
+];
+
+const STATS = [
+  { value: "ROI", label: "rastreado por estratégia" },
+  { value: "CLV", label: "vs linha de fechamento" },
+  { value: "Hard stop", label: "proteção automática" },
+];
 
 export function AuthPage({ onSignIn, onSignUp, onReset, onDemoMode, onGoogleSignIn, message }: AuthPageProps) {
   const [mode, setMode] = useState<AuthMode>("signin");
@@ -54,7 +83,7 @@ export function AuthPage({ onSignIn, onSignUp, onReset, onDemoMode, onGoogleSign
         </button>
 
         <div className="auth-divider">
-          <span>ou entre com email</span>
+          <span>ou com email</span>
         </div>
 
         {mode === "signin" && (
@@ -114,42 +143,41 @@ export function AuthPage({ onSignIn, onSignUp, onReset, onDemoMode, onGoogleSign
 
         <button className="auth-demo-btn" onClick={onDemoMode}>
           Usar sessão temporária
-          <small>Sem cadastro — cria uma sessão anônima com sincronização básica</small>
+          <small>Sem cadastro · dados salvos localmente · sem sincronização</small>
         </button>
       </div>
 
       <div className="auth-page-features">
-        <h2>Operacao clara, historico confiavel</h2>
-        <ul>
-          <li>
-            <span className="feature-icon"><BarChart3 size={18} /></span>
-            <div>
-              <strong>Dashboard com gráficos reais</strong>
-              <small>Evolução da banca, ROI mensal e distribuição por esporte</small>
-            </div>
-          </li>
-          <li>
-            <span className="feature-icon"><Brain size={18} /></span>
-            <div>
-              <strong>Insights automáticos</strong>
-              <small>Leitura rápida de risco, estratégia e exposição da operação</small>
-            </div>
-          </li>
-          <li>
-            <span className="feature-icon"><TrendingUp size={18} /></span>
-            <div>
-              <strong>CLV &amp; Edge tracking</strong>
-              <small>Meça se você está batendo a linha de fechamento</small>
-            </div>
-          </li>
-          <li>
-            <span className="feature-icon"><Cloud size={18} /></span>
-            <div>
-              <strong>Sincronização em nuvem</strong>
-              <small>Acesse seus dados em qualquer dispositivo</small>
-            </div>
-          </li>
-        </ul>
+        <div className="auth-features-inner">
+          <p className="auth-features-eyebrow">Terminal analítico para apostadores</p>
+          <h2 className="auth-features-title">Controle real.<br />Dados que importam.</h2>
+          <p className="auth-features-sub">
+            Chega de planilha. Banca+ centraliza apostas, capital, risco e edge em um único lugar — com as métricas que separam apostadores sérios de amadores.
+          </p>
+
+          <div className="auth-stats-row">
+            {STATS.map((s) => (
+              <div key={s.value} className="auth-stat">
+                <strong>{s.value}</strong>
+                <span>{s.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <ul className="auth-features-list">
+            {FEATURES.map(({ Icon, title, description }) => (
+              <li key={title} className="auth-feature-item">
+                <span className="auth-feature-icon">
+                  <Icon size={16} />
+                </span>
+                <div>
+                  <strong>{title}</strong>
+                  <small>{description}</small>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );

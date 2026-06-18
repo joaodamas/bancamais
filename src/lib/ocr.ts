@@ -101,6 +101,28 @@ function normalizeComparableValue(value: string | number | null | undefined) {
   return normalized.length > 0 ? normalized : null;
 }
 
+export function parseOcrMetadata(raw: FormDataEntryValue | null): OcrSubmissionMetadata | undefined {
+  if (typeof raw !== "string" || raw.trim().length === 0) return undefined;
+  try {
+    return JSON.parse(raw) as OcrSubmissionMetadata;
+  } catch {
+    return undefined;
+  }
+}
+
+export function isSuccessfulOcr(metadata: OcrSubmissionMetadata | undefined): boolean {
+  return metadata?.status === "success" || metadata?.status === "needs_review";
+}
+
+export function getOcrConfidenceScore(metadata: OcrSubmissionMetadata | undefined): number | undefined {
+  if (!metadata) return undefined;
+  const confidentFields = metadata.fields
+    .map((field) => field.confidence)
+    .filter((value): value is number => typeof value === "number");
+  if (confidentFields.length === 0) return undefined;
+  return confidentFields.reduce((sum, value) => sum + value, 0) / confidentFields.length;
+}
+
 export function buildOcrSubmissionMetadata(
   ocr: ParseBetSlipResponse | null,
   currentValues: Partial<Record<OcrFieldName, string | number | null>>,

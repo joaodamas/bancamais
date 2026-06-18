@@ -7,6 +7,7 @@ import {
   CloudUpload, User as UserIcon, Bell, Search, X
 } from "lucide-react";
 import { BrandLogo } from "./components/BrandLogo";
+import { CookieBanner, getStoredConsent, type CookieConsent } from "./components/CookieBanner";
 import { LoadingScreen } from "./components/LoadingScreen";
 import {
   createEmailUser,
@@ -29,8 +30,11 @@ import { getDerivedBookmakerBalance, reconcileBookmakerBalances } from "./lib/le
 import { createBetId, createBookmakerId, createStrategyId, createTransactionId, emptyState, isFirstRun, loadStateForUser, resetState, saveState, saveStateForUser } from "./lib/storage";
 import { uploadBetSlip } from "./lib/storageRepository";
 import type { AppState, Bet, BookmakerAccount, NewBetDraft, NewBetPrefill, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
-import type { OcrSubmissionMetadata } from "./lib/ocr";
-import { checkHardStop } from "./lib/riskGuard";
+import { checkHardStop, riskAlertsExtended } from "./lib/riskGuard";
+import { detectTilt } from "./lib/tiltDetection";
+import { buildBetFromForm, buildBetEdit, buildSettlement, buildDeletedBetState, mergeImportedBets } from "./services/bets.service";
+import { EditBetModal } from "./components/EditBetModal";
+import { buildBookmaker, buildManualTransaction, buildVoidEntry } from "./services/bookmaker.service";
 
 type View = "dashboard" | "bets" | "new-bet" | "import" | "intelligence" | "reports" | "clv" | "books" | "strategies" | "settings";
 
@@ -50,31 +54,6 @@ const Reports = lazy(() => import("./components/Reports").then((module) => ({ de
 const Settings = lazy(() => import("./components/Settings").then((module) => ({ default: module.Settings })));
 const AuthPage = lazy(() => import("./components/AuthPage").then((module) => ({ default: module.AuthPage })));
 
-
-function parseOcrMetadata(raw: FormDataEntryValue | null): OcrSubmissionMetadata | undefined {
-  if (typeof raw !== "string" || raw.trim().length === 0) return undefined;
-
-  try {
-    return JSON.parse(raw) as OcrSubmissionMetadata;
-  } catch {
-    return undefined;
-  }
-}
-
-function getOcrConfidenceScore(metadata: OcrSubmissionMetadata | undefined): number | undefined {
-  if (!metadata) return undefined;
-
-  const confidentFields = metadata.fields
-    .map((field) => field.confidence)
-    .filter((value): value is number => typeof value === "number");
-
-  if (confidentFields.length === 0) return undefined;
-  return confidentFields.reduce((sum, value) => sum + value, 0) / confidentFields.length;
-}
-
-function isSuccessfulOcr(metadata: OcrSubmissionMetadata | undefined) {
-  return metadata?.status === "success" || metadata?.status === "needs_review";
-}
 
 function withStateTimestamp(state: AppState): AppState {
   return {
@@ -136,8 +115,12 @@ export function App() {
   const [authMessage, setAuthMessage] = useState("Entre para sincronizar seus dados em nuvem.");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [cookieConsent, setCookieConsent] = useState<CookieConsent | null>(() => getStoredConsent());
+  const [editingBetId, setEditingBetId] = useState<string | null>(null);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const notifRef = useRef<HTMLDivElement | null>(null);
   const metrics = useMemo(() => calculateMetrics(state), [state]);
   const hydratedUserRef = useRef<string | null>(null);
   const latestStateRef = useRef<AppState>(state);
@@ -274,6 +257,27 @@ export function App() {
     setSearchQuery("");
     if (searchInputRef.current) searchInputRef.current.value = "";
   }, []);
+
+  const notifications = useMemo(() => {
+    const alerts = riskAlertsExtended(state).map((a) => ({ level: a.level, title: a.title, detail: a.detail }));
+    const tilt = detectTilt(state);
+    const tiltItems = tilt.signals.map((s) => ({
+      level: tilt.level === "high" || tilt.level === "critical" ? "danger" as const : "warning" as const,
+      title: s.type.replace(/_/g, " "),
+      detail: s.description,
+    }));
+    return [...alerts, ...tiltItems];
+  }, [state]);
+
+  useEffect(() => {
+    if (!showNotifications) return;
+    function handleClick(e: MouseEvent) {
+      if (!(e.target instanceof Node)) return;
+      if (!notifRef.current?.contains(e.target)) setShowNotifications(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showNotifications]);
 
   function updateState(next: AppState): AppState {
     const reconciled = reconcileBookmakerBalances(next);
@@ -545,26 +549,8 @@ export function App() {
     const form = event.currentTarget;
     const data = new FormData(form);
     const maybeSlip = data.get("slip");
-    const bookmakerId = String(data.get("bookmakerId"));
-    const stake = Number(data.get("stake"));
     const uploadedSlipImagePath = String(data.get("uploadedSlipImagePath") || "");
     const uploadedSlipImageUrl = String(data.get("uploadedSlipImageUrl") || "");
-    const ocrMetadata = parseOcrMetadata(data.get("ocrMetadata"));
-    const hasSuccessfulOcr = isSuccessfulOcr(ocrMetadata);
-    const suggestionId = String(data.get("suggestionId") || "") || undefined;
-    const fixtureId = String(data.get("fixtureId") || "") || undefined;
-    const estimatedProbability = Number(data.get("estimatedProbability"));
-    const estimatedEdge = Number(data.get("estimatedEdge"));
-    const suggestionConfidenceScore = Number(data.get("suggestionConfidenceScore"));
-    let slipImagePath: string | undefined;
-    let slipImageUrl: string | undefined;
-
-    const selectedBookmaker = state.bookmakers.find((book) => book.id === bookmakerId);
-    if (!selectedBookmaker) {
-      toast.error("Cadastre uma casa antes de registrar a aposta.");
-      setView("books");
-      return;
-    }
 
     const hardStop = checkHardStop(state);
     if (hardStop?.blocked) {
@@ -572,22 +558,8 @@ export function App() {
       return;
     }
 
-    if (!Number.isFinite(stake) || stake <= 0) {
-      toast.error("Informe uma stake valida.");
-      return;
-    }
-
-    const odds = Number(data.get("odds"));
-    if (!Number.isFinite(odds) || odds < 1.01) {
-      toast.error("Odd invalida. O valor minimo e 1.01.");
-      return;
-    }
-
-    const availableBalance = getDerivedBookmakerBalance(state, bookmakerId);
-    if (stake > availableBalance) {
-      toast.error(`Saldo insuficiente na ${selectedBookmaker.name}.`);
-      return;
-    }
+    let slipImagePath: string | undefined;
+    let slipImageUrl: string | undefined;
 
     if (maybeSlip instanceof File && maybeSlip.size > 0) {
       if (uploadedSlipImagePath && uploadedSlipImageUrl) {
@@ -600,51 +572,14 @@ export function App() {
       }
     }
 
-    const bet: Bet = {
-      id: createBetId(),
-      placedAt: new Date().toISOString(),
-      eventAt: String(data.get("eventAt")),
-      sport: String(data.get("sport")),
-      league: String(data.get("league")),
-      eventName: String(data.get("eventName")),
-      market: String(data.get("market")),
-      selection: String(data.get("selection")),
-      bookmakerId,
-      source: suggestionId ? "ai_suggestion" : hasSuccessfulOcr ? "ocr" : "manual",
-      suggestionId,
-      fixtureId,
-      strategyId: String(data.get("strategyId")) || undefined,
-      tags: String(data.get("tags"))
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter(Boolean),
-      stake,
-      odds,
-      status: "pending",
-      closingOdds: Number(data.get("closingOdds")) || undefined,
-      estimatedProbability: Number.isFinite(estimatedProbability) ? estimatedProbability : undefined,
-      estimatedEdge: Number.isFinite(estimatedEdge) ? estimatedEdge : undefined,
-      confidenceScore: suggestionId
-        ? (Number.isFinite(suggestionConfidenceScore) ? suggestionConfidenceScore : undefined)
-        : hasSuccessfulOcr
-          ? getOcrConfidenceScore(ocrMetadata)
-          : undefined,
-      mode: String(data.get("mode")) as Bet["mode"],
-      slipImagePath,
-      slipImageUrl,
-      ocrMetadata,
-    };
+    const result = buildBetFromForm(data, state, slipImagePath, slipImageUrl);
+    if (!result.ok) {
+      toast.error(result.error);
+      if (result.redirectTo) setView(result.redirectTo);
+      return;
+    }
 
-    const transaction: Transaction = {
-      id: createTransactionId(),
-      date: bet.placedAt,
-      type: "bet_stake",
-      bookmakerId,
-      description: `Stake - ${bet.eventName}`,
-      amount: -stake,
-      referenceType: "bet",
-      referenceId: bet.id,
-    };
+    const { bet, transaction } = result;
     syncToCloud(updateState({ ...state, bets: [bet, ...state.bets], transactions: [transaction, ...state.transactions] }));
     setNewBetPrefill(null);
     setNewBetDraft(null);
@@ -654,38 +589,11 @@ export function App() {
   }
 
   function settleBet(id: string, status: Bet["status"], cashoutAmount?: number) {
-    const currentBet = state.bets.find((bet) => bet.id === id);
-    if (!currentBet || currentBet.status !== "pending") return;
-
-    const payout =
-      status === "won"
-        ? potentialReturn(currentBet)
-        : status === "cashout"
-          ? (cashoutAmount != null && cashoutAmount > 0 ? cashoutAmount : potentialReturn(currentBet))
-          : status === "void"
-            ? currentBet.stake
-            : 0;
-    const transaction = payout > 0 ? [{
-      id: createTransactionId(),
-      date: new Date().toISOString(),
-      type: (status === "won" || status === "cashout" ? "bet_payout" : "bet_refund") as TransactionType,
-      bookmakerId: currentBet.bookmakerId,
-      description: status === "won"
-        ? `Retorno - ${currentBet.eventName}`
-        : status === "cashout"
-          ? `Cashout - ${currentBet.eventName}`
-          : `Void - ${currentBet.eventName}`,
-      amount: payout,
-      referenceType: "bet" as const,
-      referenceId: currentBet.id,
-    }] : [];
-    syncToCloud(updateState({
-      ...state,
-      transactions: [...transaction, ...state.transactions],
-      bets: state.bets.map((bet) => (
-        bet.id === id ? { ...bet, status, payout, settlementSource: "manual" } : bet
-      )),
-    }));
+    const result = buildSettlement(state.bets, id, status, cashoutAmount);
+    if (!result) return;
+    const { updatedBets, newTransaction } = result;
+    const transactions = newTransaction ? [newTransaction, ...state.transactions] : state.transactions;
+    syncToCloud(updateState({ ...state, bets: updatedBets, transactions }));
     const labels: Record<Bet["status"], string> = {
       won: "Ganha! 🎯", lost: "Perdida", cashout: "Cashout registrado",
       void: "Aposta cancelada", pending: "Pendente"
@@ -703,6 +611,24 @@ export function App() {
       transactions: state.transactions.filter((t) => t.referenceId !== id),
     }));
     toast.success("Aposta excluída");
+  }
+
+  function editBet(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const betId = editingBetId;
+    if (!betId) return;
+    const result = buildBetEdit(new FormData(event.currentTarget), state, betId);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    syncToCloud(updateState({
+      ...state,
+      bets: state.bets.map((b) => b.id === betId ? result.updatedBet : b),
+      transactions: result.updatedTransactions,
+    }));
+    setEditingBetId(null);
+    toast.success("Aposta atualizada");
   }
 
   function importBets(bets: Bet[]) {
@@ -751,11 +677,11 @@ export function App() {
 
       return items;
     });
-    updateState({
+    syncToCloud(updateState({
       ...state,
       bets: [...uniqueBets, ...state.bets],
       transactions: [...importTransactions.reverse(), ...state.transactions],
-    });
+    }));
     setView("bets");
     toast.success(`${uniqueBets.length} apostas importadas!`);
   }
@@ -981,7 +907,7 @@ export function App() {
       status: "active",
     };
 
-    updateState({ ...state, strategies: [strategy, ...state.strategies] });
+    syncToCloud(updateState({ ...state, strategies: [strategy, ...state.strategies] }));
     event.currentTarget.reset();
     toast.success("Estratégia criada!");
   }
@@ -989,14 +915,14 @@ export function App() {
   function toggleStrategy(id: string) {
     const strategy = state.strategies.find(s => s.id === id);
     const nextStatus = strategy?.status === "active" ? "pausada" : "reativada";
-    updateState({
+    syncToCloud(updateState({
       ...state,
       strategies: state.strategies.map((s) => (
         s.id === id
           ? { ...s, status: s.status === "active" ? "paused" : "active" }
           : s
       )),
-    });
+    }));
     toast.success(`Estratégia ${nextStatus}`);
   }
 
@@ -1034,11 +960,11 @@ export function App() {
       return;
     }
 
-    updateState({
+    syncToCloud(updateState({
       ...state,
       bankrollName,
       startingBalance,
-    });
+    }));
     toast.success("Dados da banca atualizados.");
   }
 
@@ -1212,7 +1138,38 @@ export function App() {
             <span>{user ? accountLabel(user) : `Sem sessao · ${state.bookmakers.length} ${state.bookmakers.length === 1 ? "casa" : "casas"}`}</span>
           </div>
           <div className="topbar-actions">
-            <button title="Notificações"><Bell size={18} /></button>
+            <div className="notif-anchor" ref={notifRef}>
+              <button
+                title="Notificações"
+                className={notifications.length > 0 ? "notif-btn notif-btn-active" : "notif-btn"}
+                onClick={() => setShowNotifications((v) => !v)}
+              >
+                <Bell size={18} />
+                {notifications.length > 0 && (
+                  <span className="notif-badge">{notifications.length}</span>
+                )}
+              </button>
+              {showNotifications && (
+                <div className="notif-panel">
+                  <div className="notif-panel-head">
+                    <strong>Alertas</strong>
+                    <span>{notifications.length} ativo{notifications.length !== 1 ? "s" : ""}</span>
+                  </div>
+                  {notifications.length === 0 ? (
+                    <p className="notif-empty">Nenhum alerta ativo.</p>
+                  ) : (
+                    <ul className="notif-list">
+                      {notifications.map((n, i) => (
+                        <li key={i} className={`notif-item notif-item-${n.level}`}>
+                          <strong>{n.title}</strong>
+                          <span>{n.detail}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
             <button title="Configurações" onClick={() => setView("settings")}>
               <UserIcon size={18} />
             </button>
@@ -1235,6 +1192,17 @@ export function App() {
 
         {/* Modal — renderizado sobre qualquer view */}
         {newBetModal}
+        {editingBetId && (() => {
+          const bet = state.bets.find((b) => b.id === editingBetId);
+          return bet ? (
+            <EditBetModal
+              bet={bet}
+              state={state}
+              onSubmit={editBet}
+              onClose={() => setEditingBetId(null)}
+            />
+          ) : null;
+        })()}
         <button className="fab" onClick={() => openNewBet()} title="Nova aposta">+</button>
 
         <Toaster
@@ -1251,6 +1219,15 @@ export function App() {
             error: { iconTheme: { primary: "#F87171", secondary: "#1a0505" } },
           }}
         />
+
+        {cookieConsent === null && (
+          <CookieBanner
+            onConsent={(choice) => {
+              setCookieConsent(choice);
+              if (choice === "all") void import("./lib/firebase").then((m) => m.initAnalytics());
+            }}
+          />
+        )}
       </main>
     </div>
   );
@@ -1267,7 +1244,7 @@ export function App() {
           />
         );
       case "bets":
-        return <Bets state={state} settleBet={settleBet} deleteBet={deleteBet} />;
+        return <Bets state={state} settleBet={settleBet} deleteBet={deleteBet} onEditBet={setEditingBetId} />;
       case "import":
         return <Import state={state} importBets={importBets} onOpenBets={() => setView("bets")} />;
       case "intelligence":

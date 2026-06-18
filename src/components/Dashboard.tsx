@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   AreaChart,
   Area,
@@ -12,7 +12,7 @@ import {
   Cell,
   ReferenceLine,
 } from "recharts";
-import { AlertTriangle, TrendingUp, Clock, Target } from "lucide-react";
+import { AlertTriangle, Clock } from "lucide-react";
 import { calculateMetrics, groupProfitBySport, money, percent, riskAlerts } from "../lib/metrics";
 import { buildBankrollTimeSeries, buildMonthlyData } from "../lib/chartData";
 import type { AppState } from "../lib/types";
@@ -93,8 +93,36 @@ export function Dashboard({
   onOpenNewBet: () => void;
   onOpenBooks: () => void;
 }) {
+  const [chartPeriod, setChartPeriod] = useState<"7d" | "30d" | "90d" | "all">("all");
+
   const timeSeries = useMemo(() => buildBankrollTimeSeries(state), [state]);
   const monthlyData = useMemo(() => buildMonthlyData(state), [state]);
+
+  const periodCutoff = useMemo(() => {
+    if (chartPeriod === "all") return null;
+    const days = chartPeriod === "7d" ? 7 : chartPeriod === "30d" ? 30 : 90;
+    return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  }, [chartPeriod]);
+
+  const filteredTimeSeries = useMemo(() => {
+    if (!periodCutoff || timeSeries.length === 0) return timeSeries;
+    const inRange = timeSeries.filter((p) => p.date && p.date >= periodCutoff);
+    if (inRange.length === 0) return [];
+    const beforeCutoff = timeSeries.filter((p) => !p.date || p.date < periodCutoff);
+    const startBalance = beforeCutoff.length > 0 ? beforeCutoff[beforeCutoff.length - 1].balance : 0;
+    return [
+      { label: "Início", axisLabel: "Início", tooltipLabel: "Início do período", balance: startBalance, date: "" },
+      ...inRange,
+    ];
+  }, [timeSeries, periodCutoff]);
+
+  const filteredMonthlyData = useMemo(() => {
+    if (!periodCutoff) return monthlyData;
+    const d = new Date(periodCutoff);
+    const cutoffKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return monthlyData.filter((m) => m.key >= cutoffKey);
+  }, [monthlyData, periodCutoff]);
+
   const monitoredCapital = metrics.totalBalance + metrics.openExposure;
   const alerts = useMemo(() => riskAlerts(state), [state]);
 
@@ -143,15 +171,14 @@ export function Dashboard({
 
   return (
     <section className="page">
-      <div className="dashboard-command panel">
-        <div className="dashboard-command-copy">
-          <span className="dashboard-kicker">Centro de controle</span>
-          <h1>Visão operacional da banca</h1>
-          <p>Monitore saldo, ritmo de execução, eficiência de preço e alertas de risco em uma única superfície.</p>
+      <div className="section-head">
+        <div>
+          <h1>Dashboard</h1>
+          <p>{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</p>
         </div>
-        <div className="dashboard-command-actions">
-          <button className="primary" onClick={onOpenNewBet}>Nova entrada</button>
-          <button onClick={onOpenBooks}>Gerir casas</button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button className="primary" onClick={onOpenNewBet}>Nova aposta</button>
+          <button onClick={onOpenBooks}>Casas</button>
         </div>
       </div>
 
@@ -195,24 +222,24 @@ export function Dashboard({
 
       <div className="dashboard-mini-grid">
         <article className="panel dashboard-mini-card">
-          <span>Capital monitorado</span>
+          <span>Capital total</span>
           <strong>{money.format(monitoredCapital)}</strong>
-          <small>Saldo atual somado ao capital ainda exposto em apostas pendentes.</small>
+          <small>saldo + exposição</small>
         </article>
         <article className="panel dashboard-mini-card">
-          <span>Resultado liquidado</span>
+          <span>Lucro realizado</span>
           <strong className={metrics.profit >= 0 ? "pos" : "neg"}>{money.format(metrics.profit)}</strong>
-          <small>Lucro acumulado ja fechado na base atual.</small>
+          <small>apostas fechadas</small>
         </article>
         <article className="panel dashboard-mini-card">
-          <span>Apostas abertas</span>
+          <span>Em aberto</span>
           <strong>{money.format(metrics.openExposure)}</strong>
-          <small>{metrics.pendingCount} apostas ainda em monitoramento.</small>
+          <small>{metrics.pendingCount} apostas pendentes</small>
         </article>
         <article className="panel dashboard-mini-card">
           <span>Liquidadas</span>
           <strong>{metrics.settledCount}</strong>
-          <small>Base pronta para revisar resultado e performance.</small>
+          <small>apostas encerradas</small>
         </article>
       </div>
 
@@ -251,14 +278,27 @@ export function Dashboard({
       <article className="panel chart-panel">
         <div className="chart-header">
           <h2>Evolução da banca</h2>
-          <span className={metrics.profit >= 0 ? "pos" : "neg"}>
-            {metrics.profit >= 0 ? "+" : ""}
-            {money.format(metrics.profit)} total
-          </span>
+          <div className="chart-header-right">
+            <div className="chart-period-tabs">
+              {(["7d", "30d", "90d", "all"] as const).map((p) => (
+                <button
+                  key={p}
+                  className={`chart-period-tab${chartPeriod === p ? " active" : ""}`}
+                  onClick={() => setChartPeriod(p)}
+                >
+                  {p === "all" ? "Tudo" : p}
+                </button>
+              ))}
+            </div>
+            <span className={metrics.profit >= 0 ? "pos" : "neg"}>
+              {metrics.profit >= 0 ? "+" : ""}
+              {money.format(metrics.profit)}
+            </span>
+          </div>
         </div>
-        {timeSeries.length > 1 ? (
+        {filteredTimeSeries.length > 1 ? (
           <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={timeSeries} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+            <AreaChart data={filteredTimeSeries} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
               <defs>
                 <linearGradient id="balanceGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={COLORS.accent} stopOpacity={0.18} />
@@ -309,9 +349,9 @@ export function Dashboard({
         {/* Monthly ROI bar chart */}
         <article className="panel chart-panel">
           <h2>ROI mensal</h2>
-          {monthlyData.length > 0 ? (
+          {filteredMonthlyData.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={monthlyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <BarChart data={filteredMonthlyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke={COLORS.line}
@@ -337,7 +377,7 @@ export function Dashboard({
                 />
                 <ReferenceLine y={0} stroke={COLORS.line} />
                 <Bar dataKey="roi" name="ROI" radius={[3, 3, 0, 0]}>
-                  {monthlyData.map((entry, index) => (
+                  {filteredMonthlyData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={entry.roi >= 0 ? COLORS.accent : COLORS.red}

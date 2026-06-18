@@ -26,12 +26,14 @@ interface BetsProps {
   state: AppState;
   settleBet: (id: string, status: Bet["status"], cashoutAmount?: number) => void;
   deleteBet: (id: string) => void;
+  onEditBet: (id: string) => void;
 }
 
 const columnHelper = createColumnHelper<Bet>();
 
-export function Bets({ state, settleBet, deleteBet }: BetsProps) {
+export function Bets({ state, settleBet, deleteBet, onEditBet }: BetsProps) {
   const [statusFilter, setStatusFilter] = useState<Bet["status"] | "all">("all");
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [cashoutBetId, setCashoutBetId] = useState<string | null>(null);
   const [cashoutInput, setCashoutInput] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -44,6 +46,11 @@ export function Bets({ state, settleBet, deleteBet }: BetsProps) {
 
   const bookmakerById = useMemo(() => new Map(state.bookmakers.map((b) => [b.id, b.name])), [state.bookmakers]);
   const strategyById = useMemo(() => new Map(state.strategies.map((s) => [s.id, s.name])), [state.strategies]);
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    state.bets.forEach((b) => b.tags.forEach((t) => set.add(t)));
+    return [...set].sort();
+  }, [state.bets]);
 
   const pendingBets = state.bets.filter((b) => b.status === "pending");
   const settledBets = state.bets.filter((b) => b.status !== "pending");
@@ -61,11 +68,13 @@ export function Bets({ state, settleBet, deleteBet }: BetsProps) {
     return betProfit(bet);
   }
 
-  // Filtro de status pré-processado antes da tabela
-  const sourceData = useMemo(
-    () => statusFilter === "all" ? state.bets : state.bets.filter((b) => b.status === statusFilter),
-    [state.bets, statusFilter],
-  );
+  // Filtros de status e tag pré-processados antes da tabela
+  const sourceData = useMemo(() => {
+    let bets = state.bets;
+    if (statusFilter !== "all") bets = bets.filter((b) => b.status === statusFilter);
+    if (tagFilter) bets = bets.filter((b) => b.tags.includes(tagFilter));
+    return bets;
+  }, [state.bets, statusFilter, tagFilter]);
 
   const columns = useMemo(() => [
     columnHelper.accessor("eventName", {
@@ -254,11 +263,9 @@ export function Bets({ state, settleBet, deleteBet }: BetsProps) {
 
       <div className="bets-toolbar">
         <div className="bets-toolbar-copy">
-          <span className="dashboard-kicker">Fila operacional</span>
           <strong>
-            {rows.length} resultado(s){globalFilter ? ` para "${globalFilter}"` : " na fila atual"}
+            {rows.length} resultado{rows.length !== 1 ? "s" : ""}{globalFilter ? ` para "${globalFilter}"` : tagFilter ? ` com #${tagFilter}` : ""}
           </strong>
-          <small>Clique nos cabeçalhos de coluna para ordenar.</small>
         </div>
         <div className="bets-toolbar-meta">
           <span>Pendente {pendingBets.length}</span>
@@ -269,19 +276,19 @@ export function Bets({ state, settleBet, deleteBet }: BetsProps) {
 
       <div className="ops-summary-grid">
         <article className="ops-summary-card">
-          <span>Fila ativa</span>
+          <span>Pendentes</span>
           <strong>{pendingBets.length}</strong>
-          <small>{money.format(openExposure)} expostos em apostas pendentes.</small>
+          <small>{money.format(openExposure)} em risco</small>
         </article>
         <article className="ops-summary-card">
           <span>Liquidadas</span>
           <strong>{settledBets.length}</strong>
-          <small>Base pronta para revisar resultado e performance.</small>
+          <small>apostas encerradas</small>
         </article>
         <article className="ops-summary-card">
-          <span>Resultado liquidado</span>
+          <span>Lucro realizado</span>
           <strong className={settledProfit >= 0 ? "pos" : "neg"}>{money.format(settledProfit)}</strong>
-          <small>Lucro acumulado das apostas já encerradas.</small>
+          <small>apostas fechadas</small>
         </article>
       </div>
 
@@ -298,12 +305,29 @@ export function Bets({ state, settleBet, deleteBet }: BetsProps) {
         ))}
       </div>
 
+      {allTags.length > 0 && (
+        <div className="tag-filter-row">
+          {tagFilter && (
+            <button className="tag-chip tag-chip-clear" onClick={() => setTagFilter(null)}>
+              <X size={10} /> limpar
+            </button>
+          )}
+          {allTags.map((tag) => (
+            <button
+              key={tag}
+              className={tagFilter === tag ? "tag-chip tag-chip-active" : "tag-chip"}
+              onClick={() => setTagFilter(tagFilter === tag ? null : tag)}
+            >
+              #{tag}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="table-card">
         <div className="table-shell-head">
           <div>
-            <span className="dashboard-kicker">Leitura consolidada</span>
-            <strong>Apostas ordenadas por {sorting[0]?.id === "placedAt" ? "data de registro" : sorting[0]?.id === "stake" ? "stake" : sorting[0]?.id ?? "data"}</strong>
-            <small>Evento, execucao, precificacao e status em uma grade unica.</small>
+            <strong>Ordenado por {sorting[0]?.id === "placedAt" ? "data de registro" : sorting[0]?.id === "stake" ? "stake" : sorting[0]?.id ?? "data"}</strong>
           </div>
           <div className="table-shell-meta">
             <span>{money.format(openExposure)} em risco</span>
@@ -472,10 +496,13 @@ export function Bets({ state, settleBet, deleteBet }: BetsProps) {
                             </button>
                             {actionMenuBetId === bet.id && (
                               <div className="bet-actions-dropdown">
+                                <button onClick={() => { onEditBet(bet.id); setActionMenuBetId(null); }}>Editar</button>
+                                <div className="bet-actions-separator" />
                                 <button onClick={() => { settleBet(bet.id, "won"); setActionMenuBetId(null); }}>Ganha</button>
                                 <button onClick={() => { settleBet(bet.id, "lost"); setActionMenuBetId(null); }}>Perdida</button>
                                 <button onClick={() => { setCashoutBetId(bet.id); setCashoutInput(""); setActionMenuBetId(null); }}>Cashout</button>
                                 <button onClick={() => { settleBet(bet.id, "void"); setActionMenuBetId(null); }}>Void</button>
+                                <div className="bet-actions-separator" />
                                 <button className="danger-ghost" onClick={() => { setConfirmDeleteId(bet.id); setActionMenuBetId(null); }}>Excluir</button>
                               </div>
                             )}

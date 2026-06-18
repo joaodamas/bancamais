@@ -19,6 +19,7 @@ export interface SportProfitPoint {
 
 export interface MonthlyPoint {
   month: string;
+  key: string;
   roi: number;
   profit: number;
   staked: number;
@@ -117,6 +118,7 @@ export function buildMonthlyData(state: AppState): MonthlyPoint[] {
       });
       return {
         month: label,
+        key,
         roi: data.staked > 0 ? data.profit / data.staked : 0,
         profit: data.profit,
         staked: data.staked,

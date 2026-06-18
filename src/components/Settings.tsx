@@ -1,5 +1,6 @@
 import type { User } from "firebase/auth";
-import type { FormEvent } from "react";
+import { type FormEvent, useState } from "react";
+import { callDeleteUserData, callExportUserData } from "../lib/cloudRepository";
 import type { AppState } from "../lib/types";
 
 interface SettingsProps {
@@ -32,31 +33,62 @@ export function Settings({
   const isAnonymous = user?.isAnonymous ?? false;
   const isAuthenticated = user !== null && !isAnonymous;
 
+  const [lgpdExporting, setLgpdExporting] = useState(false);
+  const [lgpdDeleting, setLgpdDeleting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+
+  async function handleExportData() {
+    if (!isAuthenticated) return;
+    setLgpdExporting(true);
+    try {
+      const data = await callExportUserData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `bancamais-dados-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setLgpdExporting(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!isAuthenticated || deleteConfirm !== "EXCLUIR") return;
+    setLgpdDeleting(true);
+    try {
+      await callDeleteUserData(deleteConfirm);
+    } finally {
+      setLgpdDeleting(false);
+      setDeleteConfirm("");
+    }
+  }
+
   return (
     <section className="page">
-      <div className="dashboard-command panel settings-command">
-        <div className="dashboard-command-copy">
-          <span className="dashboard-kicker">Governanca operacional</span>
-          <h1>Configuracoes, sincronizacao e risco</h1>
-          <p>Gerencie conta, persistencia e limites operacionais em uma camada unica de controle.</p>
+      <div className="section-head">
+        <div>
+          <h1>Configurações</h1>
+          <p>Conta, sincronização e limites de risco</p>
         </div>
       </div>
 
       <div className="ops-summary-grid settings-summary-grid">
         <article className="ops-summary-card">
-          <span>Status da conta</span>
-          <strong>{isAuthenticated ? "Sincronizada" : isAnonymous ? "Temporaria" : "Local"}</strong>
-          <small>{isAuthenticated ? "Operacao vinculada a conta permanente." : "Persistencia depende deste dispositivo."}</small>
+          <span>Conta</span>
+          <strong>{isAuthenticated ? "Sincronizada" : isAnonymous ? "Temporária" : "Local"}</strong>
+          <small>{isAuthenticated ? "Vinculada a conta permanente" : "Dados neste dispositivo"}</small>
         </article>
         <article className="ops-summary-card">
           <span>Unidade da banca</span>
           <strong>{state.riskSettings.unitPercent.toFixed(1)}%</strong>
-          <small>Base usada para alertas, stake e governanca.</small>
+          <small>base dos alertas de stake</small>
         </article>
         <article className="ops-summary-card">
-          <span>Exposicao maxima</span>
+          <span>Exposição máxima</span>
           <strong>{state.riskSettings.maxOpenExposurePercent.toFixed(0)}%</strong>
-          <small>Teto atual para risco aberto simultaneo.</small>
+          <small>teto de risco simultâneo</small>
         </article>
       </div>
 
@@ -212,6 +244,46 @@ export function Settings({
 
           <button className="primary" type="submit">Salvar limites</button>
         </form>
+
+        {isAuthenticated && (
+          <article className="panel settings-panel">
+            <h2>Dados e privacidade</h2>
+            <p className="sync-description">
+              Seus direitos sob a LGPD: exportar uma cópia completa dos seus dados ou excluir sua conta permanentemente.
+            </p>
+            <div className="lgpd-actions">
+              <div className="lgpd-action-row">
+                <div>
+                  <strong>Exportar meus dados</strong>
+                  <small>Baixa um JSON com apostas, transações, logs de auditoria e lista de arquivos.</small>
+                </div>
+                <button onClick={handleExportData} disabled={lgpdExporting}>
+                  {lgpdExporting ? "Exportando..." : "Exportar JSON"}
+                </button>
+              </div>
+              <div className="lgpd-action-row lgpd-action-delete">
+                <div>
+                  <strong>Excluir conta e dados</strong>
+                  <small>Remove todos os dados do Firestore, Storage e a conta de autenticação. Irreversível.</small>
+                </div>
+                <div className="lgpd-delete-confirm">
+                  <input
+                    placeholder='Digite "EXCLUIR" para confirmar'
+                    value={deleteConfirm}
+                    onChange={(e) => setDeleteConfirm(e.target.value)}
+                  />
+                  <button
+                    className="btn-danger"
+                    disabled={deleteConfirm !== "EXCLUIR" || lgpdDeleting}
+                    onClick={handleDeleteAccount}
+                  >
+                    {lgpdDeleting ? "Excluindo..." : "Excluir conta"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+        )}
 
         <article className="panel danger-zone settings-panel">
           <h2>Zona de perigo</h2>

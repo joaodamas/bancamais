@@ -11,7 +11,8 @@ import {
   type User,
 } from "firebase/auth";
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
-import { auth, db } from "./firebase";
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { auth, db, firebaseApp } from "./firebase";
 import { normalizeState } from "./storage";
 import type { AppState } from "./types";
 
@@ -80,3 +81,15 @@ export async function loadCloudState(userId: string): Promise<AppState | null> {
   });
 }
 
+const functions = getFunctions(firebaseApp, "southamerica-east1");
+
+export async function callExportUserData(): Promise<object> {
+  const fn = httpsCallable<void, object>(functions, "exportUserData");
+  const result = await fn();
+  return result.data;
+}
+
+export async function callDeleteUserData(confirmText: string): Promise<void> {
+  const fn = httpsCallable<{ confirmText: string }, { deleted: boolean }>(functions, "deleteUserData");
+  await fn({ confirmText });
+}

@@ -267,10 +267,15 @@ async function callAIEndpoint(state: AppState): Promise<AIAnalysis> {
   const endpoint = import.meta.env.VITE_AI_ENDPOINT as string;
   const prompt = buildPortfolioPrompt(state);
 
+  const token = import.meta.env.VITE_AI_BEARER_TOKEN as string | undefined;
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
   const response = await fetch(endpoint, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ prompt, model: "claude-sonnet-4-6", max_tokens: 1000 }),
+    signal: AbortSignal.timeout(15000),
   });
 
   if (!response.ok) {

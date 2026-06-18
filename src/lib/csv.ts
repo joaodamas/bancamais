@@ -130,6 +130,18 @@ export function parseBetsCsv(content: string, state: AppState) {
       return;
     }
 
+    const stakeNum = Number(record.stake);
+    if (!Number.isFinite(stakeNum) || stakeNum <= 0) {
+      errors.push(`Linha ${rowIndex + 2}: stake invalida (${record.stake}).`);
+      return;
+    }
+
+    const oddsNum = Number(record.odds);
+    if (!Number.isFinite(oddsNum) || oddsNum < 1.01) {
+      errors.push(`Linha ${rowIndex + 2}: odd invalida (${record.odds}).`);
+      return;
+    }
+
     bets.push({
       id: record.id || createBetId(),
       placedAt: record.placedAt || new Date().toISOString(),

@@ -10,3 +10,6 @@ firebase-debug.log
 firestore-debug.log
 storage-debug.log
 .DS_Store
+
+# Git worktrees criados por agentes (nunca versionar)
+.claude/worktrees/
