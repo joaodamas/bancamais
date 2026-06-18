@@ -2,15 +2,16 @@ import { useMemo } from "react";
 import { betsToCsv, downloadTextFile } from "../lib/csv";
 import { money, percent, betProfit } from "../lib/metrics";
 import { ExecutiveReport } from "./ExecutiveReport";
-import type { AppState } from "../lib/types";
+import type { AppState, ReportSnapshot } from "../lib/types";
 import type { calculateMetrics } from "../lib/metrics";
 
 interface ReportsProps {
   state: AppState;
   metrics: ReturnType<typeof calculateMetrics>;
+  onSaveSnapshot: (snapshot: ReportSnapshot) => void;
 }
 
-export function Reports({ state, metrics }: ReportsProps) {
+export function Reports({ state, metrics, onSaveSnapshot }: ReportsProps) {
   const settled = state.bets.filter((bet) => bet.status !== "pending");
   const won = settled.filter((bet) => bet.status === "won" || bet.status === "cashout");
   const lost = settled.filter((bet) => bet.status === "lost");
@@ -81,7 +82,7 @@ export function Reports({ state, metrics }: ReportsProps) {
         </div>
       </div>
 
-      <ExecutiveReport state={state} />
+      <ExecutiveReport state={state} onSaveSnapshot={onSaveSnapshot} />
 
       <div className="page-actions">
         <div className="page-actions-copy">

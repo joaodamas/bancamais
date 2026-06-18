@@ -32,7 +32,7 @@ import {
 import { getDerivedBookmakerBalance, reconcileBookmakerBalances } from "./lib/ledger";
 import { createBetId, createBookmakerId, createStrategyId, createTransactionId, emptyState, isFirstRun, loadStateForUser, resetState, saveState, saveStateForUser } from "./lib/storage";
 import { uploadBetSlip } from "./lib/storageRepository";
-import type { AppState, Bet, BookmakerAccount, NewBetDraft, NewBetFormValues, NewBetPrefill, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
+import type { AppState, Bet, BookmakerAccount, NewBetDraft, NewBetFormValues, NewBetPrefill, ReportSnapshot, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
 import { checkHardStop, riskAlertsExtended } from "./lib/riskGuard";
 import { detectTilt } from "./lib/tiltDetection";
 import { buildBetFromForm, buildBetEdit, buildSettlement, buildBulkSettlement, buildDeletedBetState, mergeImportedBets } from "./services/bets.service";
@@ -40,6 +40,7 @@ import { EditBetModal } from "./components/EditBetModal";
 import type { OnboardingResult } from "./components/Onboarding";
 import { buildBookmaker, buildManualTransaction, buildVoidEntry } from "./services/bookmaker.service";
 import { buildBetTemplate, addBetTemplate, removeBetTemplate } from "./services/template.service";
+import { saveReportSnapshot } from "./services/report.service";
 
 type View = "dashboard" | "bets" | "new-bet" | "import" | "risk" | "performance" | "intelligence" | "reports" | "clv" | "books" | "strategies" | "settings";
 
@@ -639,6 +640,11 @@ export function App() {
   function deleteBetTemplate(id: string) {
     syncToCloud(updateState(removeBetTemplate(state, id)));
     toast.success("Template removido");
+  }
+
+  function persistReportSnapshot(snapshot: ReportSnapshot) {
+    syncToCloud(updateState(saveReportSnapshot(state, snapshot)));
+    toast.success(`Snapshot de ${snapshot.periodLabel} salvo`);
   }
 
   function deleteBet(id: string) {
@@ -1310,7 +1316,7 @@ export function App() {
       case "intelligence":
         return <Intelligence state={state} metrics={metrics} onOpenNewBet={openNewBet} />;
       case "reports":
-        return <Reports state={state} metrics={metrics} />;
+        return <Reports state={state} metrics={metrics} onSaveSnapshot={persistReportSnapshot} />;
       case "clv":
         return <ClvEdge state={state} metrics={metrics} />;
       case "books":

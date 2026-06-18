@@ -4,7 +4,7 @@
  * tiltDetection, nunca de um LLM (que poderia alucinar valores financeiros).
  * Uma camada de LLM pode reescrever este rascunho depois, mas os fatos são fixos.
  */
-import type { AppState } from "./types";
+import type { AppState, ReportSnapshot } from "./types";
 import { betProfit, clvPercent, money, percent } from "./metrics";
 import { analyzeEdge, type EdgeSegment } from "./edgeAnalysis";
 import { detectTilt } from "./tiltDetection";
@@ -38,6 +38,29 @@ function monthKeyOf(iso: string): string {
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+export function currentMonthKey(now: Date = new Date()): string {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** Achata o relatório vivo na forma serializável de snapshot (savedAt null = não congelado). */
+export function toSnapshot(report: ExecutiveReport): ReportSnapshot {
+  return {
+    monthKey: report.monthKey,
+    periodLabel: report.periodLabel,
+    savedAt: null,
+    hasData: report.hasData,
+    profit: report.performance.profit,
+    yield: report.performance.yield,
+    hitRate: report.performance.hitRate,
+    staked: report.performance.staked,
+    settledCount: report.performance.settledCount,
+    clvAverage: report.performance.clvAverage,
+    topEdges: report.topEdges.map((e) => ({ key: e.key, profit: e.profit, roi: e.roi, bets: e.bets })),
+    behaviorAlert: report.behaviorAlert,
+    summary: report.summary,
+  };
 }
 
 /** Meses (mais recentes primeiro) com apostas liquidadas. */

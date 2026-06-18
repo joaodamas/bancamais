@@ -28,6 +28,7 @@ export function emptyState(): AppState {
     bets: [],
     transactions: [],
     betTemplates: [],
+    reportSnapshots: [],
   };
 }
 

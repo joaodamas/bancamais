@@ -110,6 +110,31 @@ export interface BetTemplate {
   createdAt: string;
 }
 
+export interface ReportSnapshotEdge {
+  key: string;
+  profit: number;
+  roi: number;
+  bets: number;
+}
+
+/** Snapshot congelado do relatório executivo de um mês (BI histórico). */
+export interface ReportSnapshot {
+  monthKey: string;
+  periodLabel: string;
+  /** null = vista ao vivo (não congelada); ISO = momento em que foi salva. */
+  savedAt: string | null;
+  hasData: boolean;
+  profit: number;
+  yield: number;
+  hitRate: number;
+  staked: number;
+  settledCount: number;
+  clvAverage: number | null;
+  topEdges: ReportSnapshotEdge[];
+  behaviorAlert: string | null;
+  summary: string;
+}
+
 export interface NewBetOcrFieldMeta {
   ocrField: OcrFieldName;
   confidence: number | null;
@@ -159,6 +184,7 @@ export interface AppState {
   bets: Bet[];
   transactions: Transaction[];
   betTemplates: BetTemplate[];
+  reportSnapshots: ReportSnapshot[];
 }
 
 export type UnitMode = "fixed" | "percent";
