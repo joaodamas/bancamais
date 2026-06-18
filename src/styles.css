@@ -7866,3 +7866,182 @@ button.danger:hover {
     flex: 1;
   }
 }
+
+/* =========================================================
+   APOSTAS — leitura rápida: delta de tempo, urgência, W/L inline
+   ========================================================= */
+
+.bet-block-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bet-time-chip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.bet-time-live {
+  color: var(--negative);
+  border-color: color-mix(in srgb, var(--negative) 35%, transparent);
+  background: color-mix(in srgb, var(--negative) 12%, transparent);
+}
+
+.bet-time-imminent {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 35%, transparent);
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+}
+
+.bet-time-upcoming {
+  color: var(--muted);
+}
+
+.bet-row-imminent td {
+  box-shadow: inset 3px 0 0 var(--warning);
+}
+
+/* Ações de liquidação inline (W / L + menu) */
+.bet-settle-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.settle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, transform 0.08s;
+}
+
+.settle-btn:active {
+  transform: scale(0.94);
+}
+
+.settle-won {
+  color: var(--positive);
+  border-color: color-mix(in srgb, var(--positive) 30%, transparent);
+  background: color-mix(in srgb, var(--positive) 10%, transparent);
+}
+
+.settle-won:hover {
+  background: color-mix(in srgb, var(--positive) 22%, transparent);
+  border-color: color-mix(in srgb, var(--positive) 50%, transparent);
+}
+
+.settle-lost {
+  color: var(--negative);
+  border-color: color-mix(in srgb, var(--negative) 30%, transparent);
+  background: color-mix(in srgb, var(--negative) 10%, transparent);
+}
+
+.settle-lost:hover {
+  background: color-mix(in srgb, var(--negative) 22%, transparent);
+  border-color: color-mix(in srgb, var(--negative) 50%, transparent);
+}
+
+.bet-actions-trigger.settle-more {
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  justify-content: center;
+}
+
+/* Seleção em massa */
+.bet-select-col {
+  width: 36px;
+  text-align: center;
+  padding-left: 12px !important;
+}
+
+.bet-select-col input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.bet-row-selected td {
+  background: var(--accent-dim);
+}
+
+.bulk-actions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  background: var(--accent-dim);
+}
+
+.bulk-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-bright);
+}
+
+.bulk-actions-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bulk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.bulk-btn:hover {
+  border-color: var(--line-strong, rgba(255, 255, 255, 0.16));
+}
+
+.bulk-won {
+  color: var(--positive);
+  border-color: color-mix(in srgb, var(--positive) 30%, transparent);
+}
+
+.bulk-won:hover {
+  background: color-mix(in srgb, var(--positive) 14%, transparent);
+}
+
+.bulk-lost {
+  color: var(--negative);
+  border-color: color-mix(in srgb, var(--negative) 30%, transparent);
+}
+
+.bulk-lost:hover {
+  background: color-mix(in srgb, var(--negative) 14%, transparent);
+}
+
+.bulk-clear {
+  color: var(--muted);
+}

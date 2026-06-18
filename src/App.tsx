@@ -33,7 +33,7 @@ import { uploadBetSlip } from "./lib/storageRepository";
 import type { AppState, Bet, BookmakerAccount, NewBetDraft, NewBetPrefill, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
 import { checkHardStop, riskAlertsExtended } from "./lib/riskGuard";
 import { detectTilt } from "./lib/tiltDetection";
-import { buildBetFromForm, buildBetEdit, buildSettlement, buildDeletedBetState, mergeImportedBets } from "./services/bets.service";
+import { buildBetFromForm, buildBetEdit, buildSettlement, buildBulkSettlement, buildDeletedBetState, mergeImportedBets } from "./services/bets.service";
 import { EditBetModal } from "./components/EditBetModal";
 import { buildBookmaker, buildManualTransaction, buildVoidEntry } from "./services/bookmaker.service";
 
@@ -600,6 +600,20 @@ export function App() {
       void: "Aposta cancelada", pending: "Pendente"
     };
     toast.success(labels[status] ?? "Status atualizado");
+  }
+
+  function bulkSettle(ids: string[], status: "won" | "lost" | "void") {
+    const { updatedBets, newTransactions, settledCount } = buildBulkSettlement(state, ids, status);
+    if (settledCount === 0) return;
+    syncToCloud(updateState({
+      ...state,
+      bets: updatedBets,
+      transactions: [...newTransactions, ...state.transactions],
+    }));
+    const labels: Record<"won" | "lost" | "void", string> = {
+      won: "ganhas", lost: "perdidas", void: "anuladas",
+    };
+    toast.success(`${settledCount} aposta${settledCount > 1 ? "s" : ""} ${labels[status]}`);
   }
 
   function deleteBet(id: string) {
@@ -1245,7 +1259,7 @@ export function App() {
           />
         );
       case "bets":
-        return <Bets state={state} settleBet={settleBet} deleteBet={deleteBet} onEditBet={setEditingBetId} />;
+        return <Bets state={state} settleBet={settleBet} bulkSettle={bulkSettle} deleteBet={deleteBet} onEditBet={setEditingBetId} />;
       case "import":
         return <Import state={state} importBets={importBets} onOpenBets={() => setView("bets")} />;
       case "intelligence":
