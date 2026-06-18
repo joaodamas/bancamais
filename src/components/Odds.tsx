@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Coins, RefreshCw } from "lucide-react";
 import type { NewBetPrefill } from "../lib/types";
 import {
@@ -42,6 +42,18 @@ export function Odds({ onOpenNewBet }: { onOpenNewBet: (prefill: NewBetPrefill) 
   const [touched, setTouched] = useState(false);
 
   const sportLabel = SUPPORTED_SPORTS.find((sport) => sport.key === sportKey)?.label ?? "";
+
+  const highlights = useMemo(() => {
+    const items: Array<{ event: MarketOddsEvent; outcome: MarketOddsOutcome; edge: number }> = [];
+    for (const event of events) {
+      for (const outcome of event.outcomes) {
+        if (outcome.fairOdds != null && outcome.best > outcome.fairOdds) {
+          items.push({ event, outcome, edge: (outcome.best / outcome.fairOdds - 1) * 100 });
+        }
+      }
+    }
+    return items.sort((a, b) => b.edge - a.edge).slice(0, 6);
+  }, [events]);
 
   async function selectSport(key: string) {
     setSportKey(key);
@@ -132,6 +144,35 @@ export function Odds({ onOpenNewBet }: { onOpenNewBet: (prefill: NewBetPrefill) 
           />
         </article>
       ) : (
+        <>
+        {highlights.length > 0 && (
+          <div className="odds-highlights">
+            <div className="odds-highlights-head">
+              <span className="odds-highlights-title">Destaques de valor</span>
+              <span className="odds-highlights-sub">maior edge vs. linha justa · clique pra registrar</span>
+            </div>
+            <div className="odds-highlights-list">
+              {highlights.map(({ event, outcome, edge }) => (
+                <button
+                  key={`${event.id}-${outcome.side}`}
+                  type="button"
+                  className="odds-highlight"
+                  onClick={() => register(event, outcome)}
+                >
+                  <span className="odds-highlight-edge">+{edge.toFixed(1)}%</span>
+                  <span className="odds-highlight-main">
+                    <span className="odds-highlight-pick">{outcome.name}</span>
+                    <span className="odds-highlight-event">{event.homeTeam} × {event.awayTeam}</span>
+                  </span>
+                  <span className="odds-highlight-line">
+                    <strong>{outcome.best.toFixed(2)}</strong>
+                    <em>{outcome.bestBook}</em>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="odds-board">
           {events.map((event) => (
             <div key={event.id} className="odds-row">
@@ -166,6 +207,7 @@ export function Odds({ onOpenNewBet }: { onOpenNewBet: (prefill: NewBetPrefill) 
             </div>
           ))}
         </div>
+        </>
       )}
     </section>
   );
