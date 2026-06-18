@@ -8988,6 +8988,126 @@ button.danger:hover {
   cursor: pointer;
 }
 
+/* =========================================================
+   EDGE — dissecação de performance por dimensão
+   ========================================================= */
+
+.edge-panel { display: flex; flex-direction: column; gap: 16px; }
+
+.edge-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.edge-head-copy h2 { margin: 0 0 4px; font-size: 16px; }
+.edge-head-copy p { margin: 0; max-width: 580px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+.edge-dims {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 9px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+
+.edge-dim {
+  padding: 5px 11px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.edge-dim:hover { color: var(--text); }
+
+.edge-dim.active {
+  background: var(--panel);
+  color: var(--accent-bright);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.edge-highlights { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.edge-highlight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
+.edge-highlight > div { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.edge-highlight span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.edge-highlight strong { font-size: 15px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.edge-highlight small { color: var(--muted); font-size: 12px; }
+
+.edge-highlight-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  flex-shrink: 0;
+}
+
+.edge-highlight-good {
+  background: color-mix(in srgb, var(--positive) 6%, var(--panel));
+  border-color: color-mix(in srgb, var(--positive) 25%, var(--line));
+}
+.edge-highlight-good .edge-highlight-icon { background: color-mix(in srgb, var(--positive) 14%, transparent); color: var(--positive); }
+
+.edge-highlight-bad {
+  background: color-mix(in srgb, var(--negative) 6%, var(--panel));
+  border-color: color-mix(in srgb, var(--negative) 25%, var(--line));
+}
+.edge-highlight-bad .edge-highlight-icon { background: color-mix(in srgb, var(--negative) 12%, transparent); color: var(--negative); }
+
+.edge-table-wrap { overflow-x: auto; }
+.edge-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+
+.edge-table th,
+.edge-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+  font-size: 13px;
+}
+
+.edge-table th {
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.edge-table td.num, .edge-table th.num { text-align: right; }
+.edge-table tbody tr:last-child td { border-bottom: 0; }
+.edge-table tbody tr:hover { background: rgba(47, 132, 102, 0.04); }
+
+.edge-key-cell { display: flex; align-items: center; gap: 8px; }
+.edge-key { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--text); }
+
+.edge-conf { width: 8px; height: 8px; border-radius: 999px; flex-shrink: 0; }
+.edge-conf-low { background: var(--soft); }
+.edge-conf-medium { background: var(--warning); }
+.edge-conf-high { background: var(--positive); }
+
+.edge-empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+
+@media (max-width: 720px) {
+  .edge-highlights { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 960px) {
   .stat-band { grid-template-columns: repeat(2, 1fr); }
   .risk-band { grid-template-columns: 1fr; }

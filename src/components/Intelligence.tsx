@@ -5,6 +5,7 @@ import { groupProfitByStrategy, riskAlerts, money, percent } from "../lib/metric
 import type { AppState, NewBetPrefill } from "../lib/types";
 import type { calculateMetrics } from "../lib/metrics";
 import { EmptyState } from "./EmptyState";
+import { EdgePanel } from "./EdgePanel";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { extractTeamsFromBets, isNewsApiConfigured } from "../lib/newsApi";
 import { TeamNewsWidget } from "./TeamNewsWidget";
@@ -67,6 +68,8 @@ export function Intelligence({
           {loading ? (<><Loader2 size={14} className="btn-spinner" /> Analisando...</>) : "Atualizar análise"}
         </button>
       </div>
+
+      <EdgePanel state={state} />
 
       <div className="grid two">
         {/* AI Analysis Panel */}
