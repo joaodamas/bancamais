@@ -2,85 +2,19 @@ import { useMemo, useState } from "react";
 import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell,
   ReferenceLine,
 } from "recharts";
-import { AlertTriangle, Clock, Layers, Gauge } from "lucide-react";
-import { calculateMetrics, groupProfitBySport, money, percent, riskAlerts } from "../lib/metrics";
-import { resolveUnitValue, exceedsUnitCap } from "../lib/unit";
-import { buildBankrollTimeSeries, buildMonthlyData } from "../lib/chartData";
+import { calculateMetrics, money, percent } from "../lib/metrics";
+import { buildBankrollTimeSeries } from "../lib/chartData";
+import { resolveUnitValue } from "../lib/unit";
 import type { AppState } from "../lib/types";
 import { EmptyState } from "./EmptyState";
-import { RiskAdvisor } from "./RiskAdvisor";
-
-// Cores do design system Banca+ (hex direto — Recharts não lê CSS vars)
-const COLORS = {
-  accent: "#8B5CF6",
-  cyan: "#22D3EE",
-  green: "#34D399",
-  red: "#FB7185",
-  amber: "#FBBF24",
-  panel: "#1E2026",
-  line: "rgba(255,255,255,0.09)",
-  muted: "#A1A1AA",
-  bg: "#16171B",
-};
-
-type ChartTooltipPayloadEntry = {
-  name: string;
-  value: number;
-  color: string;
-  payload?: { tooltipLabel?: string };
-};
-
-function ChartTooltipCard({
-  active,
-  payload,
-  label,
-  formatter,
-}: {
-  active?: boolean;
-  payload?: ChartTooltipPayloadEntry[];
-  label?: string;
-  formatter: (value: number) => string;
-}) {
-  if (!active || !payload?.length) return null;
-  const displayLabel = payload[0]?.payload?.tooltipLabel ?? label;
-  return (
-    <div className="chart-tooltip">
-      <span className="chart-tooltip-label">{displayLabel}</span>
-      {payload.map((entry) => (
-        <div key={entry.name} className="chart-tooltip-row">
-          <span style={{ color: entry.color }}>{entry.name}</span>
-          <strong>{formatter(entry.value)}</strong>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function MoneyTooltip(props: { active?: boolean; payload?: ChartTooltipPayloadEntry[]; label?: string }) {
-  return <ChartTooltipCard {...props} formatter={(value) => money.format(value)} />;
-}
-
-function PercentTooltip(props: { active?: boolean; payload?: ChartTooltipPayloadEntry[]; label?: string }) {
-  return <ChartTooltipCard {...props} formatter={(value) => `${(value * 100).toFixed(1)}%`} />;
-}
-
-function formatCompactMoneyTick(value: number) {
-  const absolute = Math.abs(value);
-  if (absolute >= 1000) {
-    return `R$${(value / 1000).toFixed(absolute >= 10000 ? 0 : 1)}k`;
-  }
-  return money.format(value);
-}
+import { COLORS, MoneyTooltip, formatCompactMoneyTick } from "./chartHelpers";
 
 export function Dashboard({
   state,
@@ -96,7 +30,6 @@ export function Dashboard({
   const [chartPeriod, setChartPeriod] = useState<"7d" | "30d" | "90d" | "all">("all");
 
   const timeSeries = useMemo(() => buildBankrollTimeSeries(state), [state]);
-  const monthlyData = useMemo(() => buildMonthlyData(state), [state]);
 
   const periodCutoff = useMemo(() => {
     if (chartPeriod === "all") return null;
@@ -116,32 +49,7 @@ export function Dashboard({
     ];
   }, [timeSeries, periodCutoff]);
 
-  const filteredMonthlyData = useMemo(() => {
-    if (!periodCutoff) return monthlyData;
-    const d = new Date(periodCutoff);
-    const cutoffKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    return monthlyData.filter((m) => m.key >= cutoffKey);
-  }, [monthlyData, periodCutoff]);
-
-  const monitoredCapital = metrics.totalBalance + metrics.openExposure;
-  const alerts = useMemo(() => riskAlerts(state), [state]);
-
-  // Insights baseados na unidade configurada
-  const bankroll = monitoredCapital;
-  const unitValue = resolveUnitValue(state.riskSettings, bankroll);
-  const pendingForUnits = useMemo(() => state.bets.filter((b) => b.status === "pending"), [state.bets]);
-  const overStaked = useMemo(
-    () => pendingForUnits.filter((b) => exceedsUnitCap(b.stake, state.riskSettings, bankroll)),
-    [pendingForUnits, state.riskSettings, bankroll]
-  );
-  const avgStakeUnits = pendingForUnits.length > 0 && unitValue > 0
-    ? pendingForUnits.reduce((s, b) => s + b.stake, 0) / pendingForUnits.length / unitValue
-    : 0;
-  const exposureCap = bankroll * (state.riskSettings.maxOpenExposurePercent / 100);
-  const exposurePct = exposureCap > 0 ? metrics.openExposure / exposureCap : 0;
-
-  // Colapsa a série para um ponto por dia (saldo de fechamento do dia):
-  // evita labels de eixo repetidos e deixa a curva mais legível/crível.
+  // Colapsa para um ponto por dia (saldo de fechamento) — eixo limpo, curva crível.
   const chartData = useMemo(() => {
     if (filteredTimeSeries.length === 0) return filteredTimeSeries;
     const byDay = new Map<string, (typeof filteredTimeSeries)[number]>();
@@ -157,20 +65,13 @@ export function Dashboard({
   const chartStart = chartData[0]?.balance ?? 0;
   const chartEnd = chartData[chartData.length - 1]?.balance ?? 0;
 
-  // Apostas pendentes há mais de 48h
-  const stalePendingBets = useMemo(() => {
-    const cutoff = Date.now() - 48 * 60 * 60 * 1000;
-    return state.bets.filter((b) => b.status === "pending" && new Date(b.eventAt).getTime() < cutoff);
-  }, [state.bets]);
-  const bySport = useMemo(
-    () =>
-      groupProfitBySport(state)
-        .sort((a, b) => b.profit - a.profit)
-        .slice(0, 6),
-    [state]
-  );
+  const monitoredCapital = metrics.totalBalance + metrics.openExposure;
+  const unitValue = resolveUnitValue(state.riskSettings, monitoredCapital);
+
   const isEmpty = state.bets.length === 0;
   const hasBookmakers = state.bookmakers.length > 0;
+
+  const today = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
 
   if (isEmpty) {
     return (
@@ -178,10 +79,9 @@ export function Dashboard({
         <div className="section-head">
           <div>
             <h1>Dashboard</h1>
-            <p>Visão geral da banca · {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</p>
+            <p>Visão geral da banca · {today}</p>
           </div>
         </div>
-
         <article className="panel">
           <EmptyState
             title="Nenhuma aposta registrada ainda"
@@ -205,7 +105,7 @@ export function Dashboard({
       <div className="section-head">
         <div>
           <h1>Dashboard</h1>
-          <p>{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</p>
+          <p>{today}</p>
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
           <button className="primary" onClick={onOpenNewBet}>Nova aposta</button>
@@ -261,68 +161,7 @@ export function Dashboard({
         </article>
       </div>
 
-      {/* Banda 3 — Gestão de risco (só com unidade configurada) */}
-      {unitValue > 0 && (
-        <div className="risk-band">
-          <article className="risk-card">
-            <div className="risk-card-head"><Layers size={14} /><span>Stake médio</span></div>
-            <strong className="text-mono">{avgStakeUnits > 0 ? `${avgStakeUnits.toFixed(1)}u` : "—"}</strong>
-            <small>nas {pendingForUnits.length} pendentes</small>
-          </article>
-          <article className={`risk-card${overStaked.length > 0 ? " risk-card-warn" : ""}`}>
-            <div className="risk-card-head"><AlertTriangle size={14} /><span>Acima do teto</span></div>
-            <strong className="text-mono">{overStaked.length}</strong>
-            <small>limite {state.riskSettings.maxStakeUnits}u por aposta</small>
-          </article>
-          <article className={`risk-card risk-card-exposure${exposurePct > 1 ? " risk-card-warn" : ""}`}>
-            <div className="risk-card-head"><Gauge size={14} /><span>Exposição aberta</span></div>
-            <div className="risk-exposure-figures">
-              <strong className="text-mono">{money.format(metrics.openExposure)}</strong>
-              <small>de {money.format(exposureCap)}</small>
-            </div>
-            <div className="risk-bar">
-              <div
-                className={`risk-bar-fill${exposurePct > 1 ? " over" : ""}`}
-                style={{ width: `${Math.min(100, Math.max(2, exposurePct * 100))}%` }}
-              />
-            </div>
-            <small>{exposurePct > 1 ? `${exposurePct.toFixed(1)}× o limite (${state.riskSettings.maxOpenExposurePercent}% da banca)` : `${percent.format(exposurePct)} do limite`}</small>
-          </article>
-        </div>
-      )}
-
-      {/* Bloco "Atenção hoje" — só aparece quando há itens */}
-      {(alerts.length > 0 || stalePendingBets.length > 0) && (
-        <div className="dashboard-attention-grid">
-          {alerts.map((alert) => (
-            <article key={alert.title} className={`dashboard-attention-card dashboard-attention-${alert.level}`}>
-              <div className="dashboard-attention-icon">
-                <AlertTriangle size={14} />
-              </div>
-              <div>
-                <strong>{alert.title}</strong>
-                <p>{alert.detail}</p>
-              </div>
-            </article>
-          ))}
-          {stalePendingBets.length > 0 && (
-            <article className="dashboard-attention-card dashboard-attention-info">
-              <div className="dashboard-attention-icon">
-                <Clock size={14} />
-              </div>
-              <div>
-                <strong>{stalePendingBets.length} aposta(s) sem resultado</strong>
-                <p>
-                  {stalePendingBets.slice(0, 2).map((b) => b.eventName).join(", ")}
-                  {stalePendingBets.length > 2 ? ` e mais ${stalePendingBets.length - 2}` : ""} — o evento já passou. Liquide os resultados.
-                </p>
-              </div>
-            </article>
-          )}
-        </div>
-      )}
-
-      {/* Bankroll evolution chart */}
+      {/* Curva da banca */}
       <article className="panel chart-panel">
         <div className="chart-header">
           <div className="chart-title-block">
@@ -352,11 +191,11 @@ export function Dashboard({
           </div>
         </div>
         {chartData.length > 1 ? (
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
               <defs>
                 <linearGradient id="balanceGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={COLORS.accent} stopOpacity={0.18} />
+                  <stop offset="5%" stopColor={COLORS.accent} stopOpacity={0.2} />
                   <stop offset="95%" stopColor={COLORS.accent} stopOpacity={0} />
                 </linearGradient>
               </defs>
@@ -402,117 +241,10 @@ export function Dashboard({
           </ResponsiveContainer>
         ) : (
           <div className="chart-empty">
-            <span>Liquide as primeiras apostas para visualizar a evolucao da banca</span>
+            <span>Liquide as primeiras apostas para visualizar a evolução da banca</span>
           </div>
         )}
       </article>
-
-      <div className="grid two">
-        {/* Monthly ROI bar chart */}
-        <article className="panel chart-panel">
-          <h2>ROI mensal</h2>
-          {filteredMonthlyData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={filteredMonthlyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke={COLORS.line}
-                  horizontal={true}
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fill: COLORS.muted, fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tickFormatter={(v: number) => `${(v * 100).toFixed(0)}%`}
-                  tick={{ fill: COLORS.muted, fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={44}
-                />
-                <Tooltip
-                  content={<PercentTooltip />}
-                  cursor={{ fill: "rgba(99, 102, 241, 0.08)" }}
-                />
-                <ReferenceLine y={0} stroke={COLORS.line} />
-                <Bar dataKey="roi" name="ROI" radius={[3, 3, 0, 0]}>
-                  {filteredMonthlyData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.roi >= 0 ? COLORS.accent : COLORS.red}
-                      fillOpacity={0.85}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="chart-empty">
-              <span>Sem volume suficiente para consolidar o ROI mensal</span>
-            </div>
-          )}
-        </article>
-
-        {/* Sport profit horizontal bar chart */}
-        <article className="panel chart-panel">
-          <h2>Lucro por esporte</h2>
-          {bySport.length > 0 ? (
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart
-                data={bySport}
-                layout="vertical"
-                margin={{ top: 0, right: 8, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke={COLORS.line}
-                  horizontal={false}
-                  vertical={true}
-                />
-                <XAxis
-                  type="number"
-                  tickFormatter={(v: number) => money.format(v)}
-                  tick={{ fill: COLORS.muted, fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="sport"
-                  tick={{ fill: COLORS.muted, fontSize: 11 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={64}
-                />
-                <Tooltip content={<MoneyTooltip />} />
-                <Bar dataKey="profit" name="Lucro" radius={[0, 3, 3, 0]}>
-                  {bySport.map((entry, i) => (
-                    <Cell
-                      key={i}
-                      fill={entry.profit >= 0 ? COLORS.green : COLORS.red}
-                      fillOpacity={0.85}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="chart-empty">
-              <span>Sem apostas liquidadas o bastante para comparar esportes</span>
-            </div>
-          )}
-        </article>
-      </div>
-
-      {/* Risk Advisor */}
-      <div className="dashboard-risk-row">
-        <article className="panel dashboard-risk-panel">
-          <RiskAdvisor state={state} metrics={metrics} />
-        </article>
-      </div>
     </section>
   );
 }

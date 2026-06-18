@@ -8347,6 +8347,14 @@ button.danger:hover {
 
 .risk-bar-fill.over { background: var(--warning); }
 
+.risk-clear {
+  padding: 18px 20px;
+  color: var(--positive);
+  font-size: 14px;
+  border-color: color-mix(in srgb, var(--positive) 25%, var(--line));
+  background: color-mix(in srgb, var(--positive) 6%, var(--panel));
+}
+
 @media (max-width: 960px) {
   .stat-band { grid-template-columns: repeat(2, 1fr); }
   .risk-band { grid-template-columns: 1fr; }

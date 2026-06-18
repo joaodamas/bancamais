@@ -4,7 +4,8 @@ import { Toaster, toast } from "react-hot-toast";
 import {
   LayoutDashboard, ListChecks, Upload, Brain, FileBarChart,
   TrendingUp, Wallet, Target, Settings2, Plus,
-  CloudUpload, User as UserIcon, Bell, Search, X
+  CloudUpload, User as UserIcon, Bell, Search, X,
+  ShieldAlert, Activity
 } from "lucide-react";
 import { BrandLogo } from "./components/BrandLogo";
 import { CookieBanner, getStoredConsent, type CookieConsent } from "./components/CookieBanner";
@@ -38,12 +39,14 @@ import { EditBetModal } from "./components/EditBetModal";
 import type { OnboardingResult } from "./components/Onboarding";
 import { buildBookmaker, buildManualTransaction, buildVoidEntry } from "./services/bookmaker.service";
 
-type View = "dashboard" | "bets" | "new-bet" | "import" | "intelligence" | "reports" | "clv" | "books" | "strategies" | "settings";
+type View = "dashboard" | "bets" | "new-bet" | "import" | "risk" | "performance" | "intelligence" | "reports" | "clv" | "books" | "strategies" | "settings";
 
 type NavItem = { id: View; label: string; badge?: string; Icon: React.ElementType };
 
 const Onboarding = lazy(() => import("./components/Onboarding").then((module) => ({ default: module.Onboarding })));
 const Dashboard = lazy(() => import("./components/Dashboard").then((module) => ({ default: module.Dashboard })));
+const Risk = lazy(() => import("./components/Risk").then((module) => ({ default: module.Risk })));
+const Performance = lazy(() => import("./components/Performance").then((module) => ({ default: module.Performance })));
 const Bets = lazy(() => import("./components/Bets").then((module) => ({ default: module.Bets })));
 const NewBet = lazy(() => import("./components/NewBet").then((module) => ({ default: module.NewBet })));
 const QuickBet = lazy(() => import("./components/QuickBet").then((module) => ({ default: module.QuickBet })));
@@ -89,6 +92,8 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
   {
     label: "Análise",
     items: [
+      { id: "risk" as View, label: "Risco", Icon: ShieldAlert },
+      { id: "performance" as View, label: "Performance", Icon: Activity },
       { id: "intelligence" as View, label: "Inteligência", badge: "IA", Icon: Brain },
       { id: "reports" as View, label: "Relatórios", Icon: FileBarChart },
       { id: "clv" as View, label: "CLV & Edge", Icon: TrendingUp },
@@ -1272,6 +1277,10 @@ export function App() {
         return <Bets state={state} settleBet={settleBet} bulkSettle={bulkSettle} deleteBet={deleteBet} onEditBet={setEditingBetId} />;
       case "import":
         return <Import state={state} importBets={importBets} onOpenBets={() => setView("bets")} />;
+      case "risk":
+        return <Risk state={state} metrics={metrics} />;
+      case "performance":
+        return <Performance state={state} metrics={metrics} />;
       case "intelligence":
         return <Intelligence state={state} metrics={metrics} onOpenNewBet={openNewBet} />;
       case "reports":
