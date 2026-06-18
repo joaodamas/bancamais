@@ -8414,7 +8414,229 @@ button.danger:hover {
   font-weight: 600;
 }
 
+/* =========================================================
+   APOSTAS v2 — toolbar única, resumo enxuto, tabela proporcional
+   ========================================================= */
+
+.bets-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.bets-head-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bets-search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 240px;
+  padding: 7px 11px;
+  border-radius: 9px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+}
+
+.bets-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.bets-search-clear {
+  display: flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.bets-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 9px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.bets-tool-btn:hover { border-color: var(--accent); }
+
+.bets-tool-btn.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent-bright);
+}
+
+.bets-summary-strip {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  padding: 13px 20px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.bets-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bets-summary-item span {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bets-summary-item strong {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.bets-summary-spacer { flex: 1; }
+
+.bets-summary-sorthint {
+  font-size: 11px;
+  color: var(--soft);
+}
+
+/* Tabela proporcional */
+.bets-table-v2 {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.bets-table-v2 th,
+.bets-table-v2 td {
+  padding: 11px 14px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--line);
+}
+
+.bets-table-v2 td.num,
+.bets-table-v2 th.num {
+  text-align: right;
+}
+
+.bets-table-v2 tbody tr:hover {
+  background: rgba(47, 132, 102, 0.04);
+}
+
+.bet-event-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bet-event-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bet-event-sub {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bet-print-link { color: var(--accent); }
+
+.bet-market-name {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bet-market-sel {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bet-book {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.bet-strat {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bets-table-v2 td.num strong {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.bets-table-v2 td.num small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+}
+
+.bet-odd { color: var(--muted); }
+
+.bets-table-v2 .bet-status-cell { white-space: nowrap; }
+
+.bets-table-v2 .bet-actions-cell .bet-settle-actions {
+  justify-content: flex-end;
+}
+
 @media (max-width: 960px) {
   .stat-band { grid-template-columns: repeat(2, 1fr); }
   .risk-band { grid-template-columns: 1fr; }
+  .bets-summary-strip { flex-wrap: wrap; gap: 18px; }
 }

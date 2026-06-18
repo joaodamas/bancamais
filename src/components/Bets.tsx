@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createColumnHelper,
-  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
@@ -9,9 +8,9 @@ import {
   type SortingState,
   type ColumnFiltersState,
 } from "@tanstack/react-table";
-import { MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown, SlidersHorizontal, X, Check } from "lucide-react";
+import { MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown, SlidersHorizontal, X, Check, Search } from "lucide-react";
 import { betsToCsv, downloadTextFile } from "../lib/csv";
-import { betProfit, clvPercent, money, percent, potentialReturn } from "../lib/metrics";
+import { betProfit, money, potentialReturn } from "../lib/metrics";
 import { eventDelta, isImminent } from "../lib/betTime";
 import type { AppState, Bet } from "../lib/types";
 
@@ -58,6 +57,7 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
   const pendingBets = state.bets.filter((b) => b.status === "pending");
   const settledBets = state.bets.filter((b) => b.status !== "pending");
   const openExposure = pendingBets.reduce((s, b) => s + b.stake, 0);
+  const pendingPotential = pendingBets.reduce((s, b) => s + potentialReturn(b), 0);
   const settledProfit = settledBets.reduce((s, b) => s + betProfit(b), 0);
 
   function getReturnValue(bet: Bet) {
@@ -220,31 +220,69 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
     return <ArrowUpDown size={12} className="sort-icon" />;
   }
 
+  const sortLabel = (id?: string) =>
+    id === "placedAt" ? "registro" : id === "eventAt" ? "evento" : id === "stake" ? "stake" : id === "odds" ? "odd" : id === "status" ? "status" : id ?? "registro";
+
   return (
     <section className="page page-bets">
-      <div className="page-actions">
-        <div className="page-actions-copy">
-          <strong>{state.bets.length} apostas registradas</strong>
-          <span>Ordene, filtre e liquide resultados. Clique nos cabeçalhos para ordenar.</span>
+      {/* Toolbar única: filtros de status + busca + export */}
+      <div className="bets-head">
+        <div className="filter-tabs">
+          {(["all", "pending", "won", "lost", "cashout", "void"] as const).map((s) => (
+            <button
+              key={s}
+              className={statusFilter === s ? "filter-tab active" : "filter-tab"}
+              onClick={() => setStatusFilter(s)}
+            >
+              {s === "all" ? "Todas" : (statusLabel[s as Bet["status"]] ?? s)}
+              <em>{s === "all" ? state.bets.length : state.bets.filter((b) => b.status === s).length}</em>
+            </button>
+          ))}
         </div>
-        <div className="page-actions-controls">
-          <input
-            placeholder="Buscar evento, esporte, liga, tag..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-          />
+        <div className="bets-head-tools">
+          <div className="bets-search">
+            <Search size={14} />
+            <input
+              placeholder="Filtrar apostas..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+            />
+            {globalFilter && (
+              <button className="bets-search-clear" onClick={() => setGlobalFilter("")} title="Limpar"><X size={12} /></button>
+            )}
+          </div>
           <button
-            className={showFilters ? "primary" : ""}
+            className={showFilters ? "bets-tool-btn active" : "bets-tool-btn"}
             onClick={() => setShowFilters((v) => !v)}
-            title="Filtros por coluna"
+            title="Filtros avançados"
           >
             <SlidersHorizontal size={14} />
           </button>
-          <button onClick={() => downloadTextFile("bancamais-apostas.csv", betsToCsv(state))}>Exportar CSV</button>
+          <button className="bets-tool-btn" onClick={() => downloadTextFile("bancamais-apostas.csv", betsToCsv(state))}>
+            Exportar CSV
+          </button>
         </div>
       </div>
 
-      {/* Column filters panel */}
+      {/* Resumo financeiro compacto (não repete contagens — essas estão nas abas) */}
+      <div className="bets-summary-strip">
+        <div className="bets-summary-item">
+          <span>Em risco</span>
+          <strong className="text-mono">{money.format(openExposure)}</strong>
+        </div>
+        <div className="bets-summary-item">
+          <span>Retorno potencial</span>
+          <strong className="text-mono">{money.format(pendingPotential)}</strong>
+        </div>
+        <div className="bets-summary-item">
+          <span>Lucro realizado</span>
+          <strong className={`text-mono ${settledProfit >= 0 ? "pos" : "neg"}`}>{money.format(settledProfit)}</strong>
+        </div>
+        <div className="bets-summary-spacer" />
+        <span className="bets-summary-sorthint">ordenado por {sortLabel(sorting[0]?.id)}</span>
+      </div>
+
+      {/* Filtros avançados (opcional) */}
       {showFilters && (
         <div className="bets-column-filters">
           <label>
@@ -288,50 +326,6 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
         </div>
       )}
 
-      <div className="bets-toolbar">
-        <div className="bets-toolbar-copy">
-          <strong>
-            {rows.length} resultado{rows.length !== 1 ? "s" : ""}{globalFilter ? ` para "${globalFilter}"` : tagFilter ? ` com #${tagFilter}` : ""}
-          </strong>
-        </div>
-        <div className="bets-toolbar-meta">
-          <span>Pendente {pendingBets.length}</span>
-          <span>Liquidadas {settledBets.length}</span>
-          <span>Cashout {state.bets.filter((b) => b.status === "cashout").length}</span>
-        </div>
-      </div>
-
-      <div className="ops-summary-grid">
-        <article className="ops-summary-card">
-          <span>Pendentes</span>
-          <strong>{pendingBets.length}</strong>
-          <small>{money.format(openExposure)} em risco</small>
-        </article>
-        <article className="ops-summary-card">
-          <span>Liquidadas</span>
-          <strong>{settledBets.length}</strong>
-          <small>apostas encerradas</small>
-        </article>
-        <article className="ops-summary-card">
-          <span>Lucro realizado</span>
-          <strong className={settledProfit >= 0 ? "pos" : "neg"}>{money.format(settledProfit)}</strong>
-          <small>apostas fechadas</small>
-        </article>
-      </div>
-
-      <div className="filter-tabs">
-        {(["all", "pending", "won", "lost", "cashout", "void"] as const).map((s) => (
-          <button
-            key={s}
-            className={statusFilter === s ? "filter-tab active" : "filter-tab"}
-            onClick={() => setStatusFilter(s)}
-          >
-            {s === "all" ? "Todas" : (statusLabel[s as Bet["status"]] ?? s)}
-            <em>{s === "all" ? state.bets.length : state.bets.filter((b) => b.status === s).length}</em>
-          </button>
-        ))}
-      </div>
-
       {allTags.length > 0 && (
         <div className="tag-filter-row">
           {tagFilter && (
@@ -364,17 +358,18 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
       )}
 
       <div className="table-card">
-        <div className="table-shell-head">
-          <div>
-            <strong>Ordenado por {sorting[0]?.id === "placedAt" ? "data de registro" : sorting[0]?.id === "stake" ? "stake" : sorting[0]?.id ?? "data"}</strong>
-          </div>
-          <div className="table-shell-meta">
-            <span>{money.format(openExposure)} em risco</span>
-            <span>{rows.filter((r) => r.original.status === "pending").length} pendentes visíveis</span>
-          </div>
-        </div>
         <div className="bets-table-wrapper">
-          <table className="bets-table bets-table-expanded">
+          <table className="bets-table bets-table-v2">
+            <colgroup>
+              <col style={{ width: "38px" }} />
+              <col />
+              <col style={{ width: "27%" }} />
+              <col style={{ width: "108px" }} />
+              <col style={{ width: "104px" }} />
+              <col style={{ width: "140px" }} />
+              <col style={{ width: "104px" }} />
+              <col style={{ width: "120px" }} />
+            </colgroup>
             <thead>
               <tr>
                 <th className="bet-select-col">
@@ -386,44 +381,23 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                     aria-label="Selecionar todas pendentes"
                   />
                 </th>
-                <th
-                  className={table.getColumn("eventName")?.getCanSort() ? "sortable" : ""}
-                  onClick={() => table.getColumn("eventName")?.toggleSorting()}
-                >
+                <th className="sortable" onClick={() => table.getColumn("eventName")?.toggleSorting()}>
                   Evento <SortIcon colId="eventName" />
                 </th>
-                <th
-                  className={table.getColumn("market")?.getCanSort() ? "sortable" : ""}
-                  onClick={() => table.getColumn("market")?.toggleSorting()}
-                >
+                <th className="sortable" onClick={() => table.getColumn("market")?.toggleSorting()}>
                   Mercado <SortIcon colId="market" />
                 </th>
-                <th
-                  className={table.getColumn("bookmakerId")?.getCanSort() ? "sortable" : ""}
-                  onClick={() => table.getColumn("bookmakerId")?.toggleSorting()}
-                >
-                  Execução <SortIcon colId="bookmakerId" />
+                <th className="sortable" onClick={() => table.getColumn("bookmakerId")?.toggleSorting()}>
+                  Casa <SortIcon colId="bookmakerId" />
                 </th>
-                <th
-                  className={table.getColumn("stake")?.getCanSort() ? "sortable" : ""}
-                  onClick={() => table.getColumn("stake")?.toggleSorting()}
-                >
-                  Stake <SortIcon colId="stake" />
+                <th className="num sortable" onClick={() => table.getColumn("stake")?.toggleSorting()}>
+                  Aposta <SortIcon colId="stake" />
                 </th>
-                <th
-                  className={table.getColumn("odds")?.getCanSort() ? "sortable" : ""}
-                  onClick={() => table.getColumn("odds")?.toggleSorting()}
-                >
-                  Odd <SortIcon colId="odds" />
-                </th>
-                <th>Performance</th>
-                <th
-                  className={table.getColumn("status")?.getCanSort() ? "sortable" : ""}
-                  onClick={() => table.getColumn("status")?.toggleSorting()}
-                >
+                <th className="num">Retorno</th>
+                <th className="sortable" onClick={() => table.getColumn("status")?.toggleSorting()}>
                   Status <SortIcon colId="status" />
                 </th>
-                <th>Ações</th>
+                <th className="bet-actions-col">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -432,6 +406,7 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                 const isPending = bet.status === "pending";
                 const delta = eventDelta(bet.eventAt);
                 const imminent = isPending && isImminent(bet.eventAt);
+                const gain = getGainValue(bet);
                 return (
                   <tr key={bet.id} className={`${imminent ? "bet-row-imminent" : ""}${selectedIds.has(bet.id) ? " bet-row-selected" : ""}`}>
                     <td className="bet-select-col">
@@ -445,74 +420,45 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                       )}
                     </td>
                     <td className="bet-cell bet-cell-event">
-                      <div className="bet-block-head">
-                        <strong className="bet-primary-text bet-clamp-2" title={bet.eventName}>{bet.eventName}</strong>
+                      <div className="bet-event-line">
+                        <strong className="bet-event-name" title={bet.eventName}>{bet.eventName}</strong>
                         {isPending && delta.label && (
                           <span className={`bet-time-chip bet-time-${delta.state}`}>{delta.label}</span>
                         )}
                       </div>
-                      <small>
-                        {bet.sport} · {bet.league}
-                        {!isPending && ` · ${new Date(bet.eventAt).toLocaleDateString("pt-BR")}`}
+                      <small className="bet-event-sub">
+                        {bet.sport} · {bet.league} · {bet.mode === "live" ? "Live" : "Pré-live"}
+                        {bet.source === "ocr" && " · OCR"}
+                        {bet.slipImageUrl && (
+                          <> · <a className="bet-print-link" href={bet.slipImageUrl} rel="noreferrer" target="_blank">print</a></>
+                        )}
                       </small>
-                      <div className="bet-meta-chips">
-                        <span className="bet-meta-chip">{bet.mode === "live" ? "Live" : "Pre-live"}</span>
-                        {bet.source && <span className="bet-meta-chip">{bet.source === "ai_suggestion" ? "IA" : bet.source.toUpperCase()}</span>}
-                        {bet.tags.slice(0, 2).map((tag) => (
-                          <span key={tag} className="bet-meta-chip">#{tag}</span>
-                        ))}
-                        {bet.slipImageUrl && <a className="bet-meta-chip bet-meta-chip-link" href={bet.slipImageUrl} rel="noreferrer" target="_blank">Ver print</a>}
-                      </div>
                     </td>
-                    <td className="bet-cell" data-label="Mercado">
-                      <strong className="bet-primary-text bet-clamp-2" title={bet.market}>{bet.market}</strong>
-                      <small className="bet-clamp-2" title={bet.selection}>{bet.selection}</small>
+                    <td className="bet-cell bet-cell-market">
+                      <strong className="bet-market-name" title={bet.market}>{bet.market}</strong>
+                      <small className="bet-market-sel" title={bet.selection}>{bet.selection}</small>
                     </td>
-                    <td className="bet-cell" data-label="Execução">
-                      <strong className="bet-primary-text">{bookmakerById.get(bet.bookmakerId) ?? "-"}</strong>
-                      {bet.strategyId && <small>{strategyById.get(bet.strategyId) ?? "Com estrategia"}</small>}
+                    <td className="bet-cell">
+                      <span className="bet-book">{bookmakerById.get(bet.bookmakerId) ?? "—"}</span>
+                      {bet.strategyId && <small className="bet-strat">{strategyById.get(bet.strategyId) ?? ""}</small>}
                     </td>
-                    <td className="bet-cell bet-cell-money" data-label="Stake">
-                      <strong className="bet-primary-text text-mono">{money.format(bet.stake)}</strong>
+                    <td className="bet-cell num">
+                      <strong className="text-mono">{money.format(bet.stake)}</strong>
+                      <small className="text-mono bet-odd">@ {bet.odds.toFixed(2)}</small>
                     </td>
-                    <td className="bet-cell" data-label="Odd">
-                      <strong className="bet-primary-text text-mono">@ {bet.odds.toFixed(2)}</strong>
-                      {bet.closingOdds && <small className="text-mono">fech. {bet.closingOdds.toFixed(2)}</small>}
+                    <td className="bet-cell num">
+                      <strong className="text-mono">{money.format(getReturnValue(bet))}</strong>
+                      <small className={`text-mono ${gain >= 0 ? "pos" : "neg"}`}>
+                        {gain >= 0 ? "+" : ""}{money.format(gain)}
+                      </small>
                     </td>
-                    <td className="bet-cell bet-cell-performance">
-                      <div className="perf-row">
-                        <span className="perf-label">Retorno</span>
-                        <strong className="text-mono">{money.format(getReturnValue(bet))}</strong>
-                      </div>
-                      <div className="perf-row">
-                        <span className="perf-label">Ganho</span>
-                        <strong className={`text-mono ${getGainValue(bet) >= 0 ? "pos" : "neg"}`}>
-                          {getGainValue(bet) >= 0 ? "+" : ""}{money.format(getGainValue(bet))}
-                        </strong>
-                      </div>
-                      {bet.closingOdds && (
-                        <div className="perf-row">
-                          <span className="perf-label">CLV</span>
-                          <span className={`text-mono ${(clvPercent(bet) ?? 0) >= 0 ? "pos" : "neg"}`}>
-                            {clvPercent(bet) === null ? "—" : percent.format(clvPercent(bet)!)}
-                          </span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="bet-status-cell" data-label="Status">
+                    <td className="bet-cell bet-status-cell">
                       <span className={`pill ${bet.status}`}>{statusLabel[bet.status]}</span>
-                      {bet.status !== "pending" && (
-                        <div className="settlement-value">
-                          <span className={betProfit(bet) >= 0 ? "pos" : "neg"}>{money.format(betProfit(bet))}</span>
-                          <small>{bet.payout ? `Retorno ${money.format(bet.payout)}` : "Sem retorno financeiro"}</small>
-                        </div>
-                      )}
                     </td>
-                    <td className="bet-actions-cell">
+                    <td className="bet-cell bet-actions-cell">
                       {confirmDeleteId === bet.id ? (
                         <div className="actions actions-compact">
-                          <span className="bet-delete-confirm-label">Excluir?</span>
-                          <button className="danger" onClick={() => { deleteBet(bet.id); setConfirmDeleteId(null); }}>Confirmar</button>
+                          <button className="danger" onClick={() => { deleteBet(bet.id); setConfirmDeleteId(null); }}>Excluir</button>
                           <button onClick={() => setConfirmDeleteId(null)}>Cancelar</button>
                         </div>
                       ) : bet.status === "pending" ? (
@@ -542,26 +488,16 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                                   const amount = Number(cashoutInput);
                                   if (amount > 0) { settleBet(bet.id, "cashout", amount); setCashoutBetId(null); setCashoutInput(""); }
                                 }}
-                              >Confirmar</button>
-                              <button onClick={() => { setCashoutBetId(null); setCashoutInput(""); }}>Cancelar</button>
+                              >OK</button>
+                              <button onClick={() => { setCashoutBetId(null); setCashoutInput(""); }}>×</button>
                             </div>
                           </div>
                         ) : (
                           <div className="bet-settle-actions">
-                            <button
-                              className="settle-btn settle-won"
-                              type="button"
-                              title="Liquidar como ganha"
-                              onClick={() => settleBet(bet.id, "won")}
-                            >
+                            <button className="settle-btn settle-won" type="button" title="Liquidar como ganha" onClick={() => settleBet(bet.id, "won")}>
                               <Check size={14} />
                             </button>
-                            <button
-                              className="settle-btn settle-lost"
-                              type="button"
-                              title="Liquidar como perdida"
-                              onClick={() => settleBet(bet.id, "lost")}
-                            >
+                            <button className="settle-btn settle-lost" type="button" title="Liquidar como perdida" onClick={() => settleBet(bet.id, "lost")}>
                               <X size={14} />
                             </button>
                             <div className="bet-actions-menu" ref={actionMenuBetId === bet.id ? actionMenuRef : null}>
@@ -578,7 +514,7 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                                 <div className="bet-actions-dropdown">
                                   <button onClick={() => { onEditBet(bet.id); setActionMenuBetId(null); }}>Editar</button>
                                   <button onClick={() => { setCashoutBetId(bet.id); setCashoutInput(""); setActionMenuBetId(null); }}>Cashout</button>
-                                  <button onClick={() => { settleBet(bet.id, "void"); setActionMenuBetId(null); }}>Void</button>
+                                  <button onClick={() => { settleBet(bet.id, "void"); setActionMenuBetId(null); }}>Anular (void)</button>
                                   <div className="bet-actions-separator" />
                                   <button className="danger-ghost" onClick={() => { setConfirmDeleteId(bet.id); setActionMenuBetId(null); }}>Excluir</button>
                                 </div>
@@ -588,17 +524,19 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                         )
                       ) : (
                         <div className="bet-actions-menu" ref={actionMenuBetId === bet.id ? actionMenuRef : null}>
-                          <span className="bet-closed-state">Encerrada</span>
                           <button
                             className="bet-actions-trigger"
                             type="button"
                             onClick={() => setActionMenuBetId((c) => c === bet.id ? null : bet.id)}
                             aria-expanded={actionMenuBetId === bet.id}
+                            title="Ações"
                           >
                             <MoreHorizontal size={16} />
                           </button>
                           {actionMenuBetId === bet.id && (
                             <div className="bet-actions-dropdown">
+                              <button onClick={() => { onEditBet(bet.id); setActionMenuBetId(null); }}>Editar</button>
+                              <div className="bet-actions-separator" />
                               <button className="danger-ghost" onClick={() => { setConfirmDeleteId(bet.id); setActionMenuBetId(null); }}>Excluir</button>
                             </div>
                           )}
@@ -610,7 +548,7 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
               })}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={8}>
                     <div className="table-empty rich">
                       <strong>{state.bets.length === 0 ? "Nenhuma aposta registrada" : "Nenhum resultado para os filtros"}</strong>
                       <span>{state.bets.length === 0 ? "Abra Nova aposta para iniciar sua base." : "Ajuste os filtros ou a busca."}</span>
