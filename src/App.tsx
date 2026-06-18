@@ -9,6 +9,7 @@ import {
 import { BrandLogo } from "./components/BrandLogo";
 import { CookieBanner, getStoredConsent, type CookieConsent } from "./components/CookieBanner";
 import { LoadingScreen } from "./components/LoadingScreen";
+import { Button } from "./components/ui/button";
 import {
   createEmailUser,
   loadCloudState,
@@ -1179,10 +1180,10 @@ export function App() {
                 <span>Salvar</span>
               </button>
             )}
-            <button className="primary btn-nova-aposta" onClick={() => openNewBet()}>
+            <Button className="primary btn-nova-aposta" onClick={() => openNewBet()}>
               <Plus size={16} />
               <span>Nova aposta</span>
-            </button>
+            </Button>
           </div>
         </header>
 
@@ -1209,14 +1210,14 @@ export function App() {
           position="bottom-right"
           toastOptions={{
             style: {
-              background: "#1E1C18",
-              color: "#F0EDE8",
-              border: "1px solid rgba(255,250,240,0.13)",
+              background: "#141414",
+              color: "#EDEDED",
+              border: "1px solid rgba(255,255,255,0.12)",
               fontFamily: "'Inter', system-ui, sans-serif",
               fontSize: "14px",
             },
-            success: { iconTheme: { primary: "#4ADE80", secondary: "#0a1a0f" } },
-            error: { iconTheme: { primary: "#F87171", secondary: "#1a0505" } },
+            success: { iconTheme: { primary: "#22C55E", secondary: "#0a1a0f" } },
+            error: { iconTheme: { primary: "#EF4444", secondary: "#1a0505" } },
           }}
         />
 

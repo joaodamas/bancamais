@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import { money } from "../lib/metrics";
 import { getDerivedBookmakerBalance } from "../lib/ledger";
 import type { AppState, Bet } from "../lib/types";
+import { Button } from "./ui/button";
 
 interface EditBetModalProps {
   bet: Bet;
@@ -154,10 +155,10 @@ export function EditBetModal({ bet, state, onSubmit, onClose }: EditBetModalProp
           </div>
 
           <div className="edit-bet-actions">
-            <button type="button" onClick={onClose}>Cancelar</button>
-            <button className="primary" type="submit" disabled={submitting}>
+            <Button variant="ghost" type="button" onClick={onClose}>Cancelar</Button>
+            <Button className="primary" type="submit" disabled={submitting}>
               {submitting ? "Salvando..." : "Salvar alterações"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

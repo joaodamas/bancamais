@@ -177,6 +177,42 @@ export function AuthPage({ onSignIn, onSignUp, onReset, onDemoMode, onGoogleSign
               </li>
             ))}
           </ul>
+
+          <div className="auth-terminal" aria-hidden="true">
+            <div className="auth-terminal-bar">
+              <span className="auth-terminal-dot" />
+              <span className="auth-terminal-dot" />
+              <span className="auth-terminal-dot" />
+              <span className="auth-terminal-title">banca+ · live metrics</span>
+            </div>
+            <div className="auth-terminal-body">
+              <div className="auth-terminal-row">
+                <span className="auth-terminal-key">roi</span>
+                <span className="auth-terminal-val auth-terminal-pos">+12.4%</span>
+              </div>
+              <div className="auth-terminal-row">
+                <span className="auth-terminal-key">yield</span>
+                <span className="auth-terminal-val auth-terminal-pos">+4.8%</span>
+              </div>
+              <div className="auth-terminal-row">
+                <span className="auth-terminal-key">clv médio</span>
+                <span className="auth-terminal-val auth-terminal-accent">+2.1%</span>
+              </div>
+              <div className="auth-terminal-row">
+                <span className="auth-terminal-key">hit rate</span>
+                <span className="auth-terminal-val">54.3%</span>
+              </div>
+              <div className="auth-terminal-spark">
+                <span style={{ height: "32%" }} />
+                <span style={{ height: "58%" }} />
+                <span style={{ height: "44%" }} />
+                <span style={{ height: "72%" }} />
+                <span style={{ height: "64%" }} />
+                <span style={{ height: "88%" }} />
+                <span style={{ height: "100%" }} />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

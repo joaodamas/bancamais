@@ -9,13 +9,24 @@ Banca+ é uma ferramenta financeira de gestão de apostas esportivas. **Não é 
 | Camada | Tecnologia |
 |---|---|
 | Framework | React 19 + TypeScript 5 (strict) |
-| Build | Vite 7 |
-| Estilo | CSS puro (src/styles.css) — sem Tailwind |
+| Build | Vite 7 + @tailwindcss/vite |
+| Estilo | Tailwind CSS v4 (CSS-first) + `src/styles.css` (tokens + classes globais) |
+| Componentes UI | shadcn/ui (Radix UI + cva + tailwind-merge) em `src/components/ui/` |
 | Ícones | lucide-react |
-| Gráficos | recharts |
+| Gráficos | recharts (cores hex inline — não lê CSS vars) |
 | Notificações | react-hot-toast |
 | Backend | Firebase (Auth + Firestore + Storage) |
 | Deploy | Firebase Hosting |
+
+### Design system — Linear/Vercel dark
+
+Paleta minimalista dark definida em `:root` em `styles.css`:
+- Background `#0A0A0A` (`--bg`) · Surface `#111111`/`#141414` (`--panel`/`--panel-2`)
+- Border `rgba(255,255,255,0.08)` (`--line`) · Text `#EDEDED` (`--text`) · Muted `#888888` (`--muted`)
+- Accent `#7C3AED` (`--accent`) · Success `#22C55E` · Error `#EF4444` · Warning `#F59E0B`
+- Fontes: Inter (UI) + JetBrains Mono (números/dados)
+
+`styles.css` começa com `@import "tailwindcss";` seguido das variáveis shadcn/ui e dos tokens de design. As classes customizadas existentes (notif-panel, cookie-banner, tag-chip, chart-period-tab, edit-bet-modal, lgpd-actions, etc.) foram mantidas e re-skinadas via tokens. Use `cn()` de `src/lib/utils.ts` para compor classes Tailwind.
 
 ## Estrutura de arquivos
 
