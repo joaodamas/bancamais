@@ -8809,6 +8809,33 @@ button.danger:hover {
   color: var(--positive);
 }
 
+/* ── Skeleton col-aware com shimmer fluido (Stripe-like) ── */
+.skel-block {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.055) 25%,
+    rgba(15, 23, 42, 0.11) 37%,
+    rgba(15, 23, 42, 0.055) 63%
+  );
+  background-size: 400% 100%;
+  animation: skel-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skel-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+.bets-table-v2 td.num .skel-block { margin-left: auto; }
+
+.bet-skel-row td { vertical-align: middle; }
+
+@media (prefers-reduced-motion: reduce) {
+  .skel-block { animation: none; }
+}
+
 @media (max-width: 960px) {
   .stat-band { grid-template-columns: repeat(2, 1fr); }
   .risk-band { grid-template-columns: 1fr; }

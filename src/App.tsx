@@ -10,6 +10,7 @@ import {
 import { BrandLogo } from "./components/BrandLogo";
 import { CookieBanner, getStoredConsent, type CookieConsent } from "./components/CookieBanner";
 import { LoadingScreen } from "./components/LoadingScreen";
+import { BetsSkeleton } from "./components/BetsSkeleton";
 import { Button } from "./components/ui/button";
 import {
   createEmailUser,
@@ -1227,7 +1228,7 @@ export function App() {
           </div>
         </header>
 
-        <Suspense fallback={<ViewFallback title={`Carregando ${viewTitle(view).toLowerCase()}...`} />}>
+        <Suspense fallback={view === "bets" ? <BetsSkeleton /> : <ViewFallback title={`Carregando ${viewTitle(view).toLowerCase()}...`} />}>
           {currentView}
         </Suspense>
 
