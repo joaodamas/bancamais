@@ -22,15 +22,15 @@ import { RiskAdvisor } from "./RiskAdvisor";
 
 // Cores do design system Banca+ (hex direto — Recharts não lê CSS vars)
 const COLORS = {
-  accent: "#6366F1",
-  cyan: "#818CF8",
-  green: "#10B981",
-  red: "#BE123C",
+  accent: "#8B5CF6",
+  cyan: "#22D3EE",
+  green: "#34D399",
+  red: "#FB7185",
   amber: "#FBBF24",
-  panel: "#18181B",
-  line: "#27272A",
-  muted: "#94A3B8",
-  bg: "#09090B",
+  panel: "#1E2026",
+  line: "rgba(255,255,255,0.09)",
+  muted: "#A1A1AA",
+  bg: "#16171B",
 };
 
 type ChartTooltipPayloadEntry = {

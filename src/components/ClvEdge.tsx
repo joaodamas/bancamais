@@ -17,12 +17,12 @@ import { buildClvTimeSeries } from "../lib/chartData";
 import type { AppState } from "../lib/types";
 
 const COLORS = {
-  accent: "#7cffb2",
-  red: "#ff6b81",
-  cyan: "#5ee0ff",
-  panel: "#10172a",
-  line: "rgba(148,163,184,0.16)",
-  muted: "#8a95ad",
+  accent: "#8B5CF6",
+  red: "#FB7185",
+  cyan: "#22D3EE",
+  panel: "#1E2026",
+  line: "rgba(255,255,255,0.09)",
+  muted: "#A1A1AA",
 };
 
 export function ClvEdge({
