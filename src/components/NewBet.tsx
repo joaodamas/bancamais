@@ -19,6 +19,9 @@ import type {
   NewBetPrefill,
 } from "../lib/types";
 import { isSportsApiConfigured, searchFixtures, type FixtureSearchResult } from "../lib/sportsApi";
+import { deriveBetSuggestions, leaguesForSport } from "../lib/betSuggestions";
+
+const DEFAULT_SPORTS = ["Futebol", "Basquete", "Tênis", "Esports", "Vôlei", "Hóquei", "Beisebol", "NFL", "MMA"];
 
 interface NewBetProps {
   state: AppState;
@@ -113,6 +116,17 @@ export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange }
     const selectedBookmaker = state.bookmakers.find((book) => book.id === formValues.bookmakerId);
     return selectedBookmaker?.name ?? null;
   }, [formValues.bookmakerId, state.bookmakers]);
+
+  // Autocomplete derivado do histórico (esporte/liga/mercado/seleção/tags)
+  const betSuggestions = useMemo(() => deriveBetSuggestions(state), [state]);
+  const sportOptions = useMemo(
+    () => [...new Set([...betSuggestions.sports, ...DEFAULT_SPORTS])],
+    [betSuggestions.sports],
+  );
+  const leagueOptions = useMemo(
+    () => leaguesForSport(state, formValues.sport),
+    [state, formValues.sport],
+  );
 
   const baselineFormValues = useMemo<NewBetFormValues>(() => ({
     ...initialFormValues,
@@ -674,12 +688,14 @@ export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange }
                 </label>
                 <label>
                   {renderFieldLabel("Esporte", "sport")}
-                  <input className={getFieldStateClass("sport")} name="sport" required placeholder="Futebol" value={formValues.sport} onChange={handleTextInput("sport")} />
+                  <input className={getFieldStateClass("sport")} name="sport" required placeholder="Futebol" value={formValues.sport} onChange={handleTextInput("sport")} list="nb-sport-options" autoComplete="off" />
+                  <datalist id="nb-sport-options">{sportOptions.map((s) => <option key={s} value={s} />)}</datalist>
                   {renderOcrFieldMeta("sport")}
                 </label>
                 <label>
                   {renderFieldLabel("Liga", "league")}
-                  <input className={getFieldStateClass("league")} name="league" required placeholder="UCL" value={formValues.league} onChange={handleTextInput("league")} />
+                  <input className={getFieldStateClass("league")} name="league" required placeholder="UCL" value={formValues.league} onChange={handleTextInput("league")} list="nb-league-options" autoComplete="off" />
+                  <datalist id="nb-league-options">{leagueOptions.map((l) => <option key={l} value={l} />)}</datalist>
                   {renderOcrFieldMeta("league")}
                 </label>
               </div>
@@ -694,12 +710,14 @@ export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange }
             <div className="nb-section-body nb-row-2">
               <label>
                 {renderFieldLabel("Mercado", "market")}
-                <input className={getFieldStateClass("market")} name="market" required placeholder="Total de gols" value={formValues.market} onChange={handleTextInput("market")} />
+                <input className={getFieldStateClass("market")} name="market" required placeholder="Total de gols" value={formValues.market} onChange={handleTextInput("market")} list="nb-market-options" autoComplete="off" />
+                <datalist id="nb-market-options">{betSuggestions.markets.map((m) => <option key={m} value={m} />)}</datalist>
                 {renderOcrFieldMeta("market")}
               </label>
               <label>
                 {renderFieldLabel("Seleção", "selection")}
-                <input className={getFieldStateClass("selection")} name="selection" required placeholder="Over 2.5 gols" value={formValues.selection} onChange={handleTextInput("selection")} />
+                <input className={getFieldStateClass("selection")} name="selection" required placeholder="Over 2.5 gols" value={formValues.selection} onChange={handleTextInput("selection")} list="nb-selection-options" autoComplete="off" />
+                <datalist id="nb-selection-options">{betSuggestions.selections.map((s) => <option key={s} value={s} />)}</datalist>
                 {renderOcrFieldMeta("selection")}
               </label>
             </div>
