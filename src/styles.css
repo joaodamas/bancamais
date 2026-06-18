@@ -5046,6 +5046,30 @@ nav button:hover:not(.active) {
   color: #64748B;
 }
 
+.topbar-breadcrumb {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  line-height: 1.2;
+}
+
+.topbar-breadcrumb .crumb-root {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.topbar-breadcrumb .crumb-sep {
+  font-size: 13px;
+  color: var(--soft);
+}
+
+.topbar-breadcrumb strong {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
 .topbar-actions {
   gap: 10px;
 }

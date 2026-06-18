@@ -1164,7 +1164,18 @@ export function App() {
             )}
           </div>
           <div className="topbar-meta">
-            <strong>{viewTitle(view)}</strong>
+            <nav className="topbar-breadcrumb" aria-label="Trilha de navegação">
+              {(() => {
+                const group = navGroups.find((g) => g.items.some((it) => it.id === view))?.label;
+                return group ? (
+                  <>
+                    <span className="crumb-root">{group}</span>
+                    <span className="crumb-sep">/</span>
+                  </>
+                ) : null;
+              })()}
+              <strong>{viewTitle(view)}</strong>
+            </nav>
             <span>{user ? accountLabel(user) : `Sem sessao · ${state.bookmakers.length} ${state.bookmakers.length === 1 ? "casa" : "casas"}`}</span>
           </div>
           <div className="topbar-actions">
