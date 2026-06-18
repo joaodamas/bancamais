@@ -97,6 +97,19 @@ export interface NewBetFormValues {
   tags: string;
 }
 
+/** Campos "fixos" de um template — o que se repete entre apostas (sem evento/odd/data). */
+export type BetTemplateFields = Pick<
+  NewBetFormValues,
+  "sport" | "league" | "market" | "selection" | "bookmakerId" | "strategyId" | "stake" | "mode" | "tags"
+>;
+
+export interface BetTemplate {
+  id: string;
+  name: string;
+  partial: Partial<BetTemplateFields>;
+  createdAt: string;
+}
+
 export interface NewBetOcrFieldMeta {
   ocrField: OcrFieldName;
   confidence: number | null;
@@ -145,6 +158,7 @@ export interface AppState {
   strategies: Strategy[];
   bets: Bet[];
   transactions: Transaction[];
+  betTemplates: BetTemplate[];
 }
 
 export type UnitMode = "fixed" | "percent";

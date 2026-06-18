@@ -12,6 +12,7 @@ import {
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import type {
   AppState,
+  BetTemplate,
   NewBetDraft,
   NewBetFormValues,
   NewBetOcrFieldMeta,
@@ -20,6 +21,8 @@ import type {
 } from "../lib/types";
 import { isSportsApiConfigured, searchFixtures, type FixtureSearchResult } from "../lib/sportsApi";
 import { deriveBetSuggestions, leaguesForSport } from "../lib/betSuggestions";
+import { canBuildTemplate } from "../services/template.service";
+import { TemplateChip } from "./TemplateChip";
 
 const DEFAULT_SPORTS = ["Futebol", "Basquete", "Tênis", "Esports", "Vôlei", "Hóquei", "Beisebol", "NFL", "MMA"];
 
@@ -30,6 +33,9 @@ interface NewBetProps {
   prefill?: NewBetPrefill | null;
   draft?: NewBetDraft | null;
   onDraftChange?: (draft: NewBetDraft | null) => void;
+  templates?: BetTemplate[];
+  onSaveTemplate?: (name: string, values: NewBetFormValues) => void;
+  onDeleteTemplate?: (id: string) => void;
 }
 
 type FormFieldName = keyof NewBetFormValues;
@@ -95,8 +101,10 @@ function isReviewFlagForField(flag: OcrReviewFlag, field: OcrFieldName) {
   return flag.field === field;
 }
 
-export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange }: NewBetProps) {
+export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange, templates = [], onSaveTemplate, onDeleteTemplate }: NewBetProps) {
   const [formValues, setFormValues] = useState<NewBetFormValues>(initialFormValues);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState("");
   const [fixtureSuggestions, setFixtureSuggestions] = useState<FixtureSearchResult[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -127,6 +135,17 @@ export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange }
     () => leaguesForSport(state, formValues.sport),
     [state, formValues.sport],
   );
+
+  function applyTemplate(template: BetTemplate) {
+    setFormValues((prev) => ({ ...prev, ...template.partial }));
+  }
+
+  function handleSaveTemplate() {
+    if (!onSaveTemplate || !canBuildTemplate(formValues)) return;
+    onSaveTemplate(templateName, formValues);
+    setTemplateName("");
+    setSavingTemplate(false);
+  }
 
   const baselineFormValues = useMemo<NewBetFormValues>(() => ({
     ...initialFormValues,
@@ -592,6 +611,50 @@ export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange }
           <input type="hidden" name="estimatedProbability" value={prefill?.estimatedProbability ?? ""} />
           <input type="hidden" name="estimatedEdge" value={prefill?.estimatedEdge ?? ""} />
           <input type="hidden" name="suggestionConfidenceScore" value={prefill?.confidenceScore ?? ""} />
+
+          {(templates.length > 0 || onSaveTemplate) && (
+            <div className="nb-templates">
+              <span className="nb-templates-label">Templates</span>
+              <div className="nb-templates-list">
+                {templates.map((t) => (
+                  <TemplateChip
+                    key={t.id}
+                    name={t.name}
+                    onApply={() => applyTemplate(t)}
+                    onDelete={onDeleteTemplate ? () => onDeleteTemplate(t.id) : undefined}
+                  />
+                ))}
+                {onSaveTemplate && (
+                  savingTemplate ? (
+                    <span className="nb-template-save">
+                      <input
+                        autoFocus
+                        placeholder="Nome do template"
+                        value={templateName}
+                        onChange={(e) => setTemplateName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") { e.preventDefault(); handleSaveTemplate(); }
+                          if (e.key === "Escape") { setSavingTemplate(false); setTemplateName(""); }
+                        }}
+                      />
+                      <button type="button" className="nb-template-save-ok" onClick={handleSaveTemplate} disabled={!canBuildTemplate(formValues)}>Salvar</button>
+                      <button type="button" className="nb-template-save-cancel" onClick={() => { setSavingTemplate(false); setTemplateName(""); }} aria-label="Cancelar">×</button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="nb-template-add"
+                      onClick={() => setSavingTemplate(true)}
+                      disabled={!canBuildTemplate(formValues)}
+                      title={canBuildTemplate(formValues) ? "Salvar os campos atuais como template" : "Preencha esporte, mercado ou casa para salvar um template"}
+                    >
+                      + Salvar atual
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="nb-section nb-ocr-section full">
             <div className="nb-section-head">

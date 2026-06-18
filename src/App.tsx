@@ -32,13 +32,14 @@ import {
 import { getDerivedBookmakerBalance, reconcileBookmakerBalances } from "./lib/ledger";
 import { createBetId, createBookmakerId, createStrategyId, createTransactionId, emptyState, isFirstRun, loadStateForUser, resetState, saveState, saveStateForUser } from "./lib/storage";
 import { uploadBetSlip } from "./lib/storageRepository";
-import type { AppState, Bet, BookmakerAccount, NewBetDraft, NewBetPrefill, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
+import type { AppState, Bet, BookmakerAccount, NewBetDraft, NewBetFormValues, NewBetPrefill, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
 import { checkHardStop, riskAlertsExtended } from "./lib/riskGuard";
 import { detectTilt } from "./lib/tiltDetection";
 import { buildBetFromForm, buildBetEdit, buildSettlement, buildBulkSettlement, buildDeletedBetState, mergeImportedBets } from "./services/bets.service";
 import { EditBetModal } from "./components/EditBetModal";
 import type { OnboardingResult } from "./components/Onboarding";
 import { buildBookmaker, buildManualTransaction, buildVoidEntry } from "./services/bookmaker.service";
+import { buildBetTemplate, addBetTemplate, removeBetTemplate } from "./services/template.service";
 
 type View = "dashboard" | "bets" | "new-bet" | "import" | "risk" | "performance" | "intelligence" | "reports" | "clv" | "books" | "strategies" | "settings";
 
@@ -630,6 +631,16 @@ export function App() {
     toast.success(`${settledCount} aposta${settledCount > 1 ? "s" : ""} ${labels[status]}`);
   }
 
+  function saveBetTemplate(name: string, values: NewBetFormValues) {
+    syncToCloud(updateState(addBetTemplate(state, buildBetTemplate(name, values))));
+    toast.success("Template salvo");
+  }
+
+  function deleteBetTemplate(id: string) {
+    syncToCloud(updateState(removeBetTemplate(state, id)));
+    toast.success("Template removido");
+  }
+
   function deleteBet(id: string) {
     const bet = state.bets.find((b) => b.id === id);
     if (!bet) return;
@@ -1048,6 +1059,9 @@ export function App() {
           prefill={newBetPrefill}
           draft={newBetDraft}
           onDraftChange={setNewBetDraft}
+          templates={state.betTemplates ?? []}
+          onSaveTemplate={saveBetTemplate}
+          onDeleteTemplate={deleteBetTemplate}
         />
       </Suspense>
     )

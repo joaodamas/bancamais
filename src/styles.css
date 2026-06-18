@@ -8846,6 +8846,148 @@ button.danger:hover {
   .skel-block { animation: none; }
 }
 
+/* =========================================================
+   NEW BET — templates de captura rápida (console de operação)
+   ========================================================= */
+
+.nb-templates {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+}
+
+.nb-templates-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.nb-templates-list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.template-chip {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.template-chip-apply {
+  padding: 5px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.template-chip:hover {
+  border-color: var(--accent);
+}
+
+.template-chip:hover .template-chip-apply {
+  background: var(--accent-dim);
+  color: var(--accent-bright);
+}
+
+.template-chip-del {
+  display: flex;
+  align-items: center;
+  padding: 0 8px 0 4px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: transparent;
+  color: var(--soft);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.template-chip-del:hover {
+  color: var(--negative);
+}
+
+.nb-template-add {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px dashed var(--line-strong);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
+}
+
+.nb-template-add:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-bright);
+}
+
+.nb-template-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nb-template-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nb-template-save input {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12.5px;
+  min-width: 150px;
+}
+
+.nb-template-save-ok {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 0;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nb-template-save-ok:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.nb-template-save-cancel {
+  height: 30px;
+  width: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 @media (max-width: 960px) {
   .stat-band { grid-template-columns: repeat(2, 1fr); }
   .risk-band { grid-template-columns: 1fr; }

@@ -20,4 +20,5 @@ export const initialState: AppState = {
   strategies: [],
   bets: [],
   transactions: [],
+  betTemplates: [],
 };
