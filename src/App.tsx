@@ -955,7 +955,7 @@ export function App() {
     const riskSettings: RiskSettings = {
       unitMode: (data.get("unitMode") as RiskSettings["unitMode"]) || state.riskSettings.unitMode,
       unitFixed: data.get("unitFixed") != null ? Number(data.get("unitFixed")) : state.riskSettings.unitFixed,
-      unitPercent: Number(data.get("unitPercent")),
+      unitPercent: data.get("unitPercent") != null ? Number(data.get("unitPercent")) : state.riskSettings.unitPercent,
       maxStakeUnits: Number(data.get("maxStakeUnits")),
       maxOpenExposurePercent: Number(data.get("maxOpenExposurePercent")),
       lossStreakLimit: Number(data.get("lossStreakLimit")),

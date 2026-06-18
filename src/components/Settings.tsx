@@ -36,6 +36,7 @@ export function Settings({
   const [lgpdExporting, setLgpdExporting] = useState(false);
   const [lgpdDeleting, setLgpdDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [unitMode, setUnitMode] = useState(state.riskSettings.unitMode);
 
   async function handleExportData() {
     if (!isAuthenticated) return;
@@ -82,8 +83,12 @@ export function Settings({
         </article>
         <article className="ops-summary-card">
           <span>Unidade da banca</span>
-          <strong>{state.riskSettings.unitPercent.toFixed(1)}%</strong>
-          <small>base dos alertas de stake</small>
+          <strong>
+            {state.riskSettings.unitMode === "fixed"
+              ? `R$ ${state.riskSettings.unitFixed.toFixed(2)}`
+              : `${state.riskSettings.unitPercent.toFixed(1)}%`}
+          </strong>
+          <small>{state.riskSettings.unitMode === "fixed" ? "valor fixo por unidade" : "base dos alertas de stake"}</small>
         </article>
         <article className="ops-summary-card">
           <span>Exposição máxima</span>
@@ -180,9 +185,23 @@ export function Settings({
           </p>
           <div className="risk-settings-grid">
             <label>
-              Unidade da banca (%)
-              <input defaultValue={state.riskSettings.unitPercent} min="0.1" name="unitPercent" required step="0.1" type="number" />
+              Modo da unidade
+              <select name="unitMode" defaultValue={state.riskSettings.unitMode} onChange={(e) => setUnitMode(e.target.value as typeof unitMode)}>
+                <option value="fixed">Valor fixo (R$)</option>
+                <option value="percent">% da banca</option>
+              </select>
             </label>
+            {unitMode === "fixed" ? (
+              <label>
+                Valor da unidade (R$)
+                <input defaultValue={state.riskSettings.unitFixed || ""} min="0" name="unitFixed" step="0.01" type="number" placeholder="Ex: 50.00" />
+              </label>
+            ) : (
+              <label>
+                Unidade da banca (%)
+                <input defaultValue={state.riskSettings.unitPercent} min="0.1" name="unitPercent" required step="0.1" type="number" />
+              </label>
+            )}
             <label>
               Stake máxima (unidades)
               <input defaultValue={state.riskSettings.maxStakeUnits} min="0.5" name="maxStakeUnits" required step="0.5" type="number" />
