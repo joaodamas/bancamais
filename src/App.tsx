@@ -35,6 +35,7 @@ import { checkHardStop, riskAlertsExtended } from "./lib/riskGuard";
 import { detectTilt } from "./lib/tiltDetection";
 import { buildBetFromForm, buildBetEdit, buildSettlement, buildBulkSettlement, buildDeletedBetState, mergeImportedBets } from "./services/bets.service";
 import { EditBetModal } from "./components/EditBetModal";
+import type { OnboardingResult } from "./components/Onboarding";
 import { buildBookmaker, buildManualTransaction, buildVoidEntry } from "./services/bookmaker.service";
 
 type View = "dashboard" | "bets" | "new-bet" | "import" | "intelligence" | "reports" | "clv" | "books" | "strategies" | "settings";
@@ -349,7 +350,7 @@ export function App() {
     setView("new-bet");
   }
 
-  function completeOnboarding(patch: Pick<AppState, "bankrollName" | "startingBalance" | "bookmakers">) {
+  function completeOnboarding(patch: OnboardingResult) {
     const onboardingTransactions = patch.bookmakers
       .filter((book) => book.balance > 0)
       .map((book) => ({
@@ -366,6 +367,13 @@ export function App() {
       ...state,
       bankrollName: patch.bankrollName,
       startingBalance: patch.startingBalance,
+      riskSettings: {
+        ...state.riskSettings,
+        unitMode: patch.unit.mode,
+        unitFixed: patch.unit.fixed,
+        unitPercent: patch.unit.percent,
+        maxStakeUnits: patch.unit.maxStakeUnits,
+      },
       bookmakers: patch.bookmakers.length > 0
         ? patch.bookmakers
         : state.bookmakers,

@@ -3817,6 +3817,104 @@ kbd {
   background: var(--positive, #2fb67b);
 }
 
+/* Rail de passos com ícone + label */
+.onboarding-rail {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.onboarding-rail-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--soft);
+  font-size: 12px;
+  font-weight: 500;
+  transition: color var(--transition);
+}
+
+.onboarding-rail-step.active { color: var(--accent-bright); }
+.onboarding-rail-step.done { color: var(--positive); }
+
+.onboarding-rail-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+}
+
+.onboarding-rail-step.active .onboarding-rail-dot {
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  background: var(--accent-dim);
+}
+
+.onboarding-rail-step.done .onboarding-rail-dot {
+  border-color: color-mix(in srgb, var(--positive) 45%, transparent);
+  background: color-mix(in srgb, var(--positive) 12%, transparent);
+}
+
+.onboarding-rail-label { white-space: nowrap; }
+
+/* Toggle de modo de unidade */
+.onboarding-unit-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.unit-mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.unit-mode-btn span { font-weight: 600; font-size: 14px; }
+.unit-mode-btn small { color: var(--muted); font-size: 11px; }
+.unit-mode-btn svg { color: var(--muted); }
+
+.unit-mode-btn:hover { border-color: var(--line-strong); }
+
+.unit-mode-btn.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.unit-mode-btn.active svg { color: var(--accent-bright); }
+
+/* Preview da unidade */
+.onboarding-unit-preview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.onboarding-unit-preview > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--line-strong);
+  background: var(--panel-2);
+}
+
+.onboarding-unit-preview span { color: var(--muted); font-size: 11px; }
+.onboarding-unit-preview strong { font-size: 18px; color: var(--accent-bright); }
+
 .onboarding-card {
   background: var(--panel, #0d1117);
   border: 1px solid var(--line, rgba(139,148,158,0.15));
