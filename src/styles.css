@@ -932,19 +932,15 @@ nav button:hover:not(.active) {
 }
 
 .risk-card.warning {
+  border: 1px solid var(--line);
   border-left: 2px solid var(--warning);
-  border-top: 1px solid rgba(245, 158, 11, 0.18);
-  border-right: 1px solid rgba(245, 158, 11, 0.10);
-  border-bottom: 1px solid rgba(245, 158, 11, 0.10);
-  background: rgba(245, 158, 11, 0.05);
+  background: var(--panel);
 }
 
 .risk-card.danger {
+  border: 1px solid var(--line);
   border-left: 2px solid var(--negative);
-  border-top: 1px solid rgba(251, 113, 133, 0.18);
-  border-right: 1px solid rgba(251, 113, 133, 0.10);
-  border-bottom: 1px solid rgba(251, 113, 133, 0.10);
-  background: rgba(251, 113, 133, 0.05);
+  background: var(--panel);
 }
 
 /* =========================================================
@@ -1388,12 +1384,12 @@ td small {
    ========================================================= */
 
 .pos {
-  color: var(--positive);
+  color: var(--positive) !important;
   font-family: var(--font-mono);
 }
 
 .neg {
-  color: var(--negative);
+  color: var(--negative) !important;
   font-family: var(--font-mono);
 }
 
@@ -6985,16 +6981,16 @@ button.danger:hover {
 }
 
 .risk-progress-track {
-  height: 7px;
+  height: 5px;
   background: var(--panel-3);
   border-radius: 999px;
   overflow: hidden;
-  border: 1px solid var(--line);
 }
 
 .risk-progress-fill {
   height: 100%;
-  border-radius: 2px;
+  border-radius: 999px;
+  opacity: 0.7;
   transition: width 0.4s ease;
 }
 
