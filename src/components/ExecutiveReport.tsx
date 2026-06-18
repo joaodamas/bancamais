@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { TrendingUp, AlertTriangle, Lock } from "lucide-react";
 import { buildExecutiveReport, availableReportMonths, toSnapshot, currentMonthKey } from "../lib/executiveReport";
+import { compareReports } from "../lib/reportComparison";
 import { findReportSnapshot } from "../services/report.service";
 import { money, percent } from "../lib/metrics";
 import type { AppState, ReportSnapshot } from "../lib/types";
@@ -34,6 +35,14 @@ export function ExecutiveReport({
   // Mês corrente sempre ao vivo; mês fechado usa o snapshot congelado se existir.
   const view: ReportSnapshot = frozen && !isCurrent ? frozen : liveSnapshot;
   const isFrozen = view.savedAt !== null;
+
+  // Mês anterior (snapshot congelado ou recomputado ao vivo) para comparação temporal
+  const prevMonth = useMemo(() => months.find((m) => m < activeMonth) ?? null, [months, activeMonth]);
+  const previousView = useMemo<ReportSnapshot | null>(() => {
+    if (!prevMonth) return null;
+    return findReportSnapshot(state, prevMonth) ?? toSnapshot(buildExecutiveReport(state, prevMonth));
+  }, [state, prevMonth]);
+  const comparison = useMemo(() => compareReports(view, previousView), [view, previousView]);
 
   return (
     <article className="panel exec-report">
@@ -103,6 +112,45 @@ export function ExecutiveReport({
                   </li>
                 ))}
               </ul>
+            </section>
+          )}
+
+          {comparison.hasPrevious && (
+            <section className="exec-report-section">
+              <h3><TrendingUp size={15} /> Evolução vs {comparison.previousLabel}</h3>
+              <div className="exec-compare-grid">
+                <div className="exec-compare-item">
+                  <span>Lucro</span>
+                  <strong className={`text-mono ${comparison.profitDelta >= 0 ? "pos" : "neg"}`}>
+                    {comparison.profitDelta >= 0 ? "+" : ""}{money.format(comparison.profitDelta)}
+                  </strong>
+                </div>
+                <div className="exec-compare-item">
+                  <span>Yield</span>
+                  <strong className={`text-mono ${comparison.yieldDeltaPp >= 0 ? "pos" : "neg"}`}>
+                    {comparison.yieldDeltaPp >= 0 ? "+" : ""}{comparison.yieldDeltaPp.toFixed(1)} pp
+                  </strong>
+                </div>
+                <div className="exec-compare-item">
+                  <span>Acerto</span>
+                  <strong className={`text-mono ${comparison.hitRateDeltaPp >= 0 ? "pos" : "neg"}`}>
+                    {comparison.hitRateDeltaPp >= 0 ? "+" : ""}{comparison.hitRateDeltaPp.toFixed(1)} pp
+                  </strong>
+                </div>
+              </div>
+              {comparison.edgeShifts.length > 0 && (
+                <ul className="exec-shifts">
+                  {comparison.edgeShifts.map((s) => (
+                    <li key={s.key}>
+                      <span className="exec-edge-key">{s.key}</span>
+                      <span className="text-mono exec-shift-meta">
+                        <span className={s.deltaPp >= 0 ? "pos" : "neg"}>{s.deltaPp >= 0 ? "+" : ""}{s.deltaPp.toFixed(1)} pp</span>
+                        {" "}· {percent.format(s.previousRoi)} → {percent.format(s.currentRoi)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </section>
           )}
 

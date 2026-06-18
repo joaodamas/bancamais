@@ -9269,6 +9269,39 @@ button.danger:hover {
 .exec-edge-key { font-weight: 600; color: var(--text); font-size: 13.5px; }
 .exec-edge-meta { color: var(--positive); font-size: 12.5px; white-space: nowrap; }
 
+.exec-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.exec-compare-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 11px 14px;
+  border-radius: 9px;
+  background: var(--panel-2);
+}
+
+.exec-compare-item span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.exec-compare-item strong { font-size: 17px; font-weight: 700; }
+
+.exec-shifts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+
+.exec-shifts li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 13px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
+.exec-shift-meta { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
 .exec-report-alert {
   padding: 14px 16px;
   border-radius: 10px;
