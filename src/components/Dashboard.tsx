@@ -12,8 +12,9 @@ import {
   Cell,
   ReferenceLine,
 } from "recharts";
-import { AlertTriangle, Clock } from "lucide-react";
+import { AlertTriangle, Clock, Coins, Layers, Gauge } from "lucide-react";
 import { calculateMetrics, groupProfitBySport, money, percent, riskAlerts } from "../lib/metrics";
+import { resolveUnitValue, exceedsUnitCap } from "../lib/unit";
 import { buildBankrollTimeSeries, buildMonthlyData } from "../lib/chartData";
 import type { AppState } from "../lib/types";
 import { EmptyState } from "./EmptyState";
@@ -126,6 +127,23 @@ export function Dashboard({
   const monitoredCapital = metrics.totalBalance + metrics.openExposure;
   const alerts = useMemo(() => riskAlerts(state), [state]);
 
+  // Insights baseados na unidade configurada
+  const bankroll = monitoredCapital;
+  const unitValue = resolveUnitValue(state.riskSettings, bankroll);
+  const pendingForUnits = useMemo(() => state.bets.filter((b) => b.status === "pending"), [state.bets]);
+  const overStaked = useMemo(
+    () => pendingForUnits.filter((b) => exceedsUnitCap(b.stake, state.riskSettings, bankroll)),
+    [pendingForUnits, state.riskSettings, bankroll]
+  );
+  const avgStakeUnits = pendingForUnits.length > 0 && unitValue > 0
+    ? pendingForUnits.reduce((s, b) => s + b.stake, 0) / pendingForUnits.length / unitValue
+    : 0;
+  const exposureCap = bankroll * (state.riskSettings.maxOpenExposurePercent / 100);
+  const exposurePct = exposureCap > 0 ? metrics.openExposure / exposureCap : 0;
+
+  const chartStart = filteredTimeSeries[0]?.balance ?? 0;
+  const chartEnd = filteredTimeSeries[filteredTimeSeries.length - 1]?.balance ?? 0;
+
   // Apostas pendentes há mais de 48h
   const stalePendingBets = useMemo(() => {
     const cutoff = Date.now() - 48 * 60 * 60 * 1000;
@@ -188,16 +206,16 @@ export function Dashboard({
           <strong>{money.format(metrics.totalBalance)}</strong>
           <div className="balance-breakdown">
             <div>
-              <small>Disponivel para apostar</small>
+              <small>Livre para apostar</small>
               <b>{money.format(metrics.totalBalance)}</b>
             </div>
             <div>
-              <small>Disponivel para saque</small>
-              <b>{money.format(metrics.totalBalance)}</b>
-            </div>
-            <div>
-              <small>Apostas abertas</small>
+              <small>Em apostas abertas</small>
               <b>{money.format(metrics.openExposure)}</b>
+            </div>
+            <div>
+              <small>Unidade</small>
+              <b className="text-mono">{unitValue > 0 ? money.format(unitValue) : "—"}</b>
             </div>
           </div>
         </div>
@@ -243,6 +261,44 @@ export function Dashboard({
         </article>
       </div>
 
+      {/* Insights de unidade — só quando a unidade está configurada */}
+      {unitValue > 0 && (
+        <div className="dashboard-unit-grid">
+          <article className="panel unit-insight-card">
+            <div className="unit-insight-icon"><Coins size={15} /></div>
+            <div className="unit-insight-body">
+              <span>Unidade</span>
+              <strong className="text-mono">{money.format(unitValue)}</strong>
+              <small>{state.riskSettings.unitMode === "fixed" ? "valor fixo" : `${state.riskSettings.unitPercent}% da banca`}</small>
+            </div>
+          </article>
+          <article className="panel unit-insight-card">
+            <div className="unit-insight-icon"><Layers size={15} /></div>
+            <div className="unit-insight-body">
+              <span>Stake médio</span>
+              <strong className="text-mono">{avgStakeUnits > 0 ? `${avgStakeUnits.toFixed(1)}u` : "—"}</strong>
+              <small>nas {pendingForUnits.length} pendentes</small>
+            </div>
+          </article>
+          <article className={`panel unit-insight-card${overStaked.length > 0 ? " unit-insight-warn" : ""}`}>
+            <div className="unit-insight-icon"><AlertTriangle size={15} /></div>
+            <div className="unit-insight-body">
+              <span>Acima do teto</span>
+              <strong className="text-mono">{overStaked.length}</strong>
+              <small>limite {state.riskSettings.maxStakeUnits}u/aposta</small>
+            </div>
+          </article>
+          <article className={`panel unit-insight-card${exposurePct > 1 ? " unit-insight-warn" : ""}`}>
+            <div className="unit-insight-icon"><Gauge size={15} /></div>
+            <div className="unit-insight-body">
+              <span>Exposição</span>
+              <strong className="text-mono">{exposureCap > 0 ? percent.format(exposurePct) : "—"}</strong>
+              <small>do limite ({money.format(exposureCap)})</small>
+            </div>
+          </article>
+        </div>
+      )}
+
       {/* Bloco "Atenção hoje" — só aparece quando há itens */}
       {(alerts.length > 0 || stalePendingBets.length > 0) && (
         <div className="dashboard-attention-grid">
@@ -277,7 +333,14 @@ export function Dashboard({
       {/* Bankroll evolution chart */}
       <article className="panel chart-panel">
         <div className="chart-header">
-          <h2>Evolução da banca</h2>
+          <div className="chart-title-block">
+            <h2>Evolução da banca</h2>
+            {filteredTimeSeries.length > 1 && (
+              <span className="chart-subtitle text-mono">
+                {money.format(chartStart)} → {money.format(chartEnd)}
+              </span>
+            )}
+          </div>
           <div className="chart-header-right">
             <div className="chart-period-tabs">
               {(["7d", "30d", "90d", "all"] as const).map((p) => (
@@ -325,6 +388,13 @@ export function Dashboard({
               <Tooltip
                 content={<MoneyTooltip />}
                 cursor={{ stroke: COLORS.accent, strokeDasharray: "4 4", strokeOpacity: 0.45 }}
+              />
+              <ReferenceLine
+                y={chartStart}
+                stroke={COLORS.muted}
+                strokeDasharray="4 4"
+                strokeOpacity={0.5}
+                label={{ value: "início", position: "insideTopLeft", fill: COLORS.muted, fontSize: 10 }}
               />
               <Area
                 type="monotone"
