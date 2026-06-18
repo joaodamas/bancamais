@@ -945,6 +945,8 @@ export function App() {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const riskSettings: RiskSettings = {
+      unitMode: (data.get("unitMode") as RiskSettings["unitMode"]) || state.riskSettings.unitMode,
+      unitFixed: data.get("unitFixed") != null ? Number(data.get("unitFixed")) : state.riskSettings.unitFixed,
       unitPercent: Number(data.get("unitPercent")),
       maxStakeUnits: Number(data.get("maxStakeUnits")),
       maxOpenExposurePercent: Number(data.get("maxOpenExposurePercent")),

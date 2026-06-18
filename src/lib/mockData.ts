@@ -5,6 +5,8 @@ export const initialState: AppState = {
   currency: "BRL",
   startingBalance: 0,
   riskSettings: {
+    unitMode: "percent",
+    unitFixed: 0,
     unitPercent: 1,
     maxStakeUnits: 2,
     maxOpenExposurePercent: 10,

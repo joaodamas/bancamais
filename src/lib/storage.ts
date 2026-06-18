@@ -12,6 +12,8 @@ export function emptyState(): AppState {
     startingBalance: 0,
     lastModifiedAt: null,
     riskSettings: {
+      unitMode: "percent",
+      unitFixed: 0,
       unitPercent: 1,
       maxStakeUnits: 2,
       maxOpenExposurePercent: 5,

@@ -147,7 +147,13 @@ export interface AppState {
   transactions: Transaction[];
 }
 
+export type UnitMode = "fixed" | "percent";
+
 export interface RiskSettings {
+  /** Como a unidade é definida: valor fixo em R$ ou % da banca. */
+  unitMode: UnitMode;
+  /** Valor da unidade em R$ quando unitMode === "fixed". */
+  unitFixed: number;
   unitPercent: number;
   maxStakeUnits: number;
   maxOpenExposurePercent: number;
