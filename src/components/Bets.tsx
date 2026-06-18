@@ -13,6 +13,7 @@ import { betsToCsv, downloadTextFile } from "../lib/csv";
 import { betProfit, money, potentialReturn } from "../lib/metrics";
 import { eventDelta, isImminent } from "../lib/betTime";
 import { StatusBadge } from "./StatusBadge";
+import { MultiBetPopover, parseLegs } from "./MultiBetPopover";
 import type { AppState, Bet } from "../lib/types";
 
 const statusLabel: Record<Bet["status"], string> = {
@@ -408,6 +409,7 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                 const delta = eventDelta(bet.eventAt);
                 const imminent = isPending && isImminent(bet.eventAt);
                 const gain = getGainValue(bet);
+                const legs = parseLegs(bet.selection);
                 return (
                   <tr key={bet.id} className={`${imminent ? "bet-row-imminent" : ""}${selectedIds.has(bet.id) ? " bet-row-selected" : ""}`}>
                     <td className="bet-select-col">
@@ -437,7 +439,11 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                     </td>
                     <td className="bet-cell bet-cell-market">
                       <strong className="bet-market-name" title={bet.market}>{bet.market}</strong>
-                      <small className="bet-market-sel" title={bet.selection}>{bet.selection}</small>
+                      {legs.length > 1 ? (
+                        <MultiBetPopover market={bet.market} legs={legs} oddTotal={bet.odds} />
+                      ) : (
+                        <small className="bet-market-sel" title={bet.selection}>{bet.selection}</small>
+                      )}
                     </td>
                     <td className="bet-cell">
                       <span className="bet-book">{bookmakerById.get(bet.bookmakerId) ?? "—"}</span>
