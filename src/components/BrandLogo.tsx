@@ -6,15 +6,21 @@ export function BrandLogo({ compact = false }: BrandLogoProps) {
   return (
     <div className={compact ? "brand-logo compact" : "brand-logo"} aria-label="Banca+">
       <span className="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="32" height="32" rx="9" fill="url(#brand-mark-grad)" />
-          <rect x="7.5" y="17.5" width="3.6" height="7" rx="1.8" fill="#fff" fillOpacity="0.75" />
-          <rect x="14.2" y="13" width="3.6" height="11.5" rx="1.8" fill="#fff" fillOpacity="0.88" />
-          <rect x="20.9" y="8.5" width="3.6" height="16" rx="1.8" fill="#fff" />
+        <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="36" height="36" rx="10" fill="url(#brand-mark-grad)" />
+          {/* sparkline ascendente */}
+          <path
+            d="M8 24.5 L15 18 L20 21 L28 11.5"
+            stroke="#fff"
+            strokeWidth="2.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle cx="28" cy="11.5" r="2.4" fill="#fff" />
           <defs>
-            <linearGradient id="brand-mark-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+            <linearGradient id="brand-mark-grad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
               <stop stopColor="#3B82F6" />
-              <stop offset="1" stopColor="#2563EB" />
+              <stop offset="1" stopColor="#1D4ED8" />
             </linearGradient>
           </defs>
         </svg>
@@ -22,7 +28,9 @@ export function BrandLogo({ compact = false }: BrandLogoProps) {
       <div className="brand-wordmark-block">
         <div className="brand-wordmark-line">
           <strong className="brand-wordmark-text">Banca</strong>
-          <span className="brand-wordmark-plus-text">+</span>
+          <svg className="brand-plus" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M8 2.5v11M2.5 8h11" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+          </svg>
         </div>
         {!compact && <span className="brand-tagline">Gestão de banca</span>}
       </div>
