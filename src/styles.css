@@ -19,19 +19,19 @@
   --card-foreground:        228 24% 13%;
   --popover:                0 0% 100%;
   --popover-foreground:     228 24% 13%;
-  --primary:                221 83% 53%;
+  --primary:                157 47% 35%;
   --primary-foreground:     0 0% 100%;
   --secondary:              220 23% 95%;
   --secondary-foreground:   228 24% 13%;
   --muted-bg:               220 23% 95%;
   --muted-foreground:       215 16% 47%;
-  --accent-bg:              221 83% 53%;
+  --accent-bg:              157 47% 35%;
   --accent-foreground:      0 0% 100%;
   --destructive:            0 72% 51%;
   --destructive-foreground: 0 0% 100%;
   --border:                 222 47% 11% / 0.10;
   --input:                  222 47% 11% / 0.12;
-  --ring:                   221 83% 53%;
+  --ring:                   157 47% 35%;
   --radius-shadcn:          0.5rem;
 
   /* ── Backgrounds — claro/cinza ───────────────────────── */
@@ -50,15 +50,15 @@
   --soft:  #94A3B8;
 
   /* ── Accent — azul profissional ─────────────────────── */
-  --accent:        #2563EB;
-  --accent-dim:    rgba(37, 99, 235, 0.10);
-  --accent-bright: #1D4ED8;
+  --accent:        #2F8466;
+  --accent-dim:    rgba(47, 132, 102, 0.10);
+  --accent-bright: #246B52;
 
   /* ── Status ─────────────────────────────────────────── */
   --positive: #16A34A;
   --negative: #DC2626;
   --warning:  #D97706;
-  --info:     #2563EB;
+  --info:     #2F8466;
   --cyan:     #0891B2;
 
   /* Aliases semânticos mantidos para compatibilidade */
@@ -136,7 +136,7 @@ button {
 }
 
 button:focus-visible {
-  outline: 2px solid rgba(37, 99, 235, 0.5);
+  outline: 2px solid rgba(47, 132, 102, 0.5);
   outline-offset: 1px;
 }
 
@@ -404,18 +404,18 @@ nav button em {
 nav button.active {
   border-left-color: var(--accent);
   color: var(--text);
-  background: rgba(37, 99, 235, 0.10);
+  background: rgba(47, 132, 102, 0.10);
 }
 
 nav button.active em {
-  background: rgba(37, 99, 235, 0.12);
-  border-color: rgba(37, 99, 235, 0.25);
+  background: rgba(47, 132, 102, 0.12);
+  border-color: rgba(47, 132, 102, 0.25);
   color: var(--accent);
 }
 
 nav button:hover:not(.active) {
   color: var(--text);
-  border-left-color: rgba(37, 99, 235, 0.25);
+  border-left-color: rgba(47, 132, 102, 0.25);
   background: rgba(255, 255, 255, 0.03);
 }
 
@@ -530,7 +530,7 @@ nav button:hover:not(.active) {
 }
 
 .notif-btn-active {
-  border-color: rgba(37, 99, 235, 0.4) !important;
+  border-color: rgba(47, 132, 102, 0.4) !important;
   color: var(--accent) !important;
 }
 
@@ -1100,9 +1100,9 @@ nav button:hover:not(.active) {
 }
 
 .heatmap .hm-pos {
-  background: rgba(37, 99, 235, 0.45);
+  background: rgba(47, 132, 102, 0.45);
   color: #051a08;
-  border-color: rgba(37, 99, 235, 0.25);
+  border-color: rgba(47, 132, 102, 0.25);
 }
 
 .heatmap .hm-neg {
@@ -1160,10 +1160,10 @@ nav button:hover:not(.active) {
 }
 
 .odds-list .highlight {
-  background: rgba(37, 99, 235, 0.05);
+  background: rgba(47, 132, 102, 0.05);
   border-radius: var(--radius-sm);
   padding: 7px 8px;
-  border: 1px solid rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(47, 132, 102, 0.12);
 }
 
 /* =========================================================
@@ -1418,7 +1418,7 @@ td small {
 .panel button:hover {
   border-color: var(--accent);
   color: var(--text);
-  background: rgba(37, 99, 235, 0.05);
+  background: rgba(47, 132, 102, 0.05);
 }
 
 /* =========================================================
@@ -1427,7 +1427,7 @@ td small {
 
 .primary {
   background: var(--accent) !important;
-  border: 1px solid rgba(37, 99, 235, 0.30) !important;
+  border: 1px solid rgba(47, 132, 102, 0.30) !important;
   color: #0a0614 !important;
   font-weight: 600 !important;
   font-family: var(--font-ui) !important;
@@ -1489,7 +1489,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--accent);
-  outline: 2px solid rgba(37, 99, 235, 0.5);
+  outline: 2px solid rgba(47, 132, 102, 0.5);
   outline-offset: 0;
   box-shadow: none;
 }
@@ -1520,17 +1520,17 @@ textarea {
 
 .dropzone,
 .file-drop {
-  border: 1px dashed rgba(37, 99, 235, 0.20);
+  border: 1px dashed rgba(47, 132, 102, 0.20);
   border-radius: var(--radius);
   padding: 18px;
-  background: rgba(37, 99, 235, 0.02);
+  background: rgba(47, 132, 102, 0.02);
   transition: border-color var(--transition), background var(--transition);
 }
 
 .dropzone:hover,
 .file-drop:hover {
-  border-color: rgba(37, 99, 235, 0.35);
-  background: rgba(37, 99, 235, 0.04);
+  border-color: rgba(47, 132, 102, 0.35);
+  background: rgba(47, 132, 102, 0.04);
 }
 
 .dropzone {
@@ -1927,10 +1927,10 @@ textarea {
 }
 
 .auth-message {
-  border: 1px solid rgba(37, 99, 235, 0.15);
+  border: 1px solid rgba(47, 132, 102, 0.15);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
-  background: rgba(37, 99, 235, 0.04);
+  background: rgba(47, 132, 102, 0.04);
   color: var(--muted);
   font-size: 13px;
   line-height: 1.5;
@@ -2003,7 +2003,7 @@ textarea {
 .fab {
   align-items: center;
   background: var(--accent);
-  border: 1px solid rgba(37, 99, 235, 0.30);
+  border: 1px solid rgba(47, 132, 102, 0.30);
   border-radius: var(--radius);           /* 6px quadrado, não círculo */
   bottom: 24px;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.10);
@@ -2168,11 +2168,11 @@ textarea {
   border-color: var(--accent);
   outline: none;
   background: var(--bg);
-  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.42), 0 0 0 4px rgba(37, 99, 235, 0.10);
+  box-shadow: 0 0 0 1px rgba(47, 132, 102, 0.42), 0 0 0 4px rgba(47, 132, 102, 0.10);
 }
 
 .nb-ocr-section .nb-section-head {
-  background: linear-gradient(90deg, rgba(37, 99, 235, 0.08) 0%, transparent 100%);
+  background: linear-gradient(90deg, rgba(47, 132, 102, 0.08) 0%, transparent 100%);
 }
 
 .nb-event-search {
@@ -2915,8 +2915,8 @@ nav button:hover svg {
 }
 
 .ai-insight {
-  background: rgba(37, 99, 235, 0.04);
-  border: 1px solid rgba(37, 99, 235, 0.18);
+  background: rgba(47, 132, 102, 0.04);
+  border: 1px solid rgba(47, 132, 102, 0.18);
   border-radius: var(--radius);
   padding: 10px 12px;
   margin: 10px 0;
@@ -3011,12 +3011,12 @@ nav button:hover svg {
 
 .filter-tab.active {
   background: var(--accent-dim);
-  border-color: rgba(37, 99, 235, 0.35);
+  border-color: rgba(47, 132, 102, 0.35);
   color: var(--accent);
 }
 
 .filter-tab.active em {
-  background: rgba(37, 99, 235, 0.12);
+  background: rgba(47, 132, 102, 0.12);
   color: var(--accent);
 }
 
@@ -3055,7 +3055,7 @@ nav button:hover svg {
 
 .tag-chip-active {
   background: var(--accent-dim);
-  border-color: rgba(37, 99, 235, 0.45);
+  border-color: rgba(47, 132, 102, 0.45);
   color: var(--accent);
 }
 
@@ -3188,8 +3188,8 @@ nav button:hover svg {
 }
 
 .auth-page-message {
-  background: rgba(37, 99, 235, 0.06);
-  border: 1px solid rgba(37, 99, 235, 0.18);
+  background: rgba(47, 132, 102, 0.06);
+  border: 1px solid rgba(47, 132, 102, 0.18);
   border-radius: var(--radius-sm);
   color: var(--text);
   font-size: 13px;
@@ -3257,7 +3257,7 @@ nav button:hover svg {
 }
 
 .auth-page-features {
-  background: radial-gradient(ellipse 80% 60% at 60% 30%, rgba(37, 99, 235,0.08) 0%, transparent 70%);
+  background: radial-gradient(ellipse 80% 60% at 60% 30%, rgba(47, 132, 102,0.08) 0%, transparent 70%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3270,7 +3270,7 @@ nav button:hover svg {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(37, 99, 235,0.04) 0%, transparent 50%);
+  background: linear-gradient(135deg, rgba(47, 132, 102,0.04) 0%, transparent 50%);
   pointer-events: none;
 }
 
@@ -3358,8 +3358,8 @@ nav button:hover svg {
 
 .auth-feature-icon {
   align-items: center;
-  background: rgba(37, 99, 235,0.1);
-  border: 1px solid rgba(37, 99, 235,0.2);
+  background: rgba(47, 132, 102,0.1);
+  border: 1px solid rgba(47, 132, 102,0.2);
   border-radius: var(--radius-sm);
   color: var(--accent);
   display: flex;
@@ -3548,8 +3548,8 @@ kbd {
 }
 
 .ocr-feedback-loading {
-  border-color: rgba(37, 99, 235, 0.34);
-  background: rgba(37, 99, 235, 0.08);
+  border-color: rgba(47, 132, 102, 0.34);
+  background: rgba(47, 132, 102, 0.08);
 }
 
 .ocr-feedback-done {
@@ -3611,8 +3611,8 @@ kbd {
 }
 
 .ocr-field-meta-reviewed {
-  border-color: rgba(37, 99, 235, 0.28);
-  background: rgba(37, 99, 235, 0.08);
+  border-color: rgba(47, 132, 102, 0.28);
+  background: rgba(47, 132, 102, 0.08);
 }
 
 .ocr-field-meta-head {
@@ -3708,7 +3708,7 @@ kbd {
 }
 
 .news-source {
-  color: var(--accent, #2563EB);
+  color: var(--accent, #2F8466);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -3809,7 +3809,7 @@ kbd {
 }
 
 .onboarding-step-dot.active {
-  background: var(--accent, #2563EB);
+  background: var(--accent, #2F8466);
   width: 20px;
   border-radius: 4px;
 }
@@ -3927,7 +3927,7 @@ kbd {
 }
 
 .onboarding-step-label {
-  color: var(--accent, #2563EB);
+  color: var(--accent, #2F8466);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -3966,14 +3966,14 @@ kbd {
 }
 
 .book-suggestion-chip:hover {
-  border-color: var(--accent, #2563EB);
+  border-color: var(--accent, #2F8466);
   color: var(--text, #e4e6eb);
 }
 
 .book-suggestion-chip.selected {
-  background: var(--accent-dim, rgba(37, 99, 235,0.12));
-  border-color: var(--accent, #2563EB);
-  color: var(--accent, #2563EB);
+  background: var(--accent-dim, rgba(47, 132, 102,0.12));
+  border-color: var(--accent, #2F8466);
+  color: var(--accent, #2F8466);
 }
 
 .onboarding-book-form {
@@ -3997,7 +3997,7 @@ kbd {
 }
 
 .onboarding-book-form button:hover {
-  border-color: var(--accent, #2563EB);
+  border-color: var(--accent, #2F8466);
 }
 
 .onboarding-book-form button:disabled {
@@ -4041,7 +4041,7 @@ kbd {
   display: flex;
   justify-content: space-between;
   padding: 10px 14px;
-  background: rgba(37, 99, 235, 0.05);
+  background: rgba(47, 132, 102, 0.05);
 }
 
 .onboarding-book-total span { color: var(--muted, #7d8590); font-size: 12px; }
@@ -4239,8 +4239,8 @@ kbd {
 
 .suggestions-status-chip.online,
 .suggestions-readiness-item.ready {
-  border-color: rgba(37, 99, 235, 0.22);
-  background: rgba(37, 99, 235, 0.08);
+  border-color: rgba(47, 132, 102, 0.22);
+  background: rgba(47, 132, 102, 0.08);
 }
 
 .suggestions-status-chip.degraded {
@@ -4323,7 +4323,7 @@ kbd {
 
 .suggestion-pill.ready,
 .suggestion-pill.published {
-  background: rgba(37, 99, 235, 0.12);
+  background: rgba(47, 132, 102, 0.12);
   color: var(--accent);
 }
 
@@ -4668,11 +4668,11 @@ kbd {
   white-space: nowrap;
 }
 
-.ledger-type-deposit    { background: rgba(37, 99, 235, 0.12);   color: var(--positive); }
+.ledger-type-deposit    { background: rgba(47, 132, 102, 0.12);   color: var(--positive); }
 .ledger-type-withdrawal { background: rgba(248, 81, 73, 0.10);   color: var(--negative); }
 .ledger-type-transfer   { background: rgba(56, 139, 253, 0.12);  color: var(--info); }
 .ledger-type-bet_stake  { background: rgba(210, 153, 34, 0.12);  color: var(--warning); }
-.ledger-type-bet_payout { background: rgba(37, 99, 235, 0.12);   color: var(--positive); }
+.ledger-type-bet_payout { background: rgba(47, 132, 102, 0.12);   color: var(--positive); }
 .ledger-type-bet_refund { background: rgba(121, 192, 255, 0.12); color: var(--cyan); }
 .ledger-type-adjustment { background: var(--panel-3);             color: var(--muted); }
 .ledger-type-void_entry { background: rgba(248, 81, 73, 0.12);   color: var(--negative); }
@@ -4801,13 +4801,13 @@ kbd {
   --text: #1A1D29;
   --muted: #64748B;
   --soft: #94A3B8;
-  --accent: #2563EB;
-  --accent-dim: rgba(37, 99, 235, 0.10);
-  --accent-bright: #1D4ED8;
+  --accent: #2F8466;
+  --accent-dim: rgba(47, 132, 102, 0.10);
+  --accent-bright: #246B52;
   --positive: #16A34A;
   --negative: #DC2626;
   --warning: #D97706;
-  --info: #2563EB;
+  --info: #2F8466;
   --cyan: #0891B2;
   --font-ui: "Inter", system-ui, -apple-system, sans-serif;
   --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
@@ -4870,53 +4870,34 @@ h1, h2, h3, h4 {
   gap: 6px;
 }
 
-.brand-mark {
-  display: inline-flex;
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.30);
-}
-
-.brand-mark svg {
-  width: 34px;
-  height: 34px;
-  display: block;
-}
-
-.brand-wordmark-line {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-
 .brand-wordmark-text {
   color: var(--text);
   font-family: var(--font-brand);
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
   line-height: 1;
 }
 
-.brand-plus {
-  width: 13px;
-  height: 13px;
+.brand-plus-char {
   color: var(--accent);
-  margin-bottom: 6px;
+  margin-left: 0.5px;
 }
 
 .brand-logo strong {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 23px;
+  font-weight: 800;
 }
 
 .brand-tagline {
+  display: block;
+  margin-top: 5px;
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.35;
-  letter-spacing: 0.01em;
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .bank-pill {
@@ -4925,13 +4906,13 @@ h1, h2, h3, h4 {
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
-    linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(56, 189, 248, 0.08)),
+    linear-gradient(135deg, rgba(47, 132, 102, 0.18), rgba(56, 189, 248, 0.08)),
     rgba(255, 255, 255, 0.88);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
 }
 
 .bank-pill:hover {
-  border-color: rgba(59, 130, 246, 0.34);
+  border-color: rgba(58, 155, 122, 0.34);
   transform: translateY(-1px);
 }
 
@@ -4983,8 +4964,8 @@ nav button.active::before {
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: linear-gradient(180deg, var(--accent-bright), #2563EB);
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+  background: linear-gradient(180deg, var(--accent-bright), #2F8466);
+  box-shadow: 0 0 0 4px rgba(47, 132, 102, 0.14);
 }
 
 nav button em {
@@ -4996,9 +4977,9 @@ nav button em {
 
 nav button.active {
   color: var(--text);
-  background: rgba(37, 99, 235, 0.10);
-  border-color: rgba(37, 99, 235, 0.22);
-  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.10);
+  background: rgba(47, 132, 102, 0.10);
+  border-color: rgba(47, 132, 102, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(47, 132, 102, 0.10);
 }
 
 nav button:hover:not(.active) {
@@ -5030,7 +5011,7 @@ nav button:hover:not(.active) {
 
 .search-box:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35), 0 0 0 4px rgba(37, 99, 235, 0.12);
+  box-shadow: 0 0 0 1px rgba(47, 132, 102, 0.35), 0 0 0 4px rgba(47, 132, 102, 0.12);
 }
 
 .search-box input {
@@ -5080,7 +5061,7 @@ nav button:hover:not(.active) {
 
 .topbar-actions button:not(.primary):hover {
   background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(37, 99, 235, 0.3);
+  border-color: rgba(47, 132, 102, 0.3);
 }
 
 .page {
@@ -5181,7 +5162,7 @@ nav button:hover:not(.active) {
   .risk-card:hover,
   .ledger-panel:hover {
     transform: translateY(-2px);
-    border-color: rgba(37, 99, 235, 0.14);
+    border-color: rgba(47, 132, 102, 0.14);
     box-shadow: 0 14px 34px rgba(0, 0, 0, 0.2);
   }
 }
@@ -5315,7 +5296,7 @@ nav button:hover:not(.active) {
 }
 
 .analysis-note {
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(37, 99, 235, 0.08));
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(47, 132, 102, 0.08));
   border-color: rgba(56, 189, 248, 0.18);
   color: #334155;
 }
@@ -5474,7 +5455,7 @@ tr:hover td {
 .btn-ghost:hover,
 .filter-tab:hover:not(.active) {
   background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(59, 130, 246, 0.22);
+  border-color: rgba(58, 155, 122, 0.22);
 }
 
 .actions button:active,
@@ -5487,17 +5468,17 @@ tr:hover td {
 
 .primary,
 .btn-nova-aposta {
-  background: linear-gradient(135deg, #2563EB, #2563EB) !important;
-  border: 1px solid rgba(59, 130, 246, 0.36) !important;
+  background: linear-gradient(135deg, #2F8466, #2F8466) !important;
+  border: 1px solid rgba(58, 155, 122, 0.36) !important;
   color: #ffffff !important;
   border-radius: 14px !important;
-  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.28);
+  box-shadow: 0 12px 28px rgba(47, 132, 102, 0.28);
 }
 
 .primary:hover,
 .btn-nova-aposta:hover {
-  background: linear-gradient(135deg, var(--accent-bright), #2563EB) !important;
-  box-shadow: 0 16px 32px rgba(37, 99, 235, 0.34) !important;
+  background: linear-gradient(135deg, var(--accent-bright), #2F8466) !important;
+  box-shadow: 0 16px 32px rgba(47, 132, 102, 0.34) !important;
 }
 
 .btn-danger {
@@ -5513,8 +5494,8 @@ tr:hover td {
 }
 
 .filter-tab.active {
-  background: rgba(37, 99, 235, 0.12);
-  border-color: rgba(37, 99, 235, 0.28);
+  background: rgba(47, 132, 102, 0.12);
+  border-color: rgba(47, 132, 102, 0.28);
   color: var(--text);
 }
 
@@ -5619,7 +5600,7 @@ tr:hover td {
 
 .auth-page {
   background:
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 38%),
+    radial-gradient(circle at top right, rgba(47, 132, 102, 0.12), transparent 38%),
     var(--bg);
 }
 
@@ -5643,7 +5624,7 @@ tr:hover td {
 .auth-tabs button.active {
   background: var(--accent-dim);
   color: var(--text);
-  border: 1px solid rgba(37, 99, 235, 0.3);
+  border: 1px solid rgba(47, 132, 102, 0.3);
 }
 
 .auth-page-features {
@@ -5665,7 +5646,7 @@ tr:hover td {
   width: 46px;
   height: 46px;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.20), rgba(56, 189, 248, 0.08));
+  background: linear-gradient(135deg, rgba(47, 132, 102, 0.20), rgba(56, 189, 248, 0.08));
 }
 
 /* Faux terminal metric preview — AuthPage right panel */
@@ -5748,7 +5729,7 @@ tr:hover td {
 .auth-terminal-spark span {
   flex: 1;
   border-radius: 3px 3px 0 0;
-  background: linear-gradient(180deg, var(--accent-bright), rgba(37, 99, 235, 0.25));
+  background: linear-gradient(180deg, var(--accent-bright), rgba(47, 132, 102, 0.25));
   min-height: 4px;
 }
 
@@ -5790,7 +5771,7 @@ tr:hover td {
 .dropzone:hover,
 .dropzone:focus-within {
   border-color: var(--accent);
-  background: rgba(37, 99, 235, 0.05);
+  background: rgba(47, 132, 102, 0.05);
 }
 
 .balance-card strong,
@@ -5817,7 +5798,7 @@ tr:hover td {
   padding: 24px 26px;
   margin-bottom: 18px;
   background:
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.14), transparent 34%),
+    radial-gradient(circle at top right, rgba(47, 132, 102, 0.14), transparent 34%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015)),
     #FFFFFF;
 }
@@ -5958,13 +5939,13 @@ tr:hover td {
 }
 
 .bet-meta-chip-link {
-  color: #2563EB;
+  color: #2F8466;
 }
 
 .bet-meta-chip-link:hover {
-  border-color: rgba(59, 130, 246, 0.24);
-  background: rgba(37, 99, 235, 0.12);
-  color: #1D4ED8;
+  border-color: rgba(58, 155, 122, 0.24);
+  background: rgba(47, 132, 102, 0.12);
+  color: #246B52;
 }
 
 .table-card {
@@ -6098,7 +6079,7 @@ tr:hover td {
   place-items: center;
   padding: 28px;
   background:
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.14), transparent 24%),
+    radial-gradient(circle at top right, rgba(47, 132, 102, 0.14), transparent 24%),
     var(--bg);
 }
 
@@ -6718,9 +6699,9 @@ button.danger:hover {
 .book-card-flag {
   padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(37, 99, 235, 0.22);
-  background: rgba(37, 99, 235, 0.12);
-  color: #2563EB;
+  border: 1px solid rgba(47, 132, 102, 0.22);
+  background: rgba(47, 132, 102, 0.12);
+  color: #2F8466;
   font-size: 10px;
   font-style: normal;
   font-weight: 700;
@@ -7834,8 +7815,8 @@ button.danger:hover {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: rgba(37, 99, 235, 0.07);
-  border: 1px solid rgba(37, 99, 235, 0.20);
+  background: rgba(47, 132, 102, 0.07);
+  border: 1px solid rgba(47, 132, 102, 0.20);
   border-radius: var(--radius);
   font-size: 12px;
   color: var(--muted);
@@ -8376,12 +8357,13 @@ button.danger:hover {
 
 /* ── Apostas: clamp de texto longo + performance enxuta ── */
 .bet-clamp-2 {
-  display: -webkit-box;
+  display: -webkit-box !important;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 .bet-cell-performance {
