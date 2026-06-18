@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Loader2 } from "lucide-react";
 import { useAIAnalysis } from "../lib/useAIAnalysis";
 import { groupProfitByStrategy, riskAlerts, money, percent } from "../lib/metrics";
 import type { AppState, NewBetPrefill } from "../lib/types";
@@ -63,7 +64,7 @@ export function Intelligence({
           <p>Insights automáticos sobre desempenho, risco e exposição com base nas apostas registradas.</p>
         </div>
         <button onClick={refresh} disabled={loading} className="btn-refresh">
-          {loading ? "Analisando..." : "Atualizar análise"}
+          {loading ? (<><Loader2 size={14} className="btn-spinner" /> Analisando...</>) : "Atualizar análise"}
         </button>
       </div>
 

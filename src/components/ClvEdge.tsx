@@ -12,8 +12,10 @@ import {
   Bar,
   Cell,
 } from "recharts";
+import { Crosshair } from "lucide-react";
 import { calculateMetrics, groupProfitByBookmaker, clvPercent, percent } from "../lib/metrics";
 import { buildClvTimeSeries } from "../lib/chartData";
+import { EmptyState } from "./EmptyState";
 import type { AppState } from "../lib/types";
 
 const COLORS = {
@@ -58,6 +60,16 @@ export function ClvEdge({
         </div>
       </div>
 
+      {clvSeries.length === 0 ? (
+        <article className="panel">
+          <EmptyState
+            icon={<Crosshair size={24} />}
+            title="CLV ainda não disponível"
+            description="Registre a odd de fechamento (closing odds) nas suas apostas — ao criar ou editar — para liberar o CLV médio, a evolução cronológica e o comparativo por casa. O CLV é o sinal de edge mais confiável antes do resultado sair."
+          />
+        </article>
+      ) : (
+      <>
       <div className="grid two">
         <article className="panel clv-hero">
           <span>CLV médio geral</span>
@@ -181,6 +193,8 @@ export function ClvEdge({
           </p>
         )}
       </article>
+      </>
+      )}
     </section>
   );
 }

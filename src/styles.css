@@ -3407,6 +3407,16 @@ nav button:hover svg {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.btn-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-spinner {
+  animation: spin 0.7s linear infinite;
+}
+
 /* AUTH FULLPAGE — for standalone gate rendering */
 .auth-fullpage {
   min-height: 100vh;

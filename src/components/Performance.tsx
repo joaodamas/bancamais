@@ -10,10 +10,12 @@ import {
   Cell,
   ReferenceLine,
 } from "recharts";
+import { BarChart3 } from "lucide-react";
 import { calculateMetrics, groupProfitBySport, money, percent } from "../lib/metrics";
 import { buildMonthlyData } from "../lib/chartData";
 import type { AppState } from "../lib/types";
 import { COLORS, MoneyTooltip, PercentTooltip } from "./chartHelpers";
+import { EmptyState } from "./EmptyState";
 
 export function Performance({
   state,
@@ -64,8 +66,12 @@ export function Performance({
       </div>
 
       {!hasData ? (
-        <article className="panel chart-empty">
-          <span>Liquide apostas para consolidar o desempenho por período e esporte</span>
+        <article className="panel">
+          <EmptyState
+            icon={<BarChart3 size={24} />}
+            title="Sem desempenho consolidado ainda"
+            description="Liquide suas primeiras apostas (ganha/perdida) para liberar o ROI mensal, o yield e o comparativo de lucro por esporte."
+          />
         </article>
       ) : (
         <div className="grid two">
