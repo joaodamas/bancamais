@@ -90,3 +90,46 @@ export function edgeHighlights(
   const worst = byRoi[byRoi.length - 1].roi < 0 ? byRoi[byRoi.length - 1] : null;
   return { best, worst };
 }
+
+/* ── Radar de oportunidades — matriz edge × exposição ─────────────────────── */
+
+export type RadarVerdict = "goldmine" | "drain" | "neutral";
+
+export interface RadarSignal {
+  segment: EdgeSegment;
+  /** Fatia do capital total liquidado alocada neste segmento (0..1). */
+  exposureShare: number;
+  verdict: RadarVerdict;
+}
+
+// Limiares da matriz (decisões de produto, conservadoras):
+const EDGE_GOOD = 0.05;    // ROI >= +5% = edge real
+const EDGE_BAD = -0.05;    // ROI <= -5% = prejuízo consistente
+const UNDER_EXPOSED = 0.15; // < 15% do capital = sub-alocado
+const OVER_EXPOSED = 0.20;  // >= 20% do capital = sobre-alocado
+
+/**
+ * Classifica um segmento na matriz:
+ * - goldmine: edge positivo com pouca exposição (capital sub-alocado)
+ * - drain: prejuízo consistente com muita exposição (dreno de banca)
+ * Só classifica com amostra minimamente confiável (>= medium).
+ */
+export function classifyRadar(segment: EdgeSegment, exposureShare: number): RadarVerdict {
+  if (segment.confidence === "low") return "neutral";
+  if (segment.roi >= EDGE_GOOD && exposureShare < UNDER_EXPOSED) return "goldmine";
+  if (segment.roi <= EDGE_BAD && exposureShare >= OVER_EXPOSED) return "drain";
+  return "neutral";
+}
+
+/** Cruza cada segmento com sua fatia de exposição e devolve o veredito do radar. */
+export function opportunityRadar(state: AppState, dimension: EdgeDimension): RadarSignal[] {
+  const segments = analyzeEdge(state, dimension, 1);
+  const totalStaked = state.bets
+    .filter((b) => b.status !== "pending")
+    .reduce((s, b) => s + b.stake, 0);
+
+  return segments.map((segment) => {
+    const exposureShare = totalStaked > 0 ? segment.staked / totalStaked : 0;
+    return { segment, exposureShare, verdict: classifyRadar(segment, exposureShare) };
+  });
+}

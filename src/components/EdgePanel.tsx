@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
-import { analyzeEdge, edgeHighlights, type EdgeDimension, type EdgeSegment, type EdgeConfidence } from "../lib/edgeAnalysis";
+import { opportunityRadar, edgeHighlights, type EdgeDimension, type EdgeSegment, type EdgeConfidence, type RadarVerdict } from "../lib/edgeAnalysis";
 import { money, percent } from "../lib/metrics";
 import type { AppState } from "../lib/types";
 
@@ -22,6 +22,12 @@ function ConfidenceDot({ c, n }: { c: EdgeConfidence; n: number }) {
   return <span className={`edge-conf edge-conf-${c}`} title={`${n} apostas · ${CONFIDENCE_LABEL[c]}`} />;
 }
 
+function VerdictPill({ verdict }: { verdict: RadarVerdict }) {
+  if (verdict === "goldmine") return <span className="edge-verdict edge-verdict-goldmine" title="Edge positivo com pouca exposição">Oportunidade</span>;
+  if (verdict === "drain") return <span className="edge-verdict edge-verdict-drain" title="Prejuízo com muita exposição">Dreno</span>;
+  return null;
+}
+
 function Highlight({ tone, label, seg }: { tone: "good" | "bad"; label: string; seg: EdgeSegment }) {
   return (
     <div className={`edge-highlight edge-highlight-${tone}`}>
@@ -39,9 +45,10 @@ function Highlight({ tone, label, seg }: { tone: "good" | "bad"; label: string; 
 
 export function EdgePanel({ state }: { state: AppState }) {
   const [dim, setDim] = useState<EdgeDimension>("market");
-  const segments = useMemo(() => analyzeEdge(state, dim, 1), [state, dim]);
+  const signals = useMemo(() => opportunityRadar(state, dim), [state, dim]);
   const { best, worst } = useMemo(() => edgeHighlights(state, dim), [state, dim]);
   const dimLabel = DIMENSIONS.find((d) => d.id === dim)?.label ?? "";
+  const hasVerdict = signals.some((s) => s.verdict !== "neutral");
 
   return (
     <article className="panel edge-panel">
@@ -59,7 +66,7 @@ export function EdgePanel({ state }: { state: AppState }) {
         </div>
       </div>
 
-      {segments.length === 0 ? (
+      {signals.length === 0 ? (
         <p className="edge-empty">Liquide apostas com {dimLabel.toLowerCase()} preenchido para dissecar o edge aqui.</p>
       ) : (
         <>
@@ -74,10 +81,11 @@ export function EdgePanel({ state }: { state: AppState }) {
             <table className="edge-table">
               <colgroup>
                 <col />
-                <col style={{ width: "84px" }} />
-                <col style={{ width: "84px" }} />
-                <col style={{ width: "84px" }} />
-                <col style={{ width: "84px" }} />
+                <col style={{ width: "76px" }} />
+                <col style={{ width: "78px" }} />
+                <col style={{ width: "78px" }} />
+                <col style={{ width: "78px" }} />
+                <col style={{ width: "92px" }} />
                 <col style={{ width: "104px" }} />
               </colgroup>
               <thead>
@@ -87,15 +95,17 @@ export function EdgePanel({ state }: { state: AppState }) {
                   <th className="num">ROI</th>
                   <th className="num">Acerto</th>
                   <th className="num">CLV</th>
+                  <th className="num">Exposição</th>
                   <th className="num">Lucro</th>
                 </tr>
               </thead>
               <tbody>
-                {segments.map((s) => (
-                  <tr key={s.key}>
+                {signals.map(({ segment: s, exposureShare, verdict }) => (
+                  <tr key={s.key} className={verdict !== "neutral" ? `edge-row-${verdict}` : ""}>
                     <td className="edge-key-cell">
                       <ConfidenceDot c={s.confidence} n={s.bets} />
                       <span className="edge-key" title={s.key}>{s.key}</span>
+                      <VerdictPill verdict={verdict} />
                     </td>
                     <td className="num text-mono">{s.bets}</td>
                     <td className={`num text-mono ${s.roi >= 0 ? "pos" : "neg"}`}>{percent.format(s.roi)}</td>
@@ -103,12 +113,25 @@ export function EdgePanel({ state }: { state: AppState }) {
                     <td className={`num text-mono ${s.clvAvg === null ? "" : s.clvAvg >= 0 ? "pos" : "neg"}`}>
                       {s.clvAvg === null ? "—" : percent.format(s.clvAvg)}
                     </td>
+                    <td className="num text-mono">{percent.format(exposureShare)}</td>
                     <td className={`num text-mono ${s.profit >= 0 ? "pos" : "neg"}`}>{money.format(s.profit)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          <p className="edge-legend">
+            <span className="edge-legend-dot"><span className="edge-conf edge-conf-low" /> <span className="edge-conf edge-conf-medium" /> <span className="edge-conf edge-conf-high" /> amostra (frágil → robusta)</span>
+            {hasVerdict && (
+              <>
+                <span className="edge-legend-sep">·</span>
+                <span><span className="edge-verdict edge-verdict-goldmine">Oportunidade</span> edge positivo onde você aloca pouco</span>
+                <span className="edge-legend-sep">·</span>
+                <span><span className="edge-verdict edge-verdict-drain">Dreno</span> prejuízo onde você aloca muito</span>
+              </>
+            )}
+          </p>
         </>
       )}
     </article>

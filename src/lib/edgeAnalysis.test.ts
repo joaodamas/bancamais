@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { analyzeEdge, edgeConfidence, edgeHighlights } from "./edgeAnalysis";
+import { analyzeEdge, edgeConfidence, edgeHighlights, classifyRadar, opportunityRadar } from "./edgeAnalysis";
+import type { EdgeSegment } from "./edgeAnalysis";
 import { emptyState } from "./storage";
 import type { AppState, Bet } from "./types";
 
@@ -95,5 +96,35 @@ describe("edgeHighlights", () => {
   it("não destaca segmento de amostra pequena", () => {
     const bets = [makeBet({ market: "Solo", status: "won", payout: 500 })];
     expect(edgeHighlights(state(bets), "market")).toEqual({ best: null, worst: null });
+  });
+});
+
+describe("classifyRadar", () => {
+  function seg(o: Partial<EdgeSegment>): EdgeSegment {
+    return { key: "X", bets: 20, staked: 1000, profit: 0, roi: 0, hitRate: 0.5, clvAvg: null, confidence: "high", ...o };
+  }
+  it("goldmine: edge positivo + pouca exposição", () => {
+    expect(classifyRadar(seg({ roi: 0.12, confidence: "high" }), 0.05)).toBe("goldmine");
+  });
+  it("drain: prejuízo + muita exposição", () => {
+    expect(classifyRadar(seg({ roi: -0.1, confidence: "high" }), 0.30)).toBe("drain");
+  });
+  it("neutral quando amostra baixa, mesmo com edge alto", () => {
+    expect(classifyRadar(seg({ roi: 0.2, confidence: "low" }), 0.02)).toBe("neutral");
+  });
+  it("neutral: edge bom mas já bem exposto", () => {
+    expect(classifyRadar(seg({ roi: 0.12, confidence: "high" }), 0.40)).toBe("neutral");
+  });
+});
+
+describe("opportunityRadar", () => {
+  it("calcula fatia de exposição e marca goldmine sub-alocado", () => {
+    // Segmento "Nicho": 4 vitórias (ROI alto), pouca exposição vs o resto
+    const nicho = Array.from({ length: 8 }, () => makeBet({ market: "Nicho", stake: 10, status: "won", payout: 25 }));
+    const resto = Array.from({ length: 8 }, () => makeBet({ market: "Comum", stake: 200, status: "lost", payout: 0 }));
+    const signals = opportunityRadar(state([...nicho, ...resto]), "market");
+    const nichoSig = signals.find((s) => s.segment.key === "Nicho")!;
+    expect(nichoSig.exposureShare).toBeLessThan(0.15);
+    expect(nichoSig.verdict).toBe("goldmine");
   });
 });
