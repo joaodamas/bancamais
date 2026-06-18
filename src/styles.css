@@ -13,7 +13,7 @@
   color-scheme: light;
 
   /* ── shadcn/ui CSS variables — Claro/Azul ────────────── */
-  --background:             216 25% 97%;
+  --background:             216 30% 94%;
   --foreground:             228 24% 13%;
   --card:                   0 0% 100%;
   --card-foreground:        228 24% 13%;
@@ -35,7 +35,7 @@
   --radius-shadcn:          0.5rem;
 
   /* ── Backgrounds — claro/cinza ───────────────────────── */
-  --bg:       #F4F6F9;
+  --bg:       #EBEFF5;
   --panel:    #FFFFFF;
   --panel-2:  #F0F2F6;
   --panel-3:  #E7EBF1;
@@ -450,9 +450,10 @@ nav button:hover:not(.active) {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.92);
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
@@ -502,10 +503,10 @@ nav button:hover:not(.active) {
 }
 
 .topbar-actions button:not(.primary) {
-  background: transparent;
+  background: var(--panel-2);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
-  color: var(--muted);
+  color: var(--text);
   height: 32px;
   min-width: 32px;
   font-size: 13px;
@@ -514,6 +515,7 @@ nav button:hover:not(.active) {
 
 .topbar-actions button:not(.primary):hover {
   border-color: var(--accent);
+  background: var(--panel-3);
   color: var(--text);
 }
 
@@ -805,7 +807,7 @@ nav button:hover:not(.active) {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
 /* =========================================================
@@ -1347,33 +1349,33 @@ td small {
 }
 
 .pill.won {
-  background: rgba(52, 211, 153, 0.12);
-  color: var(--positive);
-  border: 1px solid rgba(52, 211, 153, 0.30);
+  background: rgba(22, 163, 74, 0.16);
+  color: #15803D;
+  border: 1px solid rgba(22, 163, 74, 0.45);
 }
 
 .pill.lost {
-  background: rgba(251, 113, 133, 0.12);
-  color: var(--negative);
-  border: 1px solid rgba(251, 113, 133, 0.30);
+  background: rgba(220, 38, 38, 0.14);
+  color: #B91C1C;
+  border: 1px solid rgba(220, 38, 38, 0.42);
 }
 
 .pill.pending {
-  background: rgba(245, 158, 11, 0.12);
-  color: var(--warning);
-  border: 1px solid rgba(245, 158, 11, 0.30);
+  background: rgba(217, 119, 6, 0.16);
+  color: #B45309;
+  border: 1px solid rgba(217, 119, 6, 0.45);
 }
 
 .pill.cashout {
-  background: rgba(103, 232, 249, 0.10);
-  color: var(--cyan);
-  border: 1px solid rgba(103, 232, 249, 0.28);
+  background: rgba(8, 145, 178, 0.14);
+  color: #0E7490;
+  border: 1px solid rgba(8, 145, 178, 0.40);
 }
 
 .pill.void {
-  background: rgba(90, 87, 79, 0.20);
-  color: var(--soft);
-  border: 1px solid rgba(90, 87, 79, 0.35);
+  background: rgba(100, 116, 139, 0.16);
+  color: #475569;
+  border: 1px solid rgba(100, 116, 139, 0.40);
 }
 
 /* =========================================================
@@ -4792,7 +4794,7 @@ kbd {
    ========================================================= */
 
 :root {
-  --bg: #F4F6F9;
+  --bg: #EBEFF5;
   --panel: #FFFFFF;
   --panel-2: #F0F2F6;
   --panel-3: #E7EBF1;
@@ -4844,13 +4846,9 @@ h1, h2, h3, h4 {
 
 .sidebar {
   padding: 22px 16px 18px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.018), transparent 18%),
-    var(--panel);
-  border-right: 1px solid var(--line);
-  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.012);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  background: var(--panel);
+  border-right: 1px solid var(--line-strong);
+  box-shadow: 1px 0 3px rgba(15, 23, 42, 0.04);
 }
 
 .brand-logo {
@@ -5065,12 +5063,12 @@ nav button:hover:not(.active) {
 }
 
 .page {
-  max-width: 1440px;
-  padding: 30px 30px 56px;
+  max-width: none;
+  padding: 24px 32px 48px;
 }
 
 .page.page-bets {
-  max-width: 1680px;
+  max-width: none;
 }
 
 .page > * {
