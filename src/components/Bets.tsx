@@ -446,7 +446,7 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                     </td>
                     <td className="bet-cell bet-cell-event">
                       <div className="bet-block-head">
-                        <strong className="bet-primary-text">{bet.eventName}</strong>
+                        <strong className="bet-primary-text bet-clamp-2" title={bet.eventName}>{bet.eventName}</strong>
                         {isPending && delta.label && (
                           <span className={`bet-time-chip bet-time-${delta.state}`}>{delta.label}</span>
                         )}
@@ -465,8 +465,8 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                       </div>
                     </td>
                     <td className="bet-cell" data-label="Mercado">
-                      <strong className="bet-primary-text">{bet.market}</strong>
-                      <small>{bet.selection}</small>
+                      <strong className="bet-primary-text bet-clamp-2" title={bet.market}>{bet.market}</strong>
+                      <small className="bet-clamp-2" title={bet.selection}>{bet.selection}</small>
                     </td>
                     <td className="bet-cell" data-label="Execução">
                       <strong className="bet-primary-text">{bookmakerById.get(bet.bookmakerId) ?? "-"}</strong>
@@ -480,24 +480,24 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                       {bet.closingOdds && <small className="text-mono">fech. {bet.closingOdds.toFixed(2)}</small>}
                     </td>
                     <td className="bet-cell bet-cell-performance">
-                      <div className="bet-performance-grid">
-                        <div className="bet-performance-item">
-                          <span>Retorno</span>
-                          <strong className="text-mono">{money.format(getReturnValue(bet))}</strong>
-                          <small>{bet.status === "pending" ? "Potencial" : "Efetivo"}</small>
-                        </div>
-                        <div className="bet-performance-item">
-                          <span>Ganho</span>
-                          <strong className={`text-mono ${getGainValue(bet) >= 0 ? "pos" : "neg"}`}>
-                            {money.format(getGainValue(bet))}
-                          </strong>
-                          <small>{bet.status === "pending" ? "Potencial" : "Liquido"}</small>
-                        </div>
+                      <div className="perf-row">
+                        <span className="perf-label">Retorno</span>
+                        <strong className="text-mono">{money.format(getReturnValue(bet))}</strong>
                       </div>
-                      <div className="bet-inline-stats bet-inline-stats-metrics">
-                        <span>CLV</span>
-                        <span className="text-mono">{clvPercent(bet) === null ? "Sem CLV" : percent.format(clvPercent(bet)!)}</span>
+                      <div className="perf-row">
+                        <span className="perf-label">Ganho</span>
+                        <strong className={`text-mono ${getGainValue(bet) >= 0 ? "pos" : "neg"}`}>
+                          {getGainValue(bet) >= 0 ? "+" : ""}{money.format(getGainValue(bet))}
+                        </strong>
                       </div>
+                      {bet.closingOdds && (
+                        <div className="perf-row">
+                          <span className="perf-label">CLV</span>
+                          <span className={`text-mono ${(clvPercent(bet) ?? 0) >= 0 ? "pos" : "neg"}`}>
+                            {clvPercent(bet) === null ? "—" : percent.format(clvPercent(bet)!)}
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td className="bet-status-cell" data-label="Status">
                       <span className={`pill ${bet.status}`}>{statusLabel[bet.status]}</span>

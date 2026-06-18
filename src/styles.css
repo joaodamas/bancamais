@@ -4810,8 +4810,8 @@ kbd {
   --info: #2563EB;
   --cyan: #0891B2;
   --font-ui: "Inter", system-ui, -apple-system, sans-serif;
-  --font-display: "Inter", system-ui, -apple-system, sans-serif;
-  --font-brand: "Inter", system-ui, -apple-system, sans-serif;
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-brand: "Space Grotesk", "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", monospace;
   --font-data: "JetBrains Mono", "SF Mono", monospace;
   --radius-sm: 6px;
@@ -4870,26 +4870,41 @@ h1, h2, h3, h4 {
   gap: 6px;
 }
 
+.brand-mark {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.28);
+}
+
+.brand-mark svg {
+  width: 30px;
+  height: 30px;
+  display: block;
+}
+
 .brand-wordmark-text {
   color: var(--text);
   font-family: var(--font-brand);
-  font-size: 22px;
+  font-size: 21px;
   font-weight: 700;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.03em;
   line-height: 1;
 }
 
-.brand-wordmark-plus {
-  width: 14px;
-  height: 14px;
-  stroke: var(--accent);
-  stroke-width: 2.1;
-  fill: none;
-  stroke-linecap: round;
+.brand-wordmark-plus-text {
+  font-family: var(--font-brand);
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent);
+  margin-left: 1px;
 }
 
 .brand-logo strong {
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 700;
 }
 
@@ -5019,7 +5034,7 @@ nav button:hover:not(.active) {
 }
 
 .search-icon {
-  color: #8ea0bb;
+  color: #64748B;
 }
 
 .search-dropdown {
@@ -5043,7 +5058,7 @@ nav button:hover:not(.active) {
 }
 
 .topbar-meta span {
-  color: #8ea0bb;
+  color: #64748B;
 }
 
 .topbar-actions {
@@ -5185,7 +5200,7 @@ nav button:hover:not(.active) {
 .page-actions span {
   font-size: 12px;
   font-family: var(--font-ui);
-  color: #8ea0bb;
+  color: #64748B;
 }
 
 .ops-summary-grid {
@@ -5198,7 +5213,7 @@ nav button:hover:not(.active) {
 }
 
 .ops-summary-card span {
-  color: #8ea0bb;
+  color: #64748B;
   letter-spacing: 0.14em;
 }
 
@@ -5241,7 +5256,7 @@ nav button:hover:not(.active) {
 
 .balance-card span,
 .metric span {
-  color: #8ea0bb;
+  color: #64748B;
   letter-spacing: 0.14em;
 }
 
@@ -5381,7 +5396,7 @@ nav button:hover:not(.active) {
 
 th {
   background: rgba(13, 18, 32, 0.94);
-  color: #8ea0bb;
+  color: #64748B;
   font-size: 10px;
   letter-spacing: 0.14em;
 }
@@ -5504,7 +5519,7 @@ tr:hover td {
 }
 
 .report-card span {
-  color: #8ea0bb;
+  color: #64748B;
   letter-spacing: 0.14em;
 }
 
@@ -5872,7 +5887,7 @@ tr:hover td {
 }
 
 .dashboard-mini-card small {
-  color: #8ea0bb;
+  color: #64748B;
   line-height: 1.55;
 }
 
@@ -5883,9 +5898,10 @@ tr:hover td {
   gap: 14px;
   padding: 14px 18px;
   margin-bottom: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 20px;
-  background: rgba(16, 24, 39, 0.72);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   transition: border-color var(--transition), background var(--transition);
 }
 
@@ -5900,7 +5916,7 @@ tr:hover td {
 }
 
 .bets-toolbar-copy small {
-  color: #8ea0bb;
+  color: #64748B;
   font-size: 12px;
 }
 
@@ -6179,7 +6195,7 @@ tr:hover td {
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(255, 255, 255, 0.03);
-  color: #8ea0bb;
+  color: #64748B;
   font-size: 11px;
   line-height: 1.2;
 }
@@ -8352,6 +8368,40 @@ button.danger:hover {
   font-size: 14px;
   border-color: color-mix(in srgb, var(--positive) 25%, var(--line));
   background: color-mix(in srgb, var(--positive) 6%, var(--panel));
+}
+
+/* ── Apostas: clamp de texto longo + performance enxuta ── */
+.bet-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bet-cell-performance {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.perf-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.perf-label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.perf-row strong,
+.perf-row span.text-mono {
+  font-size: 13px;
+  font-weight: 600;
 }
 
 @media (max-width: 960px) {
