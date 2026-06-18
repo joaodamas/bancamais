@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import { calculateMetrics, money, percent } from "../lib/metrics";
+import { calculateMetrics, money, percent, bettingStreaks } from "../lib/metrics";
 import { buildBankrollTimeSeries } from "../lib/chartData";
 import { resolveUnitValue } from "../lib/unit";
 import type { AppState } from "../lib/types";
@@ -67,6 +67,12 @@ export function Dashboard({
 
   const monitoredCapital = metrics.totalBalance + metrics.openExposure;
   const unitValue = resolveUnitValue(state.riskSettings, monitoredCapital);
+  const deposited = state.transactions
+    .filter((transaction) => transaction.type === "deposit")
+    .reduce((sum, transaction) => sum + transaction.amount, 0);
+  const progression = deposited > 0 ? metrics.profit / deposited : null;
+  const pending = state.bets.filter((bet) => bet.status === "pending");
+  const streaks = bettingStreaks(state);
 
   const isEmpty = state.bets.length === 0;
   const hasBookmakers = state.bookmakers.length > 0;
@@ -101,7 +107,7 @@ export function Dashboard({
   }
 
   return (
-    <section className="page">
+    <section className="page page-dash">
       <div className="section-head">
         <div>
           <h1>Dashboard</h1>
@@ -115,27 +121,10 @@ export function Dashboard({
 
       {/* Banda 1 — Capital */}
       <div className="stat-band">
-        <article className="stat-card stat-card-primary stat-card-spark">
-          <div className="stat-spark-copy">
-            <span className="stat-label">Saldo</span>
-            <strong className="stat-value text-mono">{money.format(metrics.totalBalance)}</strong>
-            <span className="stat-foot">livre para apostar</span>
-          </div>
-          {chartData.length > 1 && (
-            <div className="stat-sparkline">
-              <ResponsiveContainer width="100%" height={36}>
-                <AreaChart data={chartData} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={COLORS.green} stopOpacity={0.22} />
-                      <stop offset="100%" stopColor={COLORS.green} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <Area type="monotone" dataKey="balance" stroke={COLORS.green} strokeWidth={1.6} fill="url(#sparkGrad)" dot={false} isAnimationActive={false} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+        <article className="stat-card stat-card-primary">
+          <span className="stat-label">Saldo</span>
+          <strong className="stat-value text-mono">{money.format(metrics.totalBalance)}</strong>
+          <span className="stat-foot">livre para apostar</span>
         </article>
         <article className="stat-card">
           <span className="stat-label">Em aberto</span>
@@ -176,10 +165,63 @@ export function Dashboard({
           <strong className={`stat-value text-mono ${metrics.profit >= 0 ? "pos" : "neg"}`}>{money.format(metrics.profit)}</strong>
           <span className="stat-foot">apostas fechadas</span>
         </article>
+        <article className="stat-card">
+          <span className="stat-label">Progressão</span>
+          <strong className={`stat-value text-mono ${progression == null ? "" : progression >= 0 ? "pos" : "neg"}`}>
+            {progression != null ? percent.format(progression) : "—"}
+          </strong>
+          <span className="stat-foot">lucro / capital inicial</span>
+        </article>
       </div>
 
-      {/* Curva da banca */}
-      <article className="panel chart-panel">
+      <div className="stat-band">
+        <article className="stat-card">
+          <span className="stat-label">Maior seq. green</span>
+          <strong className="stat-value text-mono pos">{streaks.longestGreen}</strong>
+          <span className="stat-foot">greens seguidos</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Maior seq. red</span>
+          <strong className="stat-value text-mono neg">{streaks.longestRed}</strong>
+          <span className="stat-foot">reds seguidos</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Green × Red</span>
+          <strong className="stat-value text-mono">{streaks.greens} × {streaks.reds}</strong>
+          <span className="stat-foot">acertos × erros</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Stake média</span>
+          <strong className="stat-value text-mono">{money.format(streaks.avgStake)}</strong>
+          <span className="stat-foot">por aposta</span>
+        </article>
+      </div>
+
+      {pending.length > 0 && (
+        <article className="panel dash-pending">
+          <div className="dash-pending-head">
+            <h2>Em aberto agora</h2>
+            <span>{pending.length} aposta{pending.length !== 1 ? "s" : ""} · {money.format(metrics.openExposure)} em risco</span>
+          </div>
+          <div className="dash-pending-list">
+            {pending.slice(0, 6).map((bet) => (
+              <div key={bet.id} className="dash-pending-row">
+                <div className="dash-pending-info">
+                  <span className="dash-pending-event">{bet.eventName}</span>
+                  <span className="dash-pending-sub">{bet.selection} · @{bet.odds.toFixed(2)}</span>
+                </div>
+                <span className="dash-pending-money text-mono">{money.format(bet.stake)} → {money.format(bet.stake * bet.odds)}</span>
+              </div>
+            ))}
+          </div>
+          {pending.length > 6 && (
+            <span className="dash-pending-foot">+{pending.length - 6} aposta(s) em aberto</span>
+          )}
+        </article>
+      )}
+
+      {/* Curva da banca — herói */}
+      <article className="panel chart-panel dash-hero">
         <div className="chart-header">
           <div className="chart-title-block">
             <h2>Evolução da banca</h2>
@@ -208,7 +250,7 @@ export function Dashboard({
           </div>
         </div>
         {chartData.length > 1 ? (
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
               <defs>
                 <linearGradient id="balanceGrad" x1="0" y1="0" x2="0" y2="1">

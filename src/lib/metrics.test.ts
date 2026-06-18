@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { betProfit, potentialReturn, clvPercent, calculateMetrics, profitFactor, segmentByOddsBand, segmentByStakeBand, segmentByDayOfWeek, segmentByMarket } from "./metrics";
+import { betProfit, potentialReturn, clvPercent, calculateMetrics, profitFactor, segmentByOddsBand, segmentByStakeBand, segmentByDayOfWeek, segmentByMarket, segmentByLeague, bettingStreaks } from "./metrics";
 import { emptyState } from "./storage";
 import type { Bet, AppState } from "./types";
 
@@ -242,5 +242,46 @@ describe("segmentByMarket", () => {
     expect(segments[0].label).toBe("Over/Under"); // maior volume (200) primeiro
     expect(segments[0].bets).toBe(2);
     expect(segments[1].label).toBe("1x2");
+  });
+});
+
+describe("segmentByLeague", () => {
+  it("agrupa por liga, ordenado por volume apostado", () => {
+    const bets = [
+      makeBet({ id: "1", league: "Brasileirão", stake: 100, status: "won", payout: 180 }),
+      makeBet({ id: "2", league: "Brasileirão", stake: 100, status: "lost", payout: 0 }),
+      makeBet({ id: "3", league: "Premier League", stake: 50, status: "won", payout: 100 }),
+    ];
+    const segments = segmentByLeague(makeState(bets));
+    expect(segments[0].label).toBe("Brasileirão");
+    expect(segments[0].bets).toBe(2);
+    expect(segments[1].label).toBe("Premier League");
+  });
+});
+
+describe("bettingStreaks", () => {
+  it("calcula maior sequência de green e de red", () => {
+    const mk = (id: string, day: number, won: boolean) =>
+      makeBet({
+        id,
+        placedAt: new Date(2026, 5, day, 12).toISOString(),
+        status: won ? "won" : "lost",
+        stake: 100,
+        payout: won ? 200 : 0,
+      });
+    const bets = [mk("1", 1, true), mk("2", 2, true), mk("3", 3, true), mk("4", 4, false), mk("5", 5, false), mk("6", 6, true)];
+    const s = bettingStreaks(makeState(bets));
+    expect(s.longestGreen).toBe(3);
+    expect(s.longestRed).toBe(2);
+    expect(s.greens).toBe(4);
+    expect(s.reds).toBe(2);
+    expect(s.avgStake).toBe(100);
+  });
+
+  it("zera com estado vazio", () => {
+    const s = bettingStreaks(makeState([]));
+    expect(s.longestGreen).toBe(0);
+    expect(s.reds).toBe(0);
+    expect(s.avgStake).toBe(0);
   });
 });

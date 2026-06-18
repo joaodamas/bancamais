@@ -186,7 +186,7 @@ export function QuickBet({ state, onSubmit, onClose, onSwitchToFull }: QuickBetP
           {/* Feedback de retorno potencial */}
           {potentialReturn !== null && (
             <div className="quick-bet-return">
-              <span>Retorno potencial</span>
+              <span>Possível retorno</span>
               <strong className="pos">{money.format(potentialReturn)}</strong>
               <span className="quick-bet-gain">
                 (ganho: <b className="pos">{money.format(potentialReturn - Number(stake))}</b>)

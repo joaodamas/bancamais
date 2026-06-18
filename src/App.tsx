@@ -3,9 +3,9 @@ import type { User } from "firebase/auth";
 import { Toaster, toast } from "react-hot-toast";
 import {
   LayoutDashboard, ListChecks, Upload, Brain, FileBarChart,
-  TrendingUp, Wallet, Target, Settings2, Plus,
-  CloudUpload, User as UserIcon, Bell, Search, X,
-  ShieldAlert, Activity
+  TrendingUp, Wallet, Target, Settings2,
+  CloudUpload, Bell, Search, X,
+  ShieldAlert, Activity, Coins, CalendarDays, Lightbulb
 } from "lucide-react";
 import { BrandLogo } from "./components/BrandLogo";
 import { CookieBanner, getStoredConsent, type CookieConsent } from "./components/CookieBanner";
@@ -14,7 +14,6 @@ import { BetsSkeleton } from "./components/BetsSkeleton";
 import { GuidedTour } from "./components/GuidedTour";
 
 const TOUR_DONE_KEY = "bancamais_tour_done";
-import { Button } from "./components/ui/button";
 import {
   createEmailUser,
   loadCloudState,
@@ -47,7 +46,7 @@ import { buildBookmaker, buildManualTransaction, buildVoidEntry } from "./servic
 import { buildBetTemplate, addBetTemplate, removeBetTemplate } from "./services/template.service";
 import { saveReportSnapshot } from "./services/report.service";
 
-type View = "dashboard" | "bets" | "new-bet" | "import" | "risk" | "performance" | "intelligence" | "reports" | "clv" | "books" | "strategies" | "settings";
+type View = "dashboard" | "bets" | "diario" | "new-bet" | "import" | "risk" | "performance" | "intelligence" | "insights" | "reports" | "clv" | "odds" | "books" | "strategies" | "settings";
 
 type NavItem = { id: View; label: string; badge?: string; Icon: React.ElementType };
 
@@ -60,7 +59,10 @@ const NewBet = lazy(() => import("./components/NewBet").then((module) => ({ defa
 const QuickBet = lazy(() => import("./components/QuickBet").then((module) => ({ default: module.QuickBet })));
 const Import = lazy(() => import("./components/Import").then((module) => ({ default: module.Import })));
 const Intelligence = lazy(() => import("./components/Intelligence").then((module) => ({ default: module.Intelligence })));
+const Insights = lazy(() => import("./components/Insights").then((module) => ({ default: module.Insights })));
 const ClvEdge = lazy(() => import("./components/ClvEdge").then((module) => ({ default: module.ClvEdge })));
+const Odds = lazy(() => import("./components/Odds").then((module) => ({ default: module.Odds })));
+const Diario = lazy(() => import("./components/Diario").then((module) => ({ default: module.Diario })));
 const Books = lazy(() => import("./components/Books").then((module) => ({ default: module.Books })));
 const Strategies = lazy(() => import("./components/Strategies").then((module) => ({ default: module.Strategies })));
 const Reports = lazy(() => import("./components/Reports").then((module) => ({ default: module.Reports })));
@@ -94,6 +96,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     items: [
       { id: "dashboard" as View, label: "Dashboard", Icon: LayoutDashboard },
       { id: "bets" as View, label: "Apostas", Icon: ListChecks },
+      { id: "diario" as View, label: "Diário", Icon: CalendarDays },
       { id: "import" as View, label: "Importar", Icon: Upload },
     ],
   },
@@ -103,8 +106,10 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
       { id: "risk" as View, label: "Risco", Icon: ShieldAlert },
       { id: "performance" as View, label: "Performance", Icon: Activity },
       { id: "intelligence" as View, label: "Inteligência", badge: "IA", Icon: Brain },
+      { id: "insights" as View, label: "Insights", Icon: Lightbulb },
       { id: "reports" as View, label: "Relatórios", Icon: FileBarChart },
       { id: "clv" as View, label: "CLV & Edge", Icon: TrendingUp },
+      { id: "odds" as View, label: "Odds", badge: "novo", Icon: Coins },
     ],
   },
   {
@@ -1339,18 +1344,14 @@ export function App() {
               )}
             </div>
             <button title="Configurações" onClick={() => setView("settings")}>
-              <UserIcon size={18} />
+              <Settings2 size={18} />
             </button>
             {user && (
-              <button title="Sync" onClick={pushCloud} className="sync-btn">
+              <button title="Salvar na nuvem agora (o app já salva sozinho a cada mudança)" onClick={pushCloud} className="sync-btn">
                 <CloudUpload size={16} />
                 <span>Salvar</span>
               </button>
             )}
-            <Button className="primary btn-nova-aposta" data-tour="new-bet" onClick={() => openNewBet()}>
-              <Plus size={16} />
-              <span>Nova aposta</span>
-            </Button>
           </div>
         </header>
 
@@ -1371,7 +1372,7 @@ export function App() {
             />
           ) : null;
         })()}
-        <button className="fab" onClick={() => openNewBet()} title="Nova aposta">+</button>
+        <button className="fab" data-tour="new-bet" onClick={() => openNewBet()} title="Nova aposta">+</button>
 
         <Toaster
           position="bottom-right"
@@ -1440,10 +1441,16 @@ export function App() {
         return <Performance state={state} metrics={metrics} />;
       case "intelligence":
         return <Intelligence state={state} metrics={metrics} onOpenNewBet={openNewBet} />;
+      case "insights":
+        return <Insights state={state} />;
       case "reports":
         return <Reports state={state} metrics={metrics} onSaveSnapshot={persistReportSnapshot} />;
       case "clv":
         return <ClvEdge state={state} metrics={metrics} />;
+      case "odds":
+        return <Odds onOpenNewBet={openNewBet} />;
+      case "diario":
+        return <Diario state={state} />;
       case "books":
         return (
           <Books

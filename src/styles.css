@@ -10,56 +10,56 @@
    ========================================================= */
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
-  /* ── shadcn/ui CSS variables — Claro/Azul ────────────── */
-  --background:             216 30% 94%;
-  --foreground:             228 24% 13%;
-  --card:                   0 0% 100%;
-  --card-foreground:        228 24% 13%;
-  --popover:                0 0% 100%;
-  --popover-foreground:     228 24% 13%;
-  --primary:                157 47% 35%;
+  /* ── shadcn/ui CSS variables — Dark/Laranja ──────────── */
+  --background:             240 6% 5%;
+  --foreground:             0 0% 96%;
+  --card:                   240 5% 8%;
+  --card-foreground:        0 0% 96%;
+  --popover:                240 5% 8%;
+  --popover-foreground:     0 0% 96%;
+  --primary:                24 94% 53%;
   --primary-foreground:     0 0% 100%;
-  --secondary:              220 23% 95%;
-  --secondary-foreground:   228 24% 13%;
-  --muted-bg:               220 23% 95%;
-  --muted-foreground:       215 16% 47%;
-  --accent-bg:              157 47% 35%;
+  --secondary:              240 5% 14%;
+  --secondary-foreground:   0 0% 96%;
+  --muted-bg:               240 5% 14%;
+  --muted-foreground:       240 4% 58%;
+  --accent-bg:              24 94% 53%;
   --accent-foreground:      0 0% 100%;
   --destructive:            0 72% 51%;
   --destructive-foreground: 0 0% 100%;
-  --border:                 222 47% 11% / 0.10;
-  --input:                  222 47% 11% / 0.12;
-  --ring:                   157 47% 35%;
+  --border:                 0 0% 100% / 0.08;
+  --input:                  0 0% 100% / 0.10;
+  --ring:                   24 94% 53%;
   --radius-shadcn:          0.5rem;
 
-  /* ── Backgrounds — claro/cinza ───────────────────────── */
-  --bg:       #EBEFF5;
-  --panel:    #FFFFFF;
-  --panel-2:  #F0F2F6;
-  --panel-3:  #E7EBF1;
+  /* ── Backgrounds — dark puro (JP Fitness) ────────────── */
+  --bg:       #0A0A0B;
+  --panel:    #121214;
+  --panel-2:  #161618;
+  --panel-3:  #1C1C20;
 
-  /* ── Bordas — dark sutil sobre claro ────────────────── */
-  --line:        rgba(15, 23, 42, 0.10);
-  --line-strong: rgba(15, 23, 42, 0.16);
+  /* ── Bordas — branco sutil sobre dark ───────────────── */
+  --line:        rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.14);
 
-  /* ── Texto — slate escuro ───────────────────────────── */
-  --text:  #1A1D29;
-  --muted: #64748B;
-  --soft:  #94A3B8;
+  /* ── Texto — claro sobre dark ───────────────────────── */
+  --text:  #F4F4F5;
+  --muted: #8A8A93;
+  --soft:  #5E5E68;
 
-  /* ── Accent — azul profissional ─────────────────────── */
-  --accent:        #2F8466;
-  --accent-dim:    rgba(47, 132, 102, 0.10);
-  --accent-bright: #246B52;
+  /* ── Accent — laranja (JP Fitness) ──────────────────── */
+  --accent:        #F97316;
+  --accent-dim:    rgba(249, 115, 22, 0.12);
+  --accent-bright: #FB8A3C;
 
   /* ── Status ─────────────────────────────────────────── */
-  --positive: #16A34A;
-  --negative: #DC2626;
-  --warning:  #D97706;
-  --info:     #2F8466;
-  --cyan:     #0891B2;
+  --positive: #22C55E;
+  --negative: #EF4444;
+  --warning:  #F59E0B;
+  --info:     #F97316;
+  --cyan:     #22D3EE;
 
   /* Aliases semânticos mantidos para compatibilidade */
   --green: var(--positive);
@@ -136,7 +136,7 @@ button {
 }
 
 button:focus-visible {
-  outline: 2px solid rgba(47, 132, 102, 0.5);
+  outline: 2px solid rgba(249, 115, 22, 0.5);
   outline-offset: 1px;
 }
 
@@ -346,7 +346,7 @@ nav {
 }
 
 .nav-group > span {
-  color: #8B8780;
+  color: var(--muted);
   font-size: 11px;
   font-family: var(--font-ui);
   letter-spacing: 0.1em;
@@ -404,18 +404,18 @@ nav button em {
 nav button.active {
   border-left-color: var(--accent);
   color: var(--text);
-  background: rgba(47, 132, 102, 0.10);
+  background: rgba(249, 115, 22, 0.10);
 }
 
 nav button.active em {
-  background: rgba(47, 132, 102, 0.12);
-  border-color: rgba(47, 132, 102, 0.25);
+  background: rgba(249, 115, 22, 0.12);
+  border-color: rgba(249, 115, 22, 0.25);
   color: var(--accent);
 }
 
 nav button:hover:not(.active) {
   color: var(--text);
-  border-left-color: rgba(47, 132, 102, 0.25);
+  border-left-color: rgba(249, 115, 22, 0.25);
   background: rgba(255, 255, 255, 0.03);
 }
 
@@ -452,7 +452,7 @@ nav button:hover:not(.active) {
   gap: 12px;
   padding: 10px 24px;
   border-bottom: 1px solid var(--line-strong);
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--panel);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -503,10 +503,10 @@ nav button:hover:not(.active) {
 }
 
 .topbar-actions button:not(.primary) {
-  background: var(--panel-2);
-  border: 1px solid var(--line-strong);
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  color: var(--text);
+  color: var(--muted);
   height: 32px;
   min-width: 32px;
   font-size: 13px;
@@ -514,8 +514,8 @@ nav button:hover:not(.active) {
 }
 
 .topbar-actions button:not(.primary):hover {
-  border-color: var(--accent);
-  background: var(--panel-3);
+  border-color: transparent;
+  background: var(--panel-2);
   color: var(--text);
 }
 
@@ -532,7 +532,6 @@ nav button:hover:not(.active) {
 }
 
 .notif-btn-active {
-  border-color: rgba(47, 132, 102, 0.4) !important;
   color: var(--accent) !important;
 }
 
@@ -649,6 +648,11 @@ nav button:hover:not(.active) {
   width: 100%;
   animation: fadeSlideUp 0.18s ease-out;
 }
+
+/* Dashboard: curva-herói no topo via order (sem mover JSX) */
+.page-dash { display: flex; flex-direction: column; }
+.page-dash > .section-head { order: -2; }
+.page-dash > .dash-hero { order: -1; margin-bottom: 12px; }
 
 /* =========================================================
    SECTION HEAD
@@ -875,6 +879,7 @@ nav button:hover:not(.active) {
   display: grid;
   grid-template-columns: 1.1fr 1fr;
   gap: 10px;
+  align-items: start;
 }
 
 /* =========================================================
@@ -1102,9 +1107,9 @@ nav button:hover:not(.active) {
 }
 
 .heatmap .hm-pos {
-  background: rgba(47, 132, 102, 0.45);
+  background: rgba(249, 115, 22, 0.45);
   color: #051a08;
-  border-color: rgba(47, 132, 102, 0.25);
+  border-color: rgba(249, 115, 22, 0.25);
 }
 
 .heatmap .hm-neg {
@@ -1162,10 +1167,10 @@ nav button:hover:not(.active) {
 }
 
 .odds-list .highlight {
-  background: rgba(47, 132, 102, 0.05);
+  background: rgba(249, 115, 22, 0.05);
   border-radius: var(--radius-sm);
   padding: 7px 8px;
-  border: 1px solid rgba(47, 132, 102, 0.12);
+  border: 1px solid rgba(249, 115, 22, 0.12);
 }
 
 /* =========================================================
@@ -1374,7 +1379,7 @@ td small {
 
 .pill.void {
   background: rgba(100, 116, 139, 0.16);
-  color: #475569;
+  color: var(--muted);
   border: 1px solid rgba(100, 116, 139, 0.40);
 }
 
@@ -1420,7 +1425,7 @@ td small {
 .panel button:hover {
   border-color: var(--accent);
   color: var(--text);
-  background: rgba(47, 132, 102, 0.05);
+  background: rgba(249, 115, 22, 0.05);
 }
 
 /* =========================================================
@@ -1429,7 +1434,7 @@ td small {
 
 .primary {
   background: var(--accent) !important;
-  border: 1px solid rgba(47, 132, 102, 0.30) !important;
+  border: 1px solid rgba(249, 115, 22, 0.30) !important;
   color: #0a0614 !important;
   font-weight: 600 !important;
   font-family: var(--font-ui) !important;
@@ -1491,7 +1496,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--accent);
-  outline: 2px solid rgba(47, 132, 102, 0.5);
+  outline: 2px solid rgba(249, 115, 22, 0.5);
   outline-offset: 0;
   box-shadow: none;
 }
@@ -1522,17 +1527,17 @@ textarea {
 
 .dropzone,
 .file-drop {
-  border: 1px dashed rgba(47, 132, 102, 0.20);
+  border: 1px dashed rgba(249, 115, 22, 0.20);
   border-radius: var(--radius);
   padding: 18px;
-  background: rgba(47, 132, 102, 0.02);
+  background: rgba(249, 115, 22, 0.02);
   transition: border-color var(--transition), background var(--transition);
 }
 
 .dropzone:hover,
 .file-drop:hover {
-  border-color: rgba(47, 132, 102, 0.35);
-  background: rgba(47, 132, 102, 0.04);
+  border-color: rgba(249, 115, 22, 0.35);
+  background: rgba(249, 115, 22, 0.04);
 }
 
 .dropzone {
@@ -1929,10 +1934,10 @@ textarea {
 }
 
 .auth-message {
-  border: 1px solid rgba(47, 132, 102, 0.15);
+  border: 1px solid rgba(249, 115, 22, 0.15);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
-  background: rgba(47, 132, 102, 0.04);
+  background: rgba(249, 115, 22, 0.04);
   color: var(--muted);
   font-size: 13px;
   line-height: 1.5;
@@ -2005,7 +2010,7 @@ textarea {
 .fab {
   align-items: center;
   background: var(--accent);
-  border: 1px solid rgba(47, 132, 102, 0.30);
+  border: 1px solid rgba(249, 115, 22, 0.30);
   border-radius: var(--radius);           /* 6px quadrado, não círculo */
   bottom: 24px;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.10);
@@ -2170,11 +2175,11 @@ textarea {
   border-color: var(--accent);
   outline: none;
   background: var(--bg);
-  box-shadow: 0 0 0 1px rgba(47, 132, 102, 0.42), 0 0 0 4px rgba(47, 132, 102, 0.10);
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.42), 0 0 0 4px rgba(249, 115, 22, 0.10);
 }
 
 .nb-ocr-section .nb-section-head {
-  background: linear-gradient(90deg, rgba(47, 132, 102, 0.08) 0%, transparent 100%);
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.08) 0%, transparent 100%);
 }
 
 .nb-event-search {
@@ -2917,8 +2922,8 @@ nav button:hover svg {
 }
 
 .ai-insight {
-  background: rgba(47, 132, 102, 0.04);
-  border: 1px solid rgba(47, 132, 102, 0.18);
+  background: rgba(249, 115, 22, 0.04);
+  border: 1px solid rgba(249, 115, 22, 0.18);
   border-radius: var(--radius);
   padding: 10px 12px;
   margin: 10px 0;
@@ -3013,12 +3018,12 @@ nav button:hover svg {
 
 .filter-tab.active {
   background: var(--accent-dim);
-  border-color: rgba(47, 132, 102, 0.35);
+  border-color: rgba(249, 115, 22, 0.35);
   color: var(--accent);
 }
 
 .filter-tab.active em {
-  background: rgba(47, 132, 102, 0.12);
+  background: rgba(249, 115, 22, 0.12);
   color: var(--accent);
 }
 
@@ -3057,7 +3062,7 @@ nav button:hover svg {
 
 .tag-chip-active {
   background: var(--accent-dim);
-  border-color: rgba(47, 132, 102, 0.45);
+  border-color: rgba(249, 115, 22, 0.45);
   color: var(--accent);
 }
 
@@ -3190,8 +3195,8 @@ nav button:hover svg {
 }
 
 .auth-page-message {
-  background: rgba(47, 132, 102, 0.06);
-  border: 1px solid rgba(47, 132, 102, 0.18);
+  background: rgba(249, 115, 22, 0.06);
+  border: 1px solid rgba(249, 115, 22, 0.18);
   border-radius: var(--radius-sm);
   color: var(--text);
   font-size: 13px;
@@ -3259,7 +3264,7 @@ nav button:hover svg {
 }
 
 .auth-page-features {
-  background: radial-gradient(ellipse 80% 60% at 60% 30%, rgba(47, 132, 102,0.08) 0%, transparent 70%);
+  background: radial-gradient(ellipse 80% 60% at 60% 30%, rgba(249, 115, 22,0.08) 0%, transparent 70%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3272,7 +3277,7 @@ nav button:hover svg {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(47, 132, 102,0.04) 0%, transparent 50%);
+  background: linear-gradient(135deg, rgba(249, 115, 22,0.04) 0%, transparent 50%);
   pointer-events: none;
 }
 
@@ -3360,8 +3365,8 @@ nav button:hover svg {
 
 .auth-feature-icon {
   align-items: center;
-  background: rgba(47, 132, 102,0.1);
-  border: 1px solid rgba(47, 132, 102,0.2);
+  background: rgba(249, 115, 22,0.1);
+  border: 1px solid rgba(249, 115, 22,0.2);
   border-radius: var(--radius-sm);
   color: var(--accent);
   display: flex;
@@ -3543,7 +3548,7 @@ kbd {
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.86);
+  background: var(--panel);
   display: grid;
   gap: 6px;
   text-align: left;
@@ -3560,8 +3565,8 @@ kbd {
 }
 
 .ocr-feedback-loading {
-  border-color: rgba(47, 132, 102, 0.34);
-  background: rgba(47, 132, 102, 0.08);
+  border-color: rgba(249, 115, 22, 0.34);
+  background: rgba(249, 115, 22, 0.08);
 }
 
 .ocr-feedback-done {
@@ -3609,7 +3614,7 @@ kbd {
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--panel);
 }
 
 .ocr-field-meta-warning {
@@ -3623,8 +3628,8 @@ kbd {
 }
 
 .ocr-field-meta-reviewed {
-  border-color: rgba(47, 132, 102, 0.28);
-  background: rgba(47, 132, 102, 0.08);
+  border-color: rgba(249, 115, 22, 0.28);
+  background: rgba(249, 115, 22, 0.08);
 }
 
 .ocr-field-meta-head {
@@ -3720,7 +3725,7 @@ kbd {
 }
 
 .news-source {
-  color: var(--accent, #2F8466);
+  color: var(--accent, #F97316);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -3821,7 +3826,7 @@ kbd {
 }
 
 .onboarding-step-dot.active {
-  background: var(--accent, #2F8466);
+  background: var(--accent, #F97316);
   width: 20px;
   border-radius: 4px;
 }
@@ -3939,7 +3944,7 @@ kbd {
 }
 
 .onboarding-step-label {
-  color: var(--accent, #2F8466);
+  color: var(--accent, #F97316);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -3978,14 +3983,14 @@ kbd {
 }
 
 .book-suggestion-chip:hover {
-  border-color: var(--accent, #2F8466);
+  border-color: var(--accent, #F97316);
   color: var(--text, #e4e6eb);
 }
 
 .book-suggestion-chip.selected {
-  background: var(--accent-dim, rgba(47, 132, 102,0.12));
-  border-color: var(--accent, #2F8466);
-  color: var(--accent, #2F8466);
+  background: var(--accent-dim, rgba(249, 115, 22,0.12));
+  border-color: var(--accent, #F97316);
+  color: var(--accent, #F97316);
 }
 
 .onboarding-book-form {
@@ -4009,7 +4014,7 @@ kbd {
 }
 
 .onboarding-book-form button:hover {
-  border-color: var(--accent, #2F8466);
+  border-color: var(--accent, #F97316);
 }
 
 .onboarding-book-form button:disabled {
@@ -4053,7 +4058,7 @@ kbd {
   display: flex;
   justify-content: space-between;
   padding: 10px 14px;
-  background: rgba(47, 132, 102, 0.05);
+  background: rgba(249, 115, 22, 0.05);
 }
 
 .onboarding-book-total span { color: var(--muted, #7d8590); font-size: 12px; }
@@ -4251,8 +4256,8 @@ kbd {
 
 .suggestions-status-chip.online,
 .suggestions-readiness-item.ready {
-  border-color: rgba(47, 132, 102, 0.22);
-  background: rgba(47, 132, 102, 0.08);
+  border-color: rgba(249, 115, 22, 0.22);
+  background: rgba(249, 115, 22, 0.08);
 }
 
 .suggestions-status-chip.degraded {
@@ -4335,7 +4340,7 @@ kbd {
 
 .suggestion-pill.ready,
 .suggestion-pill.published {
-  background: rgba(47, 132, 102, 0.12);
+  background: rgba(249, 115, 22, 0.12);
   color: var(--accent);
 }
 
@@ -4680,11 +4685,11 @@ kbd {
   white-space: nowrap;
 }
 
-.ledger-type-deposit    { background: rgba(47, 132, 102, 0.12);   color: var(--positive); }
+.ledger-type-deposit    { background: rgba(249, 115, 22, 0.12);   color: var(--positive); }
 .ledger-type-withdrawal { background: rgba(248, 81, 73, 0.10);   color: var(--negative); }
 .ledger-type-transfer   { background: rgba(56, 139, 253, 0.12);  color: var(--info); }
 .ledger-type-bet_stake  { background: rgba(210, 153, 34, 0.12);  color: var(--warning); }
-.ledger-type-bet_payout { background: rgba(47, 132, 102, 0.12);   color: var(--positive); }
+.ledger-type-bet_payout { background: rgba(249, 115, 22, 0.12);   color: var(--positive); }
 .ledger-type-bet_refund { background: rgba(121, 192, 255, 0.12); color: var(--cyan); }
 .ledger-type-adjustment { background: var(--panel-3);             color: var(--muted); }
 .ledger-type-void_entry { background: rgba(248, 81, 73, 0.12);   color: var(--negative); }
@@ -4804,23 +4809,23 @@ kbd {
    ========================================================= */
 
 :root {
-  --bg: #EBEFF5;
-  --panel: #FFFFFF;
-  --panel-2: #F0F2F6;
-  --panel-3: #E7EBF1;
-  --line: rgba(15, 23, 42, 0.10);
-  --line-strong: rgba(15, 23, 42, 0.16);
-  --text: #1A1D29;
-  --muted: #64748B;
-  --soft: #94A3B8;
-  --accent: #2F8466;
-  --accent-dim: rgba(47, 132, 102, 0.10);
-  --accent-bright: #246B52;
-  --positive: #16A34A;
-  --negative: #DC2626;
-  --warning: #D97706;
-  --info: #2F8466;
-  --cyan: #0891B2;
+  --bg: #0A0A0B;
+  --panel: #121214;
+  --panel-2: #161618;
+  --panel-3: #1C1C20;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.14);
+  --text: #F4F4F5;
+  --muted: #8A8A93;
+  --soft: #5E5E68;
+  --accent: #F97316;
+  --accent-dim: rgba(249, 115, 22, 0.12);
+  --accent-bright: #FB8A3C;
+  --positive: #22C55E;
+  --negative: #EF4444;
+  --warning: #F59E0B;
+  --info: #F97316;
+  --cyan: #22D3EE;
   --font-ui: "Inter", system-ui, -apple-system, sans-serif;
   --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
   --font-brand: "Space Grotesk", "Inter", system-ui, sans-serif;
@@ -4915,8 +4920,8 @@ h1, h2, h3, h4 {
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
-    linear-gradient(135deg, rgba(47, 132, 102, 0.18), rgba(56, 189, 248, 0.08)),
-    rgba(255, 255, 255, 0.88);
+    linear-gradient(135deg, rgba(249, 115, 22, 0.18), rgba(56, 189, 248, 0.08)),
+    var(--panel);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
 }
 
@@ -4945,7 +4950,7 @@ nav {
 
 .nav-group > span {
   margin: 12px 10px 4px;
-  color: #64748B;
+  color: var(--muted);
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -4955,27 +4960,14 @@ nav button {
   border-left: 0;
   border-radius: 10px;
   padding: 9px 12px;
-  color: #475569;
+  color: var(--muted);
   font-weight: 600;
   background: transparent;
 }
 
-nav button::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.22);
-  font-size: 0;
-}
-
+nav button::before,
 nav button.active::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, var(--accent-bright), #2F8466);
-  box-shadow: 0 0 0 4px rgba(47, 132, 102, 0.14);
+  display: none;
 }
 
 nav button em {
@@ -4988,21 +4980,21 @@ nav button em {
 
 nav button.active {
   color: var(--text);
-  background: rgba(47, 132, 102, 0.10);
-  border-color: rgba(47, 132, 102, 0.22);
-  box-shadow: inset 0 0 0 1px rgba(47, 132, 102, 0.10);
+  background: rgba(249, 115, 22, 0.10);
+  border-color: rgba(249, 115, 22, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.10);
 }
 
 nav button:hover:not(.active) {
   color: var(--text);
-  background: rgba(47, 132, 102, 0.07);
+  background: rgba(249, 115, 22, 0.07);
 }
 
 .topbar {
   gap: 16px;
   padding: 18px 28px;
   border-bottom: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--panel);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
 }
@@ -5014,7 +5006,7 @@ nav button:hover:not(.active) {
 .search-box {
   min-height: 48px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--panel);
   border: 1px solid var(--line);
   padding: 10px 14px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
@@ -5022,7 +5014,7 @@ nav button:hover:not(.active) {
 
 .search-box:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px rgba(47, 132, 102, 0.35), 0 0 0 4px rgba(47, 132, 102, 0.12);
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35), 0 0 0 4px rgba(249, 115, 22, 0.12);
 }
 
 .search-box input {
@@ -5030,13 +5022,13 @@ nav button:hover:not(.active) {
 }
 
 .search-icon {
-  color: #64748B;
+  color: var(--muted);
 }
 
 .search-dropdown {
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--panel);
   box-shadow: 0 24px 80px rgba(15, 23, 42, 0.10);
   padding: 8px;
 }
@@ -5054,7 +5046,7 @@ nav button:hover:not(.active) {
 }
 
 .topbar-meta span {
-  color: #64748B;
+  color: var(--muted);
 }
 
 .topbar-breadcrumb {
@@ -5089,14 +5081,14 @@ nav button:hover:not(.active) {
   height: 40px;
   min-width: 40px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--panel);
   border: 1px solid var(--line);
-  color: #334155;
+  color: var(--text);
 }
 
 .topbar-actions button:not(.primary):hover {
   background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(47, 132, 102, 0.3);
+  border-color: rgba(249, 115, 22, 0.3);
 }
 
 .page {
@@ -5137,8 +5129,8 @@ nav button:hover:not(.active) {
   min-height: 42px;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.72);
-  color: #334155;
+  background: var(--panel);
+  color: var(--text);
 }
 
 .page-actions,
@@ -5159,7 +5151,7 @@ nav button:hover:not(.active) {
 .suggestions-feed-item {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.012)),
-    rgba(255, 255, 255, 0.94);
+    var(--panel);
   border: 1px solid var(--line);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
   backdrop-filter: blur(14px);
@@ -5197,7 +5189,7 @@ nav button:hover:not(.active) {
   .risk-card:hover,
   .ledger-panel:hover {
     transform: translateY(-2px);
-    border-color: rgba(47, 132, 102, 0.14);
+    border-color: rgba(249, 115, 22, 0.14);
     box-shadow: 0 14px 34px rgba(0, 0, 0, 0.2);
   }
 }
@@ -5220,7 +5212,7 @@ nav button:hover:not(.active) {
 .page-actions span {
   font-size: 12px;
   font-family: var(--font-ui);
-  color: #64748B;
+  color: var(--muted);
 }
 
 .ops-summary-grid {
@@ -5233,7 +5225,7 @@ nav button:hover:not(.active) {
 }
 
 .ops-summary-card span {
-  color: #64748B;
+  color: var(--muted);
   letter-spacing: 0.14em;
 }
 
@@ -5276,7 +5268,7 @@ nav button:hover:not(.active) {
 
 .balance-card span,
 .metric span {
-  color: #64748B;
+  color: var(--muted);
   letter-spacing: 0.14em;
 }
 
@@ -5331,9 +5323,9 @@ nav button:hover:not(.active) {
 }
 
 .analysis-note {
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(47, 132, 102, 0.08));
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(249, 115, 22, 0.08));
   border-color: rgba(56, 189, 248, 0.18);
-  color: #334155;
+  color: var(--text);
 }
 
 .heatmap {
@@ -5369,11 +5361,11 @@ nav button:hover:not(.active) {
   color: var(--muted);
   border: 1px dashed var(--line-strong);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--panel);
 }
 
 .chart-tooltip {
-  background: rgba(255, 255, 255, 0.80);
+  background: var(--panel);
   border: 1px solid var(--line-strong);
   border-radius: 16px;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.10);
@@ -5474,7 +5466,7 @@ tr:hover td {
   min-height: 38px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
-  color: #334155;
+  color: var(--text);
   border-radius: 14px;
   transition:
     transform var(--transition-fast),
@@ -5503,17 +5495,17 @@ tr:hover td {
 
 .primary,
 .btn-nova-aposta {
-  background: linear-gradient(135deg, #2F8466, #2F8466) !important;
+  background: linear-gradient(135deg, #F97316, #F97316) !important;
   border: 1px solid rgba(58, 155, 122, 0.36) !important;
   color: #ffffff !important;
   border-radius: 14px !important;
-  box-shadow: 0 12px 28px rgba(47, 132, 102, 0.28);
+  box-shadow: 0 12px 28px rgba(249, 115, 22, 0.28);
 }
 
 .primary:hover,
 .btn-nova-aposta:hover {
-  background: linear-gradient(135deg, var(--accent-bright), #2F8466) !important;
-  box-shadow: 0 16px 32px rgba(47, 132, 102, 0.34) !important;
+  background: linear-gradient(135deg, var(--accent-bright), #F97316) !important;
+  box-shadow: 0 16px 32px rgba(249, 115, 22, 0.34) !important;
 }
 
 .btn-danger {
@@ -5529,8 +5521,8 @@ tr:hover td {
 }
 
 .filter-tab.active {
-  background: rgba(47, 132, 102, 0.12);
-  border-color: rgba(47, 132, 102, 0.28);
+  background: rgba(249, 115, 22, 0.12);
+  border-color: rgba(249, 115, 22, 0.28);
   color: var(--text);
 }
 
@@ -5539,7 +5531,7 @@ tr:hover td {
 }
 
 .report-card span {
-  color: #64748B;
+  color: var(--muted);
   letter-spacing: 0.14em;
 }
 
@@ -5635,7 +5627,7 @@ tr:hover td {
 
 .auth-page {
   background:
-    radial-gradient(circle at top right, rgba(47, 132, 102, 0.12), transparent 38%),
+    radial-gradient(circle at top right, rgba(249, 115, 22, 0.12), transparent 38%),
     var(--bg);
 }
 
@@ -5659,7 +5651,7 @@ tr:hover td {
 .auth-tabs button.active {
   background: var(--accent-dim);
   color: var(--text);
-  border: 1px solid rgba(47, 132, 102, 0.3);
+  border: 1px solid rgba(249, 115, 22, 0.3);
 }
 
 .auth-page-features {
@@ -5681,7 +5673,7 @@ tr:hover td {
   width: 46px;
   height: 46px;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(47, 132, 102, 0.20), rgba(56, 189, 248, 0.08));
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.20), rgba(56, 189, 248, 0.08));
 }
 
 /* Faux terminal metric preview — AuthPage right panel */
@@ -5764,7 +5756,7 @@ tr:hover td {
 .auth-terminal-spark span {
   flex: 1;
   border-radius: 3px 3px 0 0;
-  background: linear-gradient(180deg, var(--accent-bright), rgba(47, 132, 102, 0.25));
+  background: linear-gradient(180deg, var(--accent-bright), rgba(249, 115, 22, 0.25));
   min-height: 4px;
 }
 
@@ -5777,7 +5769,7 @@ tr:hover td {
 .modal-panel {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015)),
-    rgba(255, 255, 255, 0.96);
+    var(--panel);
   box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15);
 }
 
@@ -5794,11 +5786,11 @@ tr:hover td {
 .nb-section {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
-    rgba(255, 255, 255, 0.76);
+    var(--panel);
 }
 
 .dropzone {
-  background: rgba(255, 255, 255, 0.94);
+  background: var(--panel);
   border-color: var(--line);
   border-style: dashed;
 }
@@ -5806,7 +5798,7 @@ tr:hover td {
 .dropzone:hover,
 .dropzone:focus-within {
   border-color: var(--accent);
-  background: rgba(47, 132, 102, 0.05);
+  background: rgba(249, 115, 22, 0.05);
 }
 
 .balance-card strong,
@@ -5833,9 +5825,9 @@ tr:hover td {
   padding: 24px 26px;
   margin-bottom: 18px;
   background:
-    radial-gradient(circle at top right, rgba(47, 132, 102, 0.14), transparent 34%),
+    radial-gradient(circle at top right, rgba(249, 115, 22, 0.14), transparent 34%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015)),
-    #FFFFFF;
+    var(--panel);
 }
 
 .dashboard-command-copy {
@@ -5863,7 +5855,7 @@ tr:hover td {
 .dashboard-command-copy p {
   margin: 0;
   max-width: 720px;
-  color: #64748B;
+  color: var(--muted);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -5907,7 +5899,7 @@ tr:hover td {
 }
 
 .dashboard-mini-card small {
-  color: #64748B;
+  color: var(--muted);
   line-height: 1.55;
 }
 
@@ -5932,11 +5924,11 @@ tr:hover td {
 
 .bets-toolbar-copy strong {
   font-size: 15px;
-  color: #1A1D29;
+  color: var(--text);
 }
 
 .bets-toolbar-copy small {
-  color: #64748B;
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -5968,27 +5960,27 @@ tr:hover td {
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
-  color: #475569;
+  color: var(--muted);
   font-size: 11px;
   line-height: 1;
 }
 
 .bet-meta-chip-link {
-  color: #2F8466;
+  color: #F97316;
 }
 
 .bet-meta-chip-link:hover {
   border-color: rgba(58, 155, 122, 0.24);
-  background: rgba(47, 132, 102, 0.12);
-  color: #246B52;
+  background: rgba(249, 115, 22, 0.12);
+  color: #FB8A3C;
 }
 
 .table-card {
-  overflow: hidden;
+  overflow: visible;
 }
 
 .bets-table-wrapper {
-  overflow-x: auto;
+  overflow: visible;
   margin: 0 -4px;
   padding: 0 4px 2px;
 }
@@ -6114,7 +6106,7 @@ tr:hover td {
   place-items: center;
   padding: 28px;
   background:
-    radial-gradient(circle at top right, rgba(47, 132, 102, 0.14), transparent 24%),
+    radial-gradient(circle at top right, rgba(249, 115, 22, 0.14), transparent 24%),
     var(--bg);
 }
 
@@ -6132,7 +6124,7 @@ tr:hover td {
   border: 1px solid var(--line);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.012)),
-    rgba(255, 255, 255, 0.94);
+    var(--panel);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
 }
 
@@ -6215,7 +6207,7 @@ tr:hover td {
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(255, 255, 255, 0.03);
-  color: #64748B;
+  color: var(--muted);
   font-size: 11px;
   line-height: 1.2;
 }
@@ -6289,7 +6281,7 @@ button.danger:hover {
   background:
     radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 28%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015)),
-    #FFFFFF;
+    var(--panel);
 }
 
 .book-inline-metrics {
@@ -6308,7 +6300,8 @@ button.danger:hover {
 }
 
 .settings-panel {
-  min-height: 100%;
+  min-height: 0;
+  align-self: start;
 }
 
 @media (max-width: 1280px) {
@@ -6627,7 +6620,7 @@ button.danger:hover {
   border-radius: 14px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015)),
-    rgba(255, 255, 255, 0.98);
+    var(--panel);
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10);
   display: grid;
   gap: 6px;
@@ -6734,9 +6727,9 @@ button.danger:hover {
 .book-card-flag {
   padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(47, 132, 102, 0.22);
-  background: rgba(47, 132, 102, 0.12);
-  color: #2F8466;
+  border: 1px solid rgba(249, 115, 22, 0.22);
+  background: rgba(249, 115, 22, 0.12);
+  color: #F97316;
   font-size: 10px;
   font-style: normal;
   font-weight: 700;
@@ -6759,7 +6752,7 @@ button.danger:hover {
   padding: 14px 16px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--panel);
 }
 
 .ledger-summary-strip strong {
@@ -6972,7 +6965,7 @@ button.danger:hover {
   display: flex;
   align-items: center;
   font-size: 11px;
-  color: #475569;
+  color: var(--muted);
   font-weight: 600;
   font-family: var(--font-mono);
   text-transform: uppercase;
@@ -7853,8 +7846,8 @@ button.danger:hover {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: rgba(47, 132, 102, 0.07);
-  border: 1px solid rgba(47, 132, 102, 0.20);
+  background: rgba(249, 115, 22, 0.07);
+  border: 1px solid rgba(249, 115, 22, 0.20);
   border-radius: var(--radius);
   font-size: 12px;
   color: var(--muted);
@@ -8263,7 +8256,7 @@ button.danger:hover {
 /* ── Bandas de stat uniformes (sem esticar, sem sobrepor) ── */
 .stat-band {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -8319,6 +8312,9 @@ button.danger:hover {
   letter-spacing: -0.02em;
   color: var(--text);
 }
+
+.stat-value.pos { color: var(--positive); }
+.stat-value.neg { color: var(--negative); }
 
 .stat-foot {
   font-size: 12px;
@@ -8578,7 +8574,7 @@ button.danger:hover {
 }
 
 .bets-table-v2 tbody tr:hover {
-  background: rgba(47, 132, 102, 0.04);
+  background: rgba(249, 115, 22, 0.04);
 }
 
 .bet-event-line {
@@ -8684,7 +8680,7 @@ button.danger:hover {
 .badge-pending { background: rgba(217, 119, 6, 0.11);  color: #B45309; }
 .badge-lost    { background: rgba(220, 38, 38, 0.09);  color: #B91C1C; }
 .badge-cashout { background: rgba(8, 145, 178, 0.10);  color: #0E7490; }
-.badge-void    { background: rgba(100, 116, 139, 0.10); color: #475569; }
+.badge-void    { background: rgba(100, 116, 139, 0.10); color: var(--muted); }
 
 /* ── Ações aparecem só no hover/foco da linha (Linear) ── */
 .bets-table-v2 .bet-actions-cell > * {
@@ -8798,7 +8794,7 @@ button.danger:hover {
   border-radius: 8px;
 }
 
-.multibet-leg:hover { background: rgba(47, 132, 102, 0.05); }
+.multibet-leg:hover { background: rgba(249, 115, 22, 0.05); }
 
 .multibet-leg-num {
   flex-shrink: 0;
@@ -8829,9 +8825,9 @@ button.danger:hover {
   border-radius: 6px;
   background: linear-gradient(
     90deg,
-    rgba(15, 23, 42, 0.055) 25%,
-    rgba(15, 23, 42, 0.11) 37%,
-    rgba(15, 23, 42, 0.055) 63%
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 37%,
+    rgba(255, 255, 255, 0.04) 63%
   );
   background-size: 400% 100%;
   animation: skel-shimmer 1.4s ease-in-out infinite;
@@ -9096,7 +9092,7 @@ button.danger:hover {
 
 .edge-table td.num, .edge-table th.num { text-align: right; }
 .edge-table tbody tr:last-child td { border-bottom: 0; }
-.edge-table tbody tr:hover { background: rgba(47, 132, 102, 0.04); }
+.edge-table tbody tr:hover { background: rgba(249, 115, 22, 0.04); }
 
 .edge-key-cell { display: flex; align-items: center; gap: 8px; }
 .edge-key { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--text); }
@@ -9146,6 +9142,299 @@ button.danger:hover {
   margin-left: auto;
   font-family: var(--font-mono);
 }
+
+/* =========================================================
+   TELA DE ODDS — mercado / line shopping
+   ========================================================= */
+.odds-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.odds-sports { display: flex; flex-wrap: wrap; gap: 6px; }
+.odds-sport-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 13px 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+.odds-sport-icon { font-size: 13px; line-height: 1; }
+.odds-sport-chip:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
+.odds-sport-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.odds-sport-chip:disabled { opacity: 0.5; cursor: default; }
+.odds-quota { font-size: 11.5px; color: var(--muted); font-family: var(--font-mono); }
+.odds-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.odds-refresh:hover:not(:disabled) { border-color: var(--accent); }
+.odds-status { color: var(--muted); padding: 8px 2px; font-size: 13px; }
+.odds-board {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--panel);
+}
+.odds-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  transition: background var(--transition-fast);
+}
+.odds-row:last-child { border-bottom: 0; }
+.odds-row:hover { background: var(--panel-2); }
+.odds-row-time {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 42px;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  line-height: 1.3;
+}
+.odds-row-time em { font-style: normal; font-size: 9.5px; color: var(--soft); }
+.odds-row-time strong { font-size: 12px; font-weight: 600; color: var(--muted); }
+.odds-row-event { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.odds-row-team {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.odds-cells { display: grid; grid-template-columns: repeat(3, 66px); gap: 6px; flex-shrink: 0; }
+.odds-cells.two { grid-template-columns: repeat(2, 66px); }
+.odds-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px;
+  min-height: 50px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), transform var(--transition-fast);
+}
+.odds-cell:hover { border-color: var(--accent); background: var(--panel-3); transform: translateY(-1px); }
+.odds-cell-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.odds-cell-odd {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: var(--font-mono);
+  line-height: 1.2;
+}
+.odds-cell-book {
+  font-size: 7.5px;
+  color: var(--soft);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  max-width: 58px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.odds-cell.value { border-color: rgba(34, 197, 94, 0.55); background: color-mix(in srgb, var(--positive) 10%, var(--panel-2)); }
+.odds-cell.value:hover { border-color: var(--positive); }
+.odds-cell.value .odds-cell-odd { color: var(--positive); }
+.odds-cell-edge {
+  position: absolute;
+  top: -7px;
+  right: -4px;
+  font-size: 7.5px;
+  font-weight: 800;
+  color: #0A0A0B;
+  background: var(--positive);
+  padding: 1px 4px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+}
+
+@media (max-width: 640px) {
+  .odds-cells { grid-template-columns: repeat(3, 54px); }
+  .odds-cells.two { grid-template-columns: repeat(2, 54px); }
+  .odds-row { gap: 10px; padding: 9px 11px; }
+}
+
+/* =========================================================
+   DIÁRIO — extrato agrupado por mês / dia
+   ========================================================= */
+.diary { display: flex; flex-direction: column; gap: 20px; }
+.diary-month-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 2px 10px;
+  border-bottom: 1px solid var(--line-strong);
+  margin-bottom: 10px;
+}
+.diary-month-name { font-size: 15px; font-weight: 700; color: var(--text); text-transform: capitalize; }
+.diary-month-meta { display: flex; align-items: center; gap: 14px; }
+.diary-month-meta em { font-style: normal; font-size: 11.5px; color: var(--muted); }
+.diary-month-meta strong { font-family: var(--font-mono); font-size: 14px; }
+.diary-day {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.diary-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 14px;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line);
+}
+.diary-day-name { font-size: 12.5px; font-weight: 600; color: var(--text); text-transform: capitalize; }
+.diary-day-pnl { font-family: var(--font-mono); font-size: 13px; }
+.diary-bets { display: flex; flex-direction: column; }
+.diary-bet {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  transition: background var(--transition-fast);
+}
+.diary-bet:last-child { border-bottom: 0; }
+.diary-bet:hover { background: var(--panel-2); }
+.diary-bet-time { font-size: 11px; color: var(--muted); width: 38px; flex-shrink: 0; }
+.diary-bet-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.diary-bet-event {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.diary-bet-sub {
+  font-size: 10.5px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.diary-bet-stake { font-size: 12px; color: var(--muted); width: 84px; text-align: right; flex-shrink: 0; }
+.diary-bet-pnl { font-size: 12.5px; font-weight: 600; width: 92px; text-align: right; flex-shrink: 0; }
+.diary-bet-pnl.muted { color: var(--soft); font-weight: 400; }
+
+/* Dashboard — painel "Em aberto agora" */
+.dash-pending-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.dash-pending-head h2 { margin: 0; }
+.dash-pending-head span { font-size: 11.5px; color: var(--muted); font-family: var(--font-mono); }
+.dash-pending-list { display: flex; flex-direction: column; }
+.dash-pending-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+.dash-pending-row:last-child { border-bottom: 0; }
+.dash-pending-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.dash-pending-event {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dash-pending-sub { font-size: 10.5px; color: var(--muted); }
+.dash-pending-money { font-size: 12.5px; color: var(--text); flex-shrink: 0; white-space: nowrap; }
+.dash-pending-foot { display: block; font-size: 11px; color: var(--muted); padding-top: 8px; }
+
+/* =========================================================
+   INSIGHTS — leitura automática narrada
+   ========================================================= */
+.insights-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+}
+.insight-card {
+  display: flex;
+  gap: 11px;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: var(--radius-lg);
+}
+.insight-positive { border-left-color: var(--positive); }
+.insight-negative { border-left-color: var(--negative); }
+.insight-neutral { border-left-color: var(--muted); }
+.insight-dot { width: 8px; height: 8px; border-radius: 999px; margin-top: 5px; flex-shrink: 0; }
+.insight-positive .insight-dot { background: var(--positive); }
+.insight-negative .insight-dot { background: var(--negative); }
+.insight-neutral .insight-dot { background: var(--muted); }
+.insight-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.insight-title { font-size: 13.5px; font-weight: 650; color: var(--text); }
+.insight-detail { font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+/* Apostas — filtros de data + tint da linha por status */
+.bets-date-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.date-chip {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+.date-chip:hover { border-color: var(--accent); color: var(--text); }
+.date-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.bets-table-v2 tbody tr.bet-row-won td { background: color-mix(in srgb, var(--positive) 4%, transparent); }
+.bets-table-v2 tbody tr.bet-row-lost td { background: color-mix(in srgb, var(--negative) 4%, transparent); }
+.bets-table-v2 tbody tr.bet-row-cashout td { background: color-mix(in srgb, var(--warning) 5%, transparent); }
+.bets-table-v2 tbody tr.bet-row-void td { background: color-mix(in srgb, var(--muted) 6%, transparent); }
 
 /* Veredito do radar (over/under exposure) */
 .edge-verdict {

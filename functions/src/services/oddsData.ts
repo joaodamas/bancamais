@@ -1,4 +1,9 @@
-import type { ClosingOddsResult } from "../contracts/externalData.js";
+import type {
+  ClosingOddsResult,
+  MarketOddsEvent,
+  MarketOddsOutcome,
+  SportOddsResult,
+} from "../contracts/externalData.js";
 import { getCachedValue, setCachedValue } from "./externalCache.js";
 import { fetchJson } from "./httpClient.js";
 
@@ -281,4 +286,137 @@ export async function fetchClosingOddsForBets(
   }
 
   return results;
+}
+
+/** Melhor preço de um lado entre todas as casas + referência Pinnacle, para line shopping. */
+function collectBestPrice(
+  event: OddsApiEvent,
+  outcomeName: string,
+): { best: number; bestBook: string; pinnacle: number | null } | null {
+  const target = normalizeName(outcomeName);
+  let best = 0;
+  let bestBook = "";
+  let pinnacle: number | null = null;
+
+  for (const book of event.bookmakers ?? []) {
+    const h2h = book.markets?.find((market) => market.key === "h2h");
+    const outcome = h2h?.outcomes?.find((item) => normalizeName(item.name) === target);
+    if (!outcome || typeof outcome.price !== "number" || outcome.price <= 1) continue;
+
+    if (outcome.price > best) {
+      best = outcome.price;
+      bestBook = book.title || book.key;
+    }
+    if (book.key === PREFERRED_BOOKMAKER) pinnacle = outcome.price;
+  }
+
+  return best > 0 ? { best, bestBook, pinnacle } : null;
+}
+
+function transformMarketEvent(event: OddsApiEvent): MarketOddsEvent | null {
+  const sides: Array<{ side: "home" | "away" | "draw"; name: string }> = [
+    { side: "home", name: event.home_team },
+    { side: "draw", name: "Draw" },
+    { side: "away", name: event.away_team },
+  ];
+
+  const collected: Array<{
+    side: "home" | "away" | "draw";
+    name: string;
+    best: number;
+    bestBook: string;
+    pinnacle: number | null;
+  }> = [];
+  for (const { side, name } of sides) {
+    const price = collectBestPrice(event, name);
+    if (!price) continue;
+    collected.push({ side, name, best: price.best, bestBook: price.bestBook, pinnacle: price.pinnacle });
+  }
+
+  if (collected.length === 0) return null;
+
+  // Margem (overround) da Pinnacle p/ derivar a odd "justa" sem vig.
+  // Só assim "valor" tem sentido: melhor preço entre N casas quase sempre supera
+  // o preço bruto de UMA casa — o teto real é a linha sem vig.
+  const pinnacles = collected
+    .map((entry) => entry.pinnacle)
+    .filter((price): price is number => price != null && price > 1);
+  const hasFullPinnacle = pinnacles.length === collected.length && pinnacles.length >= 2;
+  const overround = hasFullPinnacle ? pinnacles.reduce((sum, price) => sum + 1 / price, 0) : null;
+
+  const outcomes: MarketOddsOutcome[] = collected.map((entry) => {
+    const fairOdds =
+      overround != null && entry.pinnacle != null && entry.pinnacle > 1
+        ? round2(entry.pinnacle * overround)
+        : null;
+    return {
+      side: entry.side,
+      name: entry.side === "draw" ? "Empate" : entry.name,
+      best: round2(entry.best),
+      bestBook: entry.bestBook,
+      pinnacle: entry.pinnacle != null ? round2(entry.pinnacle) : null,
+      fairOdds,
+      impliedProb: entry.best > 1 ? Math.round((1 / entry.best) * 1000) / 1000 : 0,
+    };
+  });
+
+  return {
+    id: event.id,
+    commenceTime: event.commence_time,
+    homeTeam: event.home_team,
+    awayTeam: event.away_team,
+    outcomes,
+  };
+}
+
+async function fetchSportOddsRaw(
+  apiKey: string,
+  sportKey: string,
+): Promise<{ events: OddsApiEvent[]; remaining: number | null }> {
+  const url = new URL(`${ODDS_BASE_URL}/sports/${sportKey}/odds`);
+  url.searchParams.set("apiKey", apiKey);
+  url.searchParams.set("regions", "eu");
+  url.searchParams.set("markets", "h2h");
+  url.searchParams.set("oddsFormat", "decimal");
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`Odds upstream failed with status ${response.status}.`);
+    }
+    const remainingHeader = response.headers.get("x-requests-remaining");
+    const remaining = remainingHeader != null ? Number(remainingHeader) : null;
+    const events = (await response.json()) as OddsApiEvent[];
+    return {
+      events: Array.isArray(events) ? events : [],
+      remaining: remaining != null && Number.isFinite(remaining) ? remaining : null,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/** Lista os jogos futuros de um esporte com line shopping (melhor preço + Pinnacle + prob implícita). */
+export async function listSportOdds(apiKey: string, sportKey: string): Promise<SportOddsResult> {
+  const cacheKey = `oddsmarket:${sportKey}`;
+  const cached = getCachedValue<SportOddsResult>(cacheKey);
+  if (cached) return cached;
+
+  const { events, remaining } = await fetchSportOddsRaw(apiKey, sportKey);
+  const now = Date.now();
+
+  const result: SportOddsResult = {
+    requestsRemaining: remaining,
+    events: events
+      .filter((event) => Date.parse(event.commence_time) > now)
+      .sort((a, b) => Date.parse(a.commence_time) - Date.parse(b.commence_time))
+      .slice(0, 40)
+      .map(transformMarketEvent)
+      .filter((event): event is MarketOddsEvent => event !== null),
+  };
+
+  setCachedValue(cacheKey, result, ODDS_TTL_MS);
+  return result;
 }

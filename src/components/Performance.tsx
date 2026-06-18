@@ -11,7 +11,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { BarChart3 } from "lucide-react";
-import { calculateMetrics, groupProfitBySport, money, percent, profitFactor, segmentByOddsBand, segmentByStakeBand, segmentByDayOfWeek, segmentByMarket, type SegmentStats } from "../lib/metrics";
+import { calculateMetrics, groupProfitBySport, money, percent, profitFactor, segmentByOddsBand, segmentByStakeBand, segmentByDayOfWeek, segmentByMarket, segmentByLeague, type SegmentStats } from "../lib/metrics";
 import { buildMonthlyData } from "../lib/chartData";
 import type { AppState } from "../lib/types";
 import { COLORS, MoneyTooltip, PercentTooltip } from "./chartHelpers";
@@ -34,6 +34,7 @@ export function Performance({
   const byStake = useMemo(() => segmentByStakeBand(state), [state]);
   const byDay = useMemo(() => segmentByDayOfWeek(state), [state]);
   const byMarket = useMemo(() => segmentByMarket(state), [state]);
+  const byLeague = useMemo(() => segmentByLeague(state), [state]);
   const pfLabel = metrics.settledCount === 0 ? "—" : pf === null ? "∞" : pf.toFixed(2);
   const pfPositive = pf === null ? metrics.settledCount > 0 : pf >= 1;
 
@@ -102,7 +103,7 @@ export function Performance({
                     tickLine={false}
                     width={44}
                   />
-                  <Tooltip content={<PercentTooltip />} cursor={{ fill: "rgba(139, 92, 246, 0.08)" }} />
+                  <Tooltip content={<PercentTooltip />} cursor={{ fill: "rgba(249, 115, 22, 0.08)" }} />
                   <ReferenceLine y={0} stroke={COLORS.line} />
                   <Bar dataKey="roi" name="ROI" radius={[3, 3, 0, 0]}>
                     {monthlyData.map((entry, index) => (
@@ -172,6 +173,11 @@ export function Performance({
             <SegmentTable rows={byMarket} />
           </article>
         </div>
+
+        <article className="panel">
+          <h2>Desempenho por liga / campeonato</h2>
+          <SegmentTable rows={byLeague} />
+        </article>
         </>
       )}
     </section>

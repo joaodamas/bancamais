@@ -19,7 +19,7 @@ import { EmptyState } from "./EmptyState";
 import type { AppState } from "../lib/types";
 
 const COLORS = {
-  accent: "#8B5CF6",
+  accent: "#F97316",
   red: "#FB7185",
   cyan: "#22D3EE",
   panel: "#1E2026",

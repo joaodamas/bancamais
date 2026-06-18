@@ -24,6 +24,20 @@ const statusLabel: Record<Bet["status"], string> = {
   void: "Cancelada",
 };
 
+type DateRange = "all" | "today" | "7d" | "30d" | "month" | "year";
+
+function inDateRange(iso: string, range: DateRange): boolean {
+  if (range === "all") return true;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return false;
+  const now = new Date();
+  if (range === "today") return date.toDateString() === now.toDateString();
+  if (range === "month") return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+  if (range === "year") return date.getFullYear() === now.getFullYear();
+  const days = range === "7d" ? 7 : 30;
+  return date.getTime() >= now.getTime() - days * 86400000;
+}
+
 interface BetsProps {
   state: AppState;
   settleBet: (id: string, status: Bet["status"], cashoutAmount?: number) => void;
@@ -46,6 +60,7 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [dateFilter, setDateFilter] = useState<DateRange>("all");
   const actionMenuRef = useRef<HTMLDivElement | null>(null);
 
   const bookmakerById = useMemo(() => new Map(state.bookmakers.map((b) => [b.id, b.name])), [state.bookmakers]);
@@ -78,8 +93,9 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
     let bets = state.bets;
     if (statusFilter !== "all") bets = bets.filter((b) => b.status === statusFilter);
     if (tagFilter) bets = bets.filter((b) => b.tags.includes(tagFilter));
+    if (dateFilter !== "all") bets = bets.filter((b) => inDateRange(b.placedAt, dateFilter));
     return bets;
-  }, [state.bets, statusFilter, tagFilter]);
+  }, [state.bets, statusFilter, tagFilter, dateFilter]);
 
   const columns = useMemo(() => [
     columnHelper.accessor("eventName", {
@@ -196,7 +212,7 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
 
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [statusFilter, tagFilter, globalFilter]);
+  }, [statusFilter, tagFilter, globalFilter, dateFilter]);
 
   useEffect(() => {
     if (!actionMenuBetId) return;
@@ -266,6 +282,25 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
         </div>
       </div>
 
+      <div className="bets-date-filters">
+        {([
+          ["all", "Tudo"],
+          ["today", "Hoje"],
+          ["7d", "7 dias"],
+          ["30d", "30 dias"],
+          ["month", "Mês"],
+          ["year", "Ano"],
+        ] as const).map(([key, label]) => (
+          <button
+            key={key}
+            className={dateFilter === key ? "date-chip active" : "date-chip"}
+            onClick={() => setDateFilter(key)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* Resumo financeiro compacto (não repete contagens — essas estão nas abas) */}
       <div className="bets-summary-strip">
         <div className="bets-summary-item">
@@ -273,7 +308,7 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
           <strong className="text-mono">{money.format(openExposure)}</strong>
         </div>
         <div className="bets-summary-item">
-          <span>Retorno potencial</span>
+          <span>Possível retorno</span>
           <strong className="text-mono">{money.format(pendingPotential)}</strong>
         </div>
         <div className="bets-summary-item">
@@ -411,7 +446,7 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                 const gain = getGainValue(bet);
                 const legs = parseLegs(bet.selection);
                 return (
-                  <tr key={bet.id} className={`${imminent ? "bet-row-imminent" : ""}${selectedIds.has(bet.id) ? " bet-row-selected" : ""}`}>
+                  <tr key={bet.id} className={`bet-row-${bet.status}${imminent ? " bet-row-imminent" : ""}${selectedIds.has(bet.id) ? " bet-row-selected" : ""}`}>
                     <td className="bet-select-col">
                       {isPending && (
                         <input
@@ -451,7 +486,7 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                     </td>
                     <td className="bet-cell num">
                       <strong className="text-mono">{money.format(bet.stake)}</strong>
-                      <small className="text-mono bet-odd">@ {bet.odds.toFixed(2)}</small>
+                      <small className="text-mono bet-odd">@ {bet.odds.toFixed(2)} · {(100 / bet.odds).toFixed(0)}%</small>
                     </td>
                     <td className="bet-cell num">
                       <strong className="text-mono">{money.format(getReturnValue(bet))}</strong>

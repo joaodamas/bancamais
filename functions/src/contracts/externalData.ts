@@ -119,3 +119,32 @@ export interface ClosingOddsResult {
   closingOdds: number;
   bookmaker: string;
 }
+
+// --- Mercado de odds (line shopping ao vivo) ---
+
+export interface ListSportOddsRequest {
+  sportKey: string;
+}
+
+export interface MarketOddsOutcome {
+  side: "home" | "away" | "draw";
+  name: string;
+  best: number;
+  bestBook: string;
+  pinnacle: number | null;
+  fairOdds: number | null;
+  impliedProb: number;
+}
+
+export interface MarketOddsEvent {
+  id: string;
+  commenceTime: string;
+  homeTeam: string;
+  awayTeam: string;
+  outcomes: MarketOddsOutcome[];
+}
+
+export interface SportOddsResult {
+  events: MarketOddsEvent[];
+  requestsRemaining: number | null;
+}

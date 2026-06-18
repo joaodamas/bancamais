@@ -9,6 +9,7 @@ import type {
   EstimateEdgeRequest,
   FetchClosingOddsRequest,
   FetchTeamNewsRequest,
+  ListSportOddsRequest,
   GetSportsFixtureResultRequest,
   GetTeamContextRequest,
   SearchSportsFixturesRequest,
@@ -18,7 +19,7 @@ import { AnthropicOcrClient } from "./services/anthropicOcr.js";
 import { buildFailedResponse, buildNotConfiguredResponse, mapProviderPayload } from "./services/ocrMapper.js";
 import { fetchTeamNews } from "./services/teamNews.js";
 import { getSportsFixtureResult, searchSportsFixtures } from "./services/sportsData.js";
-import { fetchClosingOddsForBets } from "./services/oddsData.js";
+import { fetchClosingOddsForBets, listSportOdds } from "./services/oddsData.js";
 import { getTeamContext } from "./services/teamContext.js";
 import { estimateEdge } from "./services/edgeEstimator.js";
 import { downloadUserSlip } from "./services/storage.js";
@@ -241,6 +242,32 @@ export const fetchClosingOddsCallable = onCall(
     } catch (error) {
       logger.error("Closing odds fetch failed", { error });
       return [];
+    }
+  },
+);
+
+export const listSportOddsCallable = onCall(
+  {
+    region: DEFAULT_REGION,
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    secrets: [THEODDS_API_KEY],
+  },
+  async (request) => {
+    ensureAuthenticated(request.auth?.uid);
+    const payload = parseListSportOddsRequest(request.data);
+    const apiKey = THEODDS_API_KEY.value();
+
+    if (!apiKey) {
+      logger.warn("THEODDS_API_KEY is not configured.");
+      return { events: [], requestsRemaining: null };
+    }
+
+    try {
+      return await listSportOdds(apiKey, payload.sportKey);
+    } catch (error) {
+      logger.error("List sport odds failed", { error });
+      return { events: [], requestsRemaining: null };
     }
   },
 );
@@ -510,4 +537,17 @@ function parseFetchClosingOddsRequest(data: unknown): FetchClosingOddsRequest {
   });
 
   return { bets: parsed };
+}
+
+function parseListSportOddsRequest(data: unknown): ListSportOddsRequest {
+  if (!data || typeof data !== "object") {
+    throw new HttpsError("invalid-argument", "Request payload must be an object.");
+  }
+
+  const sportKey = Reflect.get(data, "sportKey");
+  if (typeof sportKey !== "string" || !/^[a-z0-9_]{3,60}$/.test(sportKey)) {
+    throw new HttpsError("invalid-argument", "sportKey must be a valid sport key.");
+  }
+
+  return { sportKey };
 }

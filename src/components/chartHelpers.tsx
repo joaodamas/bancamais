@@ -1,16 +1,16 @@
 import { money } from "../lib/metrics";
 
-// Cores do design system Carvão Suave (hex direto — Recharts não lê CSS vars)
+// Cores do design system dark + laranja (hex direto — Recharts não lê CSS vars)
 export const COLORS = {
-  accent: "#8B5CF6",
+  accent: "#F97316",
   cyan: "#22D3EE",
-  green: "#34D399",
-  red: "#FB7185",
-  amber: "#FBBF24",
-  panel: "#1E2026",
-  line: "rgba(255,255,255,0.09)",
-  muted: "#A1A1AA",
-  bg: "#16171B",
+  green: "#22C55E",
+  red: "#EF4444",
+  amber: "#F59E0B",
+  panel: "#161618",
+  line: "rgba(255,255,255,0.08)",
+  muted: "#8A8A93",
+  bg: "#0A0A0B",
 };
 
 export type ChartTooltipPayloadEntry = {

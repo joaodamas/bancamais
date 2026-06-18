@@ -9,7 +9,6 @@ import { EdgePanel } from "./EdgePanel";
 import { LoadingSkeleton } from "./LoadingSkeleton";
 import { extractTeamsFromBets, isNewsApiConfigured } from "../lib/newsApi";
 import { TeamNewsWidget } from "./TeamNewsWidget";
-import { Suggestions } from "./Suggestions";
 
 // Gera heatmap data-driven dos últimos 21 dias
 function buildHeatmapData(state: AppState) {
@@ -256,7 +255,6 @@ export function Intelligence({
         </article>
       )}
 
-      <Suggestions state={state} onOpenNewBet={onOpenNewBet} />
     </section>
   );
 }

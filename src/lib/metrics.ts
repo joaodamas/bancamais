@@ -262,3 +262,63 @@ export function segmentByMarket(state: AppState): SegmentStats[] {
     .sort((a, b) => b.staked - a.staked);
 }
 
+/** Por liga/campeonato — mostra onde o apostador realmente ganha dinheiro. */
+export function segmentByLeague(state: AppState): SegmentStats[] {
+  const byLeague = new Map<string, Bet[]>();
+  for (const bet of state.bets) {
+    const key = bet.league.trim() || "—";
+    const list = byLeague.get(key) ?? [];
+    list.push(bet);
+    byLeague.set(key, list);
+  }
+
+  return [...byLeague.entries()]
+    .map(([label, bets]) => buildSegment(label, bets))
+    .sort((a, b) => b.staked - a.staked);
+}
+
+export interface StreakStats {
+  longestGreen: number;
+  longestRed: number;
+  greens: number;
+  reds: number;
+  avgStake: number;
+}
+
+/** Sequências de greens/reds, contagem e stake média — leitura de consistência. */
+export function bettingStreaks(state: AppState): StreakStats {
+  const settled = settledBets(state.bets)
+    .slice()
+    .sort((a, b) => a.placedAt.localeCompare(b.placedAt));
+
+  let longestGreen = 0;
+  let longestRed = 0;
+  let curGreen = 0;
+  let curRed = 0;
+  let greens = 0;
+  let reds = 0;
+
+  for (const bet of settled) {
+    const profit = betProfit(bet);
+    if (profit > 0) {
+      greens += 1;
+      curGreen += 1;
+      curRed = 0;
+      longestGreen = Math.max(longestGreen, curGreen);
+    } else if (profit < 0) {
+      reds += 1;
+      curRed += 1;
+      curGreen = 0;
+      longestRed = Math.max(longestRed, curRed);
+    } else {
+      curGreen = 0;
+      curRed = 0;
+    }
+  }
+
+  const totalStake = state.bets.reduce((sum, bet) => sum + bet.stake, 0);
+  const avgStake = state.bets.length > 0 ? totalStake / state.bets.length : 0;
+
+  return { longestGreen, longestRed, greens, reds, avgStake };
+}
+
