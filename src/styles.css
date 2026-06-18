@@ -2452,7 +2452,7 @@ textarea {
 
 nav button svg {
   flex: 0 0 auto;
-  opacity: 0.55;
+  opacity: 0.9;
   transition: opacity var(--transition), color var(--transition);
 }
 
@@ -4933,18 +4933,19 @@ nav {
 }
 
 .nav-group > span {
-  margin: 8px 10px 4px;
-  color: #7c8aa3;
+  margin: 12px 10px 4px;
+  color: #64748B;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
 }
 
 nav button {
   border-left: 0;
-  border-radius: 14px;
-  padding: 11px 12px;
-  color: #a8b3c7;
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: #475569;
+  font-weight: 600;
   background: transparent;
 }
 
@@ -4969,8 +4970,9 @@ nav button.active::before {
 nav button em {
   border-radius: 999px;
   padding: 3px 7px;
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--panel-2);
+  border-color: var(--line-strong);
+  color: var(--muted);
 }
 
 nav button.active {
@@ -4982,7 +4984,7 @@ nav button.active {
 
 nav button:hover:not(.active) {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.035);
+  background: rgba(47, 132, 102, 0.07);
 }
 
 .topbar {
