@@ -12,13 +12,12 @@ import {
   Cell,
   ReferenceLine,
 } from "recharts";
-import { AlertTriangle, Clock, Coins, Layers, Gauge } from "lucide-react";
+import { AlertTriangle, Clock, Layers, Gauge } from "lucide-react";
 import { calculateMetrics, groupProfitBySport, money, percent, riskAlerts } from "../lib/metrics";
 import { resolveUnitValue, exceedsUnitCap } from "../lib/unit";
 import { buildBankrollTimeSeries, buildMonthlyData } from "../lib/chartData";
 import type { AppState } from "../lib/types";
 import { EmptyState } from "./EmptyState";
-import { Metric } from "./Metric";
 import { RiskAdvisor } from "./RiskAdvisor";
 
 // Cores do design system Banca+ (hex direto — Recharts não lê CSS vars)
@@ -141,8 +140,22 @@ export function Dashboard({
   const exposureCap = bankroll * (state.riskSettings.maxOpenExposurePercent / 100);
   const exposurePct = exposureCap > 0 ? metrics.openExposure / exposureCap : 0;
 
-  const chartStart = filteredTimeSeries[0]?.balance ?? 0;
-  const chartEnd = filteredTimeSeries[filteredTimeSeries.length - 1]?.balance ?? 0;
+  // Colapsa a série para um ponto por dia (saldo de fechamento do dia):
+  // evita labels de eixo repetidos e deixa a curva mais legível/crível.
+  const chartData = useMemo(() => {
+    if (filteredTimeSeries.length === 0) return filteredTimeSeries;
+    const byDay = new Map<string, (typeof filteredTimeSeries)[number]>();
+    const order: string[] = [];
+    filteredTimeSeries.forEach((point, i) => {
+      const key = point.date ? point.date.slice(0, 10) : `__start_${i}`;
+      if (!byDay.has(key)) order.push(key);
+      byDay.set(key, point);
+    });
+    return order.map((key) => byDay.get(key)!);
+  }, [filteredTimeSeries]);
+
+  const chartStart = chartData[0]?.balance ?? 0;
+  const chartEnd = chartData[chartData.length - 1]?.balance ?? 0;
 
   // Apostas pendentes há mais de 48h
   const stalePendingBets = useMemo(() => {
@@ -200,101 +213,80 @@ export function Dashboard({
         </div>
       </div>
 
-      <div className="hero">
-        <div className="balance-card">
-          <span>Saldo</span>
-          <strong>{money.format(metrics.totalBalance)}</strong>
-          <div className="balance-breakdown">
-            <div>
-              <small>Livre para apostar</small>
-              <b>{money.format(metrics.totalBalance)}</b>
-            </div>
-            <div>
-              <small>Em apostas abertas</small>
-              <b>{money.format(metrics.openExposure)}</b>
-            </div>
-            <div>
-              <small>Unidade</small>
-              <b className="text-mono">{unitValue > 0 ? money.format(unitValue) : "—"}</b>
-            </div>
-          </div>
-        </div>
-        <Metric
-          label="ROI"
-          value={percent.format(metrics.roi)}
-          detail={`${metrics.settledCount} apostas liquidadas`}
-          tone={metrics.roi >= 0 ? "good" : "bad"}
-        />
-        <Metric
-          label="Taxa de acerto"
-          value={percent.format(metrics.hitRate)}
-          detail="apostas ganhas / liquidadas"
-        />
-        <Metric
-          label="CLV médio"
-          value={percent.format(metrics.clvAverage)}
-          detail="vs linha de fechamento"
-          tone={metrics.clvAverage >= 0 ? "good" : "bad"}
-        />
-      </div>
-
-      <div className="dashboard-mini-grid">
-        <article className="panel dashboard-mini-card">
-          <span>Capital total</span>
-          <strong>{money.format(monitoredCapital)}</strong>
-          <small>saldo + exposição</small>
+      {/* Banda 1 — Capital */}
+      <div className="stat-band">
+        <article className="stat-card stat-card-primary">
+          <span className="stat-label">Saldo</span>
+          <strong className="stat-value text-mono">{money.format(metrics.totalBalance)}</strong>
+          <span className="stat-foot">livre para apostar</span>
         </article>
-        <article className="panel dashboard-mini-card">
-          <span>Lucro realizado</span>
-          <strong className={metrics.profit >= 0 ? "pos" : "neg"}>{money.format(metrics.profit)}</strong>
-          <small>apostas fechadas</small>
+        <article className="stat-card">
+          <span className="stat-label">Em aberto</span>
+          <strong className="stat-value text-mono">{money.format(metrics.openExposure)}</strong>
+          <span className="stat-foot">{metrics.pendingCount} pendentes</span>
         </article>
-        <article className="panel dashboard-mini-card">
-          <span>Em aberto</span>
-          <strong>{money.format(metrics.openExposure)}</strong>
-          <small>{metrics.pendingCount} apostas pendentes</small>
+        <article className="stat-card">
+          <span className="stat-label">Capital total</span>
+          <strong className="stat-value text-mono">{money.format(monitoredCapital)}</strong>
+          <span className="stat-foot">saldo + exposição</span>
         </article>
-        <article className="panel dashboard-mini-card">
-          <span>Liquidadas</span>
-          <strong>{metrics.settledCount}</strong>
-          <small>apostas encerradas</small>
+        <article className="stat-card">
+          <span className="stat-label">Unidade</span>
+          <strong className="stat-value text-mono">{unitValue > 0 ? money.format(unitValue) : "—"}</strong>
+          <span className="stat-foot">{state.riskSettings.unitMode === "fixed" ? "valor fixo" : `${state.riskSettings.unitPercent}% da banca`}</span>
         </article>
       </div>
 
-      {/* Insights de unidade — só quando a unidade está configurada */}
+      {/* Banda 2 — Performance */}
+      <div className="stat-band">
+        <article className="stat-card">
+          <span className="stat-label">ROI</span>
+          <strong className={`stat-value text-mono ${metrics.roi >= 0 ? "pos" : "neg"}`}>{percent.format(metrics.roi)}</strong>
+          <span className="stat-foot">{metrics.settledCount} liquidadas</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Taxa de acerto</span>
+          <strong className="stat-value text-mono">{percent.format(metrics.hitRate)}</strong>
+          <span className="stat-foot">ganhas / liquidadas</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">CLV médio</span>
+          <strong className={`stat-value text-mono ${metrics.clvAverage >= 0 ? "pos" : "neg"}`}>{percent.format(metrics.clvAverage)}</strong>
+          <span className="stat-foot">vs linha de fechamento</span>
+        </article>
+        <article className="stat-card">
+          <span className="stat-label">Lucro realizado</span>
+          <strong className={`stat-value text-mono ${metrics.profit >= 0 ? "pos" : "neg"}`}>{money.format(metrics.profit)}</strong>
+          <span className="stat-foot">apostas fechadas</span>
+        </article>
+      </div>
+
+      {/* Banda 3 — Gestão de risco (só com unidade configurada) */}
       {unitValue > 0 && (
-        <div className="dashboard-unit-grid">
-          <article className="panel unit-insight-card">
-            <div className="unit-insight-icon"><Coins size={15} /></div>
-            <div className="unit-insight-body">
-              <span>Unidade</span>
-              <strong className="text-mono">{money.format(unitValue)}</strong>
-              <small>{state.riskSettings.unitMode === "fixed" ? "valor fixo" : `${state.riskSettings.unitPercent}% da banca`}</small>
-            </div>
+        <div className="risk-band">
+          <article className="risk-card">
+            <div className="risk-card-head"><Layers size={14} /><span>Stake médio</span></div>
+            <strong className="text-mono">{avgStakeUnits > 0 ? `${avgStakeUnits.toFixed(1)}u` : "—"}</strong>
+            <small>nas {pendingForUnits.length} pendentes</small>
           </article>
-          <article className="panel unit-insight-card">
-            <div className="unit-insight-icon"><Layers size={15} /></div>
-            <div className="unit-insight-body">
-              <span>Stake médio</span>
-              <strong className="text-mono">{avgStakeUnits > 0 ? `${avgStakeUnits.toFixed(1)}u` : "—"}</strong>
-              <small>nas {pendingForUnits.length} pendentes</small>
-            </div>
+          <article className={`risk-card${overStaked.length > 0 ? " risk-card-warn" : ""}`}>
+            <div className="risk-card-head"><AlertTriangle size={14} /><span>Acima do teto</span></div>
+            <strong className="text-mono">{overStaked.length}</strong>
+            <small>limite {state.riskSettings.maxStakeUnits}u por aposta</small>
           </article>
-          <article className={`panel unit-insight-card${overStaked.length > 0 ? " unit-insight-warn" : ""}`}>
-            <div className="unit-insight-icon"><AlertTriangle size={15} /></div>
-            <div className="unit-insight-body">
-              <span>Acima do teto</span>
-              <strong className="text-mono">{overStaked.length}</strong>
-              <small>limite {state.riskSettings.maxStakeUnits}u/aposta</small>
+          <article className={`risk-card risk-card-exposure${exposurePct > 1 ? " risk-card-warn" : ""}`}>
+            <div className="risk-card-head"><Gauge size={14} /><span>Exposição aberta</span></div>
+            <div className="risk-exposure-figures">
+              <strong className="text-mono">{money.format(metrics.openExposure)}</strong>
+              <small>de {money.format(exposureCap)}</small>
             </div>
-          </article>
-          <article className={`panel unit-insight-card${exposurePct > 1 ? " unit-insight-warn" : ""}`}>
-            <div className="unit-insight-icon"><Gauge size={15} /></div>
-            <div className="unit-insight-body">
-              <span>Exposição</span>
-              <strong className="text-mono">{exposureCap > 0 ? percent.format(exposurePct) : "—"}</strong>
-              <small>do limite ({money.format(exposureCap)})</small>
+            <div className="risk-bar">
+              <div
+                className={`risk-bar-fill${exposurePct > 1 ? " over" : ""}`}
+                style={{ width: `${Math.min(100, Math.max(2, exposurePct * 100))}%` }}
+              />
             </div>
+            <small>{exposurePct > 1 ? `${exposurePct.toFixed(1)}× o limite (${state.riskSettings.maxOpenExposurePercent}% da banca)` : `${percent.format(exposurePct)} do limite`}</small>
           </article>
         </div>
       )}
@@ -335,7 +327,7 @@ export function Dashboard({
         <div className="chart-header">
           <div className="chart-title-block">
             <h2>Evolução da banca</h2>
-            {filteredTimeSeries.length > 1 && (
+            {chartData.length > 1 && (
               <span className="chart-subtitle text-mono">
                 {money.format(chartStart)} → {money.format(chartEnd)}
               </span>
@@ -359,9 +351,9 @@ export function Dashboard({
             </span>
           </div>
         </div>
-        {filteredTimeSeries.length > 1 ? (
+        {chartData.length > 1 ? (
           <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={filteredTimeSeries} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
               <defs>
                 <linearGradient id="balanceGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={COLORS.accent} stopOpacity={0.18} />
