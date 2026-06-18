@@ -11,6 +11,9 @@ import { BrandLogo } from "./components/BrandLogo";
 import { CookieBanner, getStoredConsent, type CookieConsent } from "./components/CookieBanner";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { BetsSkeleton } from "./components/BetsSkeleton";
+import { GuidedTour } from "./components/GuidedTour";
+
+const TOUR_DONE_KEY = "bancamais_tour_done";
 import { Button } from "./components/ui/button";
 import {
   createEmailUser,
@@ -119,6 +122,7 @@ export function App() {
   const [newBetDraft, setNewBetDraft] = useState<NewBetDraft | null>(null);
   const [betMode, setBetMode] = useState<"quick" | "full">("quick");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showTour, setShowTour] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState("Sem sessao autenticada");
@@ -647,6 +651,20 @@ export function App() {
     toast.success(`Snapshot de ${snapshot.periodLabel} salvo`);
   }
 
+  function dismissTour() {
+    setShowTour(false);
+    try { localStorage.setItem(TOUR_DONE_KEY, "1"); } catch { /* ignore */ }
+  }
+
+  useEffect(() => {
+    if (authLoading || showOnboarding) return;
+    let done = false;
+    try { done = localStorage.getItem(TOUR_DONE_KEY) === "1"; } catch { done = true; }
+    if (done) return;
+    const timer = setTimeout(() => setShowTour(true), 700);
+    return () => clearTimeout(timer);
+  }, [authLoading, showOnboarding]);
+
   function deleteBet(id: string) {
     const bet = state.bets.find((b) => b.id === id);
     if (!bet) return;
@@ -1091,6 +1109,7 @@ export function App() {
                 <button
                   className={view === item.id ? "active" : ""}
                   key={item.id}
+                  data-tour={item.id}
                   onClick={() => setView(item.id)}
                 >
                   <span className="nav-icon-label">
@@ -1241,7 +1260,7 @@ export function App() {
                 <span>Salvar</span>
               </button>
             )}
-            <Button className="primary btn-nova-aposta" onClick={() => openNewBet()}>
+            <Button className="primary btn-nova-aposta" data-tour="new-bet" onClick={() => openNewBet()}>
               <Plus size={16} />
               <span>Nova aposta</span>
             </Button>
@@ -1290,6 +1309,8 @@ export function App() {
             }}
           />
         )}
+
+        {showTour && !showOnboarding && cookieConsent !== null && <GuidedTour onDone={dismissTour} />}
       </main>
     </div>
   );

@@ -9302,6 +9302,86 @@ button.danger:hover {
 
 .exec-shift-meta { font-size: 12px; color: var(--muted); white-space: nowrap; }
 
+/* =========================================================
+   TOUR GUIADO — coach marks com spotlight
+   ========================================================= */
+
+.tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  pointer-events: none;
+}
+
+.tour-highlight {
+  position: relative;
+  z-index: 1250;
+  border-radius: 10px;
+  box-shadow: 0 0 0 3px var(--accent), 0 0 0 9999px rgba(15, 23, 42, 0.45);
+  transition: box-shadow 0.2s ease-out;
+}
+
+.tour-tip {
+  position: fixed;
+  z-index: 1300;
+  width: 300px;
+  max-width: calc(100vw - 24px);
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.22);
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: tour-pop 0.18s ease-out;
+}
+
+@keyframes tour-pop { from { opacity: 0; } }
+
+.tour-step-count {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-bright);
+}
+
+.tour-tip strong { font-size: 15px; color: var(--text); }
+.tour-tip p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+
+.tour-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.tour-skip {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  cursor: pointer;
+  padding: 6px 4px;
+}
+
+.tour-skip:hover { color: var(--text); }
+
+.tour-next {
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tour-next:hover { background: var(--accent-bright); }
+
 .exec-report-alert {
   padding: 14px 16px;
   border-radius: 10px;
