@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { betsToCsv, downloadTextFile } from "../lib/csv";
 import { money, percent, betProfit } from "../lib/metrics";
+import { ExecutiveReport } from "./ExecutiveReport";
 import type { AppState } from "../lib/types";
 import type { calculateMetrics } from "../lib/metrics";
 
@@ -79,6 +80,8 @@ export function Reports({ state, metrics }: ReportsProps) {
           <button onClick={() => downloadTextFile("bancamais-fiscal-base.csv", csv)}>Base fiscal</button>
         </div>
       </div>
+
+      <ExecutiveReport state={state} />
 
       <div className="page-actions">
         <div className="page-actions-copy">
