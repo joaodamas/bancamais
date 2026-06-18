@@ -27,6 +27,7 @@ import {
   watchAuth,
 } from "./lib/cloudRepository";
 import { useFirestoreSync } from "./lib/useFirestoreSync";
+import { track } from "./lib/analytics";
 import {
   calculateMetrics,
   money,
@@ -193,6 +194,7 @@ export function App() {
         if (guestHasData && newAccountEmpty) {
           setShowOnboarding(false);
           setPendingMigration({ guestState, guestUid: prevUser.uid });
+          track("demo_migration_offered", { bets: guestState.bets.length });
         }
       }
     });
@@ -407,6 +409,7 @@ export function App() {
       transactions: onboardingTransactions.length > 0 ? onboardingTransactions : state.transactions,
     };
     updateState(next);
+    track("onboarding_complete", { bookmakers: patch.bookmakers.length });
     setShowOnboarding(false);
   }
 
@@ -415,6 +418,7 @@ export function App() {
     try {
       const signedUser = await signInDemoUser();
       setSyncStatus(`Sessao temporaria iniciada: ${signedUser.uid.slice(0, 8)}`);
+      track("demo_start");
       toast.success("Sessão temporária iniciada.");
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Falha ao conectar";
@@ -434,6 +438,7 @@ export function App() {
     try {
       const createdUser = await createEmailUser(email, password, displayName);
       await saveCloudState(createdUser.uid, state);
+      track("signup_success", { method: "email" });
       setAuthMessage(`Conta criada para ${createdUser.email}. Snapshot local salvo na nuvem.`);
       toast.success(`Conta criada para ${createdUser.email}!`);
     } catch (error) {
@@ -452,6 +457,7 @@ export function App() {
     setAuthMessage("Entrando...");
     try {
       const signedUser = await signInEmailUser(email, password);
+      track("login_success", { method: "email" });
       const cloudState = await loadCloudState(signedUser.uid);
       if (cloudState) {
         hydratedUserRef.current = signedUser.uid;
@@ -492,6 +498,7 @@ export function App() {
     setAuthMessage("Conectando com Google...");
     try {
       const googleUser = await signInWithGoogle();
+      track("login_success", { method: "google" });
       const cloudState = await loadCloudState(googleUser.uid);
       if (cloudState) {
         hydratedUserRef.current = googleUser.uid;
@@ -616,7 +623,11 @@ export function App() {
     }
 
     const { bet, transaction } = result;
+    const isFirstBet = state.bets.length === 0;
     syncToCloud(updateState({ ...state, bets: [bet, ...state.bets], transactions: [transaction, ...state.transactions] }));
+    if (isFirstBet) track("first_bet_recorded");
+    track("bet_recorded", { source: bet.source ?? "manual", mode: bet.mode });
+    if (bet.source === "ocr") track("ocr_used");
     setNewBetPrefill(null);
     setNewBetDraft(null);
     form.reset();
@@ -653,6 +664,7 @@ export function App() {
 
   function saveBetTemplate(name: string, values: NewBetFormValues) {
     syncToCloud(updateState(addBetTemplate(state, buildBetTemplate(name, values))));
+    track("template_saved");
     toast.success("Template salvo");
   }
 
@@ -663,11 +675,13 @@ export function App() {
 
   function persistReportSnapshot(snapshot: ReportSnapshot) {
     syncToCloud(updateState(saveReportSnapshot(state, snapshot)));
+    track("report_snapshot_saved", { month: snapshot.monthKey });
     toast.success(`Snapshot de ${snapshot.periodLabel} salvo`);
   }
 
   function dismissTour() {
     setShowTour(false);
+    track("tour_completed");
     try { localStorage.setItem(TOUR_DONE_KEY, "1"); } catch { /* ignore */ }
   }
 
@@ -675,12 +689,14 @@ export function App() {
     if (!pendingMigration) return;
     syncToCloud(updateState(pendingMigration.guestState));
     try { clearStateForUser(pendingMigration.guestUid); } catch { /* ignore */ }
+    track("demo_data_imported", { bets: pendingMigration.guestState.bets.length });
     setPendingMigration(null);
     setShowOnboarding(false);
     toast.success("Dados do modo demonstração importados");
   }
 
   function dismissMigration() {
+    track("demo_migration_declined");
     setPendingMigration(null);
   }
 

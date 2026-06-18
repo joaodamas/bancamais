@@ -113,7 +113,10 @@ initAppCheck();
 
 export async function initAnalytics() {
   if (await isSupported()) {
-    return getAnalytics(firebaseApp);
+    const instance = getAnalytics(firebaseApp);
+    const { setAnalyticsInstance } = await import("./analytics");
+    setAnalyticsInstance(instance);
+    return instance;
   }
 
   return null;
