@@ -6972,7 +6972,8 @@ button.danger:hover {
   display: flex;
   align-items: center;
   font-size: 11px;
-  color: var(--muted);
+  color: #475569;
+  font-weight: 600;
   font-family: var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -6984,16 +6985,18 @@ button.danger:hover {
 
 .risk-dimension-score {
   font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--soft);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
   text-align: right;
 }
 
 .risk-progress-track {
-  height: 4px;
+  height: 7px;
   background: var(--panel-3);
-  border-radius: 2px;
+  border-radius: 999px;
   overflow: hidden;
+  border: 1px solid var(--line);
 }
 
 .risk-progress-fill {
@@ -7097,12 +7100,12 @@ button.danger:hover {
   display: flex;
   align-items: flex-start;
   gap: 7px;
-  font-size: 11px;
-  color: var(--soft);
+  font-size: 12px;
+  color: var(--muted);
   line-height: 1.5;
-  padding: 8px 10px;
+  padding: 9px 11px;
   border-radius: var(--radius-sm);
-  background: var(--panel-3);
+  background: var(--panel-2);
 }
 
 .risk-tip svg {
