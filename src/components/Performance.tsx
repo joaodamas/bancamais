@@ -11,7 +11,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { BarChart3 } from "lucide-react";
-import { calculateMetrics, groupProfitBySport, money, percent } from "../lib/metrics";
+import { calculateMetrics, groupProfitBySport, money, percent, profitFactor, segmentByOddsBand, segmentByStakeBand, segmentByDayOfWeek, segmentByMarket, type SegmentStats } from "../lib/metrics";
 import { buildMonthlyData } from "../lib/chartData";
 import type { AppState } from "../lib/types";
 import { COLORS, MoneyTooltip, PercentTooltip } from "./chartHelpers";
@@ -29,6 +29,13 @@ export function Performance({
     () => groupProfitBySport(state).sort((a, b) => b.profit - a.profit).slice(0, 8),
     [state]
   );
+  const pf = useMemo(() => profitFactor(state), [state]);
+  const byOdds = useMemo(() => segmentByOddsBand(state), [state]);
+  const byStake = useMemo(() => segmentByStakeBand(state), [state]);
+  const byDay = useMemo(() => segmentByDayOfWeek(state), [state]);
+  const byMarket = useMemo(() => segmentByMarket(state), [state]);
+  const pfLabel = metrics.settledCount === 0 ? "—" : pf === null ? "∞" : pf.toFixed(2);
+  const pfPositive = pf === null ? metrics.settledCount > 0 : pf >= 1;
 
   const hasData = state.bets.some((b) => b.status !== "pending");
 
@@ -63,6 +70,11 @@ export function Performance({
           <strong className="stat-value text-mono">{metrics.averageOdds.toFixed(2)}</strong>
           <span className="stat-foot">execução média</span>
         </article>
+        <article className="stat-card">
+          <span className="stat-label">Fator de lucro</span>
+          <strong className={`stat-value text-mono ${pfPositive ? "pos" : "neg"}`}>{pfLabel}</strong>
+          <span className="stat-foot">ganhos / perdas</span>
+        </article>
       </div>
 
       {!hasData ? (
@@ -74,6 +86,7 @@ export function Performance({
           />
         </article>
       ) : (
+        <>
         <div className="grid two">
           <article className="panel chart-panel">
             <h2>ROI mensal</h2>
@@ -137,7 +150,60 @@ export function Performance({
             )}
           </article>
         </div>
+
+        <div className="grid two">
+          <article className="panel">
+            <h2>Desempenho por faixa de cotação</h2>
+            <SegmentTable rows={byOdds} />
+          </article>
+          <article className="panel">
+            <h2>Desempenho por tamanho de stake</h2>
+            <SegmentTable rows={byStake} />
+          </article>
+        </div>
+
+        <div className="grid two">
+          <article className="panel">
+            <h2>Desempenho por dia da semana</h2>
+            <SegmentTable rows={byDay} />
+          </article>
+          <article className="panel">
+            <h2>Desempenho por mercado</h2>
+            <SegmentTable rows={byMarket} />
+          </article>
+        </div>
+        </>
       )}
     </section>
+  );
+}
+
+function SegmentTable({ rows }: { rows: SegmentStats[] }) {
+  if (rows.length === 0) {
+    return <p className="edge-empty">Sem apostas suficientes para este corte.</p>;
+  }
+  return (
+    <table className="edge-table">
+      <thead>
+        <tr>
+          <th>Faixa</th>
+          <th className="num">Apostas</th>
+          <th className="num">ROI</th>
+          <th className="num">Lucro</th>
+          <th className="num">Acerto</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row.label}>
+            <td>{row.label}</td>
+            <td className="num text-mono">{row.bets}</td>
+            <td className={`num ${row.roi >= 0 ? "pos" : "neg"}`}>{percent.format(row.roi)}</td>
+            <td className={`num ${row.profit >= 0 ? "pos" : "neg"}`}>{money.format(row.profit)}</td>
+            <td className="num text-mono">{percent.format(row.hitRate)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }

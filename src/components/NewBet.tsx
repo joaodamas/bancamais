@@ -21,6 +21,8 @@ import type {
 } from "../lib/types";
 import { isSportsApiConfigured, searchFixtures, type FixtureSearchResult } from "../lib/sportsApi";
 import { deriveBetSuggestions, leaguesForSport } from "../lib/betSuggestions";
+import { calculateLedgerTotalBalance } from "../lib/ledger";
+import { money } from "../lib/metrics";
 import { canBuildTemplate } from "../services/template.service";
 import { TemplateChip } from "./TemplateChip";
 
@@ -135,6 +137,13 @@ export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange, 
     () => leaguesForSport(state, formValues.sport),
     [state, formValues.sport],
   );
+  const bankroll = useMemo(() => calculateLedgerTotalBalance(state), [state]);
+
+  function applyStakePercent(pct: number) {
+    if (bankroll <= 0) return;
+    const value = Math.round(bankroll * (pct / 100) * 100) / 100;
+    setFieldValue("stake", String(value), { markReviewed: true });
+  }
 
   function applyTemplate(template: BetTemplate) {
     setFormValues((prev) => ({ ...prev, ...template.partial }));
@@ -814,6 +823,17 @@ export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange, 
                 <label>
                   {renderFieldLabel("Stake", "stake")}
                   <input className={getFieldStateClass("stake")} name="stake" required min="1" step="0.01" type="number" placeholder="250" value={formValues.stake} onChange={handleTextInput("stake")} />
+                  {bankroll > 0 && (
+                    <div className="nb-stake-pct">
+                      <span className="nb-stake-pct-label">% da banca</span>
+                      {[1, 2, 3, 5].map((p) => (
+                        <button key={p} type="button" className="nb-stake-pct-chip" onClick={() => applyStakePercent(p)}>
+                          {p}%
+                        </button>
+                      ))}
+                      <span className="nb-stake-pct-hint">de {money.format(bankroll)}</span>
+                    </div>
+                  )}
                   {renderOcrFieldMeta("stake")}
                 </label>
                 <label>

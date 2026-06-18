@@ -98,3 +98,24 @@ export interface EdgeEstimate {
   confidence: "high" | "medium" | "low";
   reasoning: string;
 }
+
+// --- Closing line (CLV automático via The Odds API) ---
+
+export interface ClosingOddsBet {
+  betId: string;
+  sport: string;
+  league: string;
+  eventName: string;
+  selection: string;
+  eventAt: string;
+}
+
+export interface FetchClosingOddsRequest {
+  bets: ClosingOddsBet[];
+}
+
+export interface ClosingOddsResult {
+  betId: string;
+  closingOdds: number;
+  bookmaker: string;
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { betProfit, potentialReturn, clvPercent, calculateMetrics } from "./metrics";
+import { betProfit, potentialReturn, clvPercent, calculateMetrics, profitFactor, segmentByOddsBand, segmentByStakeBand, segmentByDayOfWeek, segmentByMarket } from "./metrics";
 import { emptyState } from "./storage";
 import type { Bet, AppState } from "./types";
 
@@ -144,5 +144,103 @@ describe("calculateMetrics", () => {
     const m = calculateMetrics(makeState(bets));
     expect(m.openExposure).toBe(250);
     expect(m.pendingCount).toBe(2);
+  });
+});
+
+describe("profitFactor", () => {
+  it("retorna null sem perdas liquidadas (∞)", () => {
+    const bets = [makeBet({ id: "1", status: "won", stake: 100, payout: 250 })];
+    expect(profitFactor(makeState(bets))).toBeNull();
+  });
+
+  it("calcula ganhos brutos / perdas brutas", () => {
+    const bets = [
+      makeBet({ id: "1", status: "won", stake: 100, payout: 250 }), // +150
+      makeBet({ id: "2", status: "lost", stake: 100, payout: 0 }),  // -100
+    ];
+    expect(profitFactor(makeState(bets))).toBeCloseTo(1.5);
+  });
+
+  it("ignora pendentes e voids", () => {
+    const bets = [
+      makeBet({ id: "1", status: "won", stake: 100, payout: 200 }), // +100
+      makeBet({ id: "2", status: "lost", stake: 50, payout: 0 }),   // -50
+      makeBet({ id: "3", status: "pending", stake: 999 }),
+      makeBet({ id: "4", status: "void", stake: 999, payout: 999 }),
+    ];
+    expect(profitFactor(makeState(bets))).toBeCloseTo(2);
+  });
+});
+
+describe("segmentByOddsBand", () => {
+  it("agrupa por faixa de cotação e omite faixas vazias", () => {
+    const bets = [
+      makeBet({ id: "1", odds: 1.4, status: "won", stake: 100, payout: 140 }),
+      makeBet({ id: "2", odds: 1.8, status: "lost", stake: 100, payout: 0 }),
+      makeBet({ id: "3", odds: 2.5, status: "won", stake: 100, payout: 250 }),
+    ];
+    const segments = segmentByOddsBand(makeState(bets));
+    expect(segments.map((s) => s.label)).toEqual(["1.00–1.50", "1.50–2.00", "2.00–3.00"]);
+    const band = segments.find((s) => s.label === "1.50–2.00");
+    expect(band?.bets).toBe(1);
+    expect(band?.profit).toBe(-100);
+  });
+
+  it("cotação no limite cai na faixa superior (intervalo [min, max))", () => {
+    const bets = [makeBet({ id: "1", odds: 2.0, status: "won", stake: 100, payout: 200 })];
+    const segments = segmentByOddsBand(makeState(bets));
+    expect(segments).toHaveLength(1);
+    expect(segments[0].label).toBe("2.00–3.00");
+  });
+});
+
+describe("segmentByStakeBand", () => {
+  it("agrupa por stake relativo à média (150 = média)", () => {
+    const bets = [
+      makeBet({ id: "1", stake: 50, status: "won", odds: 2, payout: 100 }),  // 0,33×
+      makeBet({ id: "2", stake: 100, status: "lost", odds: 2, payout: 0 }),  // 0,66×
+      makeBet({ id: "3", stake: 300, status: "won", odds: 2, payout: 600 }), // 2,0×
+    ];
+    const labels = segmentByStakeBand(makeState(bets)).map((s) => s.label);
+    expect(labels).toContain("< 0,5× média");
+    expect(labels).toContain("0,5–1× média");
+    expect(labels).toContain("≥ 2× média");
+    expect(labels).not.toContain("1–2× média");
+  });
+
+  it("retorna vazio sem apostas", () => {
+    expect(segmentByStakeBand(makeState([]))).toEqual([]);
+  });
+});
+
+describe("segmentByDayOfWeek", () => {
+  it("agrupa por dia da semana e mantém só dias com apostas", () => {
+    const mon = new Date(2026, 5, 15, 12).toISOString(); // 15/jun/2026 = segunda
+    const tue = new Date(2026, 5, 16, 12).toISOString(); // 16/jun/2026 = terça
+    const bets = [
+      makeBet({ id: "1", placedAt: mon, status: "won", stake: 100, payout: 200 }),
+      makeBet({ id: "2", placedAt: tue, status: "lost", stake: 100, payout: 0 }),
+      makeBet({ id: "3", placedAt: tue, status: "won", stake: 100, payout: 150 }),
+    ];
+    const segments = segmentByDayOfWeek(makeState(bets));
+    const labels = segments.map((s) => s.label);
+    expect(labels).toContain("Seg");
+    expect(labels).toContain("Ter");
+    expect(segments.find((s) => s.label === "Ter")?.bets).toBe(2);
+    expect(labels.indexOf("Seg")).toBeLessThan(labels.indexOf("Ter")); // ordem Dom→Sáb
+  });
+});
+
+describe("segmentByMarket", () => {
+  it("agrupa por mercado, ordenado por volume apostado", () => {
+    const bets = [
+      makeBet({ id: "1", market: "Over/Under", stake: 100, status: "won", payout: 180 }),
+      makeBet({ id: "2", market: "Over/Under", stake: 100, status: "lost", payout: 0 }),
+      makeBet({ id: "3", market: "1x2", stake: 50, status: "won", payout: 120 }),
+    ];
+    const segments = segmentByMarket(makeState(bets));
+    expect(segments[0].label).toBe("Over/Under"); // maior volume (200) primeiro
+    expect(segments[0].bets).toBe(2);
+    expect(segments[1].label).toBe("1x2");
   });
 });

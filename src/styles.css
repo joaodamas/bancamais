@@ -9108,6 +9108,45 @@ button.danger:hover {
 
 .edge-empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
 
+/* Staking por % da banca (NewBet) */
+.nb-stake-pct {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.nb-stake-pct-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.nb-stake-pct-chip {
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.nb-stake-pct-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.nb-stake-pct-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: auto;
+  font-family: var(--font-mono);
+}
+
 /* Veredito do radar (over/under exposure) */
 .edge-verdict {
   display: inline-flex;

@@ -28,6 +28,7 @@ import {
 } from "./lib/cloudRepository";
 import { useFirestoreSync } from "./lib/useFirestoreSync";
 import { track } from "./lib/analytics";
+import { collectBetsNeedingClosing, fetchClosingOdds, isClosingOddsConfigured } from "./lib/closingOdds";
 import {
   calculateMetrics,
   money,
@@ -141,6 +142,8 @@ export function App() {
   const hydratedUserRef = useRef<string | null>(null);
   const latestStateRef = useRef<AppState>(state);
   const latestUserRef = useRef<User | null>(user);
+  const closingAttemptedRef = useRef<Set<string>>(new Set());
+  const closingInFlightRef = useRef(false);
   latestStateRef.current = state;
   latestUserRef.current = user;
 
@@ -370,6 +373,46 @@ export function App() {
       setSyncStatus(`Sync realtime ativo - ultimo check ${realtimeSync.lastSyncAt.toLocaleTimeString("pt-BR")}`);
     }
   }, [authLoading, realtimeSync.error, realtimeSync.lastSyncAt, realtimeSync.status, user]);
+
+  // Auto-CLV: ao carregar/atualizar apostas, busca a closing line das pendentes na janela
+  // pré-kickoff e congela o valor. Batch por esporte, tenta-uma-vez por sessão (sem loop nem
+  // re-gasto de cota em apostas sem match).
+  useEffect(() => {
+    if (authLoading || !user) return;
+    if (!isClosingOddsConfigured()) return;
+    if (closingInFlightRef.current) return;
+
+    const candidates = collectBetsNeedingClosing(state.bets).filter(
+      (bet) => !closingAttemptedRef.current.has(bet.betId),
+    );
+    if (candidates.length === 0) return;
+
+    closingInFlightRef.current = true;
+    candidates.forEach((bet) => closingAttemptedRef.current.add(bet.betId));
+
+    fetchClosingOdds(candidates)
+      .then((results) => {
+        if (results.length === 0) return;
+        const closingById = new Map(results.map((result) => [result.betId, result.closingOdds]));
+        const current = latestStateRef.current;
+        let changed = false;
+        const bets = current.bets.map((bet) => {
+          const closing = closingById.get(bet.id);
+          if (closing != null && bet.closingOdds == null) {
+            changed = true;
+            return { ...bet, closingOdds: closing };
+          }
+          return bet;
+        });
+        if (changed) {
+          syncToCloud(updateState({ ...current, bets }));
+          toast.success(`CLV de fechamento preenchido em ${results.length} aposta(s).`);
+        }
+      })
+      .finally(() => {
+        closingInFlightRef.current = false;
+      });
+  }, [authLoading, state.bets, user]);
 
   function openNewBet(prefill: NewBetPrefill | null = null) {
     if (prefill) {

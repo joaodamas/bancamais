@@ -7,6 +7,7 @@ import { defineSecret } from "firebase-functions/params";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import type {
   EstimateEdgeRequest,
+  FetchClosingOddsRequest,
   FetchTeamNewsRequest,
   GetSportsFixtureResultRequest,
   GetTeamContextRequest,
@@ -17,6 +18,7 @@ import { AnthropicOcrClient } from "./services/anthropicOcr.js";
 import { buildFailedResponse, buildNotConfiguredResponse, mapProviderPayload } from "./services/ocrMapper.js";
 import { fetchTeamNews } from "./services/teamNews.js";
 import { getSportsFixtureResult, searchSportsFixtures } from "./services/sportsData.js";
+import { fetchClosingOddsForBets } from "./services/oddsData.js";
 import { getTeamContext } from "./services/teamContext.js";
 import { estimateEdge } from "./services/edgeEstimator.js";
 import { downloadUserSlip } from "./services/storage.js";
@@ -28,6 +30,7 @@ if (getApps().length === 0) {
 const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
 const APISPORTS_API_KEY = defineSecret("APISPORTS_API_KEY");
 const GNEWS_API_KEY = defineSecret("GNEWS_API_KEY");
+const THEODDS_API_KEY = defineSecret("THEODDS_API_KEY");
 const DEFAULT_REGION = "southamerica-east1";
 
 export const parseBetSlipFromStorage = onCall(
@@ -212,6 +215,32 @@ export const estimateEdgeCallable = onCall(
         error,
       });
       throw new HttpsError("internal", "Edge estimation failed.");
+    }
+  },
+);
+
+export const fetchClosingOddsCallable = onCall(
+  {
+    region: DEFAULT_REGION,
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    secrets: [THEODDS_API_KEY],
+  },
+  async (request) => {
+    ensureAuthenticated(request.auth?.uid);
+    const payload = parseFetchClosingOddsRequest(request.data);
+    const apiKey = THEODDS_API_KEY.value();
+
+    if (!apiKey) {
+      logger.warn("THEODDS_API_KEY is not configured.");
+      return [];
+    }
+
+    try {
+      return await fetchClosingOddsForBets(apiKey, payload.bets);
+    } catch (error) {
+      logger.error("Closing odds fetch failed", { error });
+      return [];
     }
   },
 );
@@ -430,4 +459,55 @@ function parseEstimateEdgeRequest(data: unknown): EstimateEdgeRequest {
     selection: selection.trim(),
     odds,
   };
+}
+
+function parseFetchClosingOddsRequest(data: unknown): FetchClosingOddsRequest {
+  if (!data || typeof data !== "object") {
+    throw new HttpsError("invalid-argument", "Request payload must be an object.");
+  }
+
+  const bets = Reflect.get(data, "bets");
+  if (!Array.isArray(bets) || bets.length === 0) {
+    throw new HttpsError("invalid-argument", "bets must be a non-empty array.");
+  }
+  if (bets.length > 50) {
+    throw new HttpsError("invalid-argument", "bets must contain at most 50 items.");
+  }
+
+  const parsed = bets.map((raw, index) => {
+    if (!raw || typeof raw !== "object") {
+      throw new HttpsError("invalid-argument", `bets[${index}] must be an object.`);
+    }
+
+    const betId = Reflect.get(raw, "betId");
+    const sport = Reflect.get(raw, "sport");
+    const league = Reflect.get(raw, "league");
+    const eventName = Reflect.get(raw, "eventName");
+    const selection = Reflect.get(raw, "selection");
+    const eventAt = Reflect.get(raw, "eventAt");
+
+    if (typeof betId !== "string" || betId.length === 0) {
+      throw new HttpsError("invalid-argument", `bets[${index}].betId is required.`);
+    }
+    if (typeof eventName !== "string" || eventName.length === 0) {
+      throw new HttpsError("invalid-argument", `bets[${index}].eventName is required.`);
+    }
+    if (typeof selection !== "string" || selection.length === 0) {
+      throw new HttpsError("invalid-argument", `bets[${index}].selection is required.`);
+    }
+    if (typeof eventAt !== "string" || eventAt.length === 0) {
+      throw new HttpsError("invalid-argument", `bets[${index}].eventAt is required.`);
+    }
+
+    return {
+      betId,
+      sport: typeof sport === "string" ? sport : "",
+      league: typeof league === "string" ? league : "",
+      eventName,
+      selection,
+      eventAt,
+    };
+  });
+
+  return { bets: parsed };
 }

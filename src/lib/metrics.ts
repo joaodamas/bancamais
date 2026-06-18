@@ -135,3 +135,130 @@ export function riskAlerts(state: AppState) {
   return alerts;
 }
 
+// ── Cortes analíticos (faixa de cotação / faixa de stake / fator de lucro) ────
+
+export interface SegmentStats {
+  label: string;
+  bets: number;
+  staked: number;
+  profit: number;
+  roi: number;
+  hitRate: number;
+}
+
+function settledBets(bets: Bet[]): Bet[] {
+  return bets.filter((bet) => bet.status !== "pending" && bet.status !== "void");
+}
+
+function isWin(bet: Bet): boolean {
+  return bet.status === "won" || bet.status === "cashout";
+}
+
+/** Fator de Lucro = ganhos brutos / perdas brutas. null = sem perdas liquidadas (resultado ∞). */
+export function profitFactor(state: AppState): number | null {
+  let grossWin = 0;
+  let grossLoss = 0;
+  for (const bet of settledBets(state.bets)) {
+    const profit = betProfit(bet);
+    if (profit > 0) grossWin += profit;
+    else if (profit < 0) grossLoss += -profit;
+  }
+  if (grossLoss === 0) return null;
+  return grossWin / grossLoss;
+}
+
+function buildSegment(label: string, bets: Bet[]): SegmentStats {
+  const settled = settledBets(bets);
+  const settledStake = settled.reduce((sum, bet) => sum + bet.stake, 0);
+  const profit = settled.reduce((sum, bet) => sum + betProfit(bet), 0);
+  const wins = settled.filter(isWin).length;
+
+  return {
+    label,
+    bets: bets.length,
+    staked: bets.reduce((sum, bet) => sum + bet.stake, 0),
+    profit,
+    roi: settledStake > 0 ? profit / settledStake : 0,
+    hitRate: settled.length > 0 ? wins / settled.length : 0,
+  };
+}
+
+const ODDS_BANDS: Array<{ label: string; min: number; max: number }> = [
+  { label: "1.00–1.50", min: 1, max: 1.5 },
+  { label: "1.50–2.00", min: 1.5, max: 2 },
+  { label: "2.00–3.00", min: 2, max: 3 },
+  { label: "3.00–5.00", min: 3, max: 5 },
+  { label: "5.00+", min: 5, max: Infinity },
+];
+
+/** Desempenho por faixa de cotação — universal, mostra onde o edge realmente está. */
+export function segmentByOddsBand(state: AppState): SegmentStats[] {
+  return ODDS_BANDS
+    .map((band) => buildSegment(
+      band.label,
+      state.bets.filter((bet) => bet.odds >= band.min && bet.odds < band.max),
+    ))
+    .filter((segment) => segment.bets > 0);
+}
+
+const STAKE_BANDS: Array<{ label: string; min: number; max: number }> = [
+  { label: "< 0,5× média", min: 0, max: 0.5 },
+  { label: "0,5–1× média", min: 0.5, max: 1 },
+  { label: "1–2× média", min: 1, max: 2 },
+  { label: "≥ 2× média", min: 2, max: Infinity },
+];
+
+/** Desempenho por tamanho de stake (relativo à média) — revela indisciplina nas entradas grandes. */
+export function segmentByStakeBand(state: AppState): SegmentStats[] {
+  const stakes = state.bets.map((bet) => bet.stake).filter((value) => value > 0);
+  if (stakes.length === 0) return [];
+
+  const average = stakes.reduce((sum, value) => sum + value, 0) / stakes.length;
+  if (average <= 0) return [];
+
+  return STAKE_BANDS
+    .map((band) => buildSegment(
+      band.label,
+      state.bets.filter((bet) => {
+        const ratio = bet.stake / average;
+        return ratio >= band.min && ratio < band.max;
+      }),
+    ))
+    .filter((segment) => segment.bets > 0);
+}
+
+const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+/** Desempenho por dia da semana (data da entrada) — revela disciplina/sangria por dia. */
+export function segmentByDayOfWeek(state: AppState): SegmentStats[] {
+  const byDay = new Map<number, Bet[]>();
+  for (const bet of state.bets) {
+    const date = new Date(bet.placedAt);
+    if (Number.isNaN(date.getTime())) continue;
+    const day = date.getDay();
+    const list = byDay.get(day) ?? [];
+    list.push(bet);
+    byDay.set(day, list);
+  }
+
+  return WEEKDAY_LABELS
+    .map((label, index) => ({ label, bets: byDay.get(index) ?? [] }))
+    .filter((entry) => entry.bets.length > 0)
+    .map((entry) => buildSegment(entry.label, entry.bets));
+}
+
+/** Desempenho por mercado/tipo de aposta — onde o edge se concentra (over/under, 1x2, etc.). */
+export function segmentByMarket(state: AppState): SegmentStats[] {
+  const byMarket = new Map<string, Bet[]>();
+  for (const bet of state.bets) {
+    const key = bet.market.trim() || "—";
+    const list = byMarket.get(key) ?? [];
+    list.push(bet);
+    byMarket.set(key, list);
+  }
+
+  return [...byMarket.entries()]
+    .map(([label, bets]) => buildSegment(label, bets))
+    .sort((a, b) => b.staked - a.staked);
+}
+
