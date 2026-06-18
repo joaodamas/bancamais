@@ -12,6 +12,7 @@ import { MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown, SlidersHorizontal, X, 
 import { betsToCsv, downloadTextFile } from "../lib/csv";
 import { betProfit, money, potentialReturn } from "../lib/metrics";
 import { eventDelta, isImminent } from "../lib/betTime";
+import { StatusBadge } from "./StatusBadge";
 import type { AppState, Bet } from "../lib/types";
 
 const statusLabel: Record<Bet["status"], string> = {
@@ -453,7 +454,7 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                       </small>
                     </td>
                     <td className="bet-cell bet-status-cell">
-                      <span className={`pill ${bet.status}`}>{statusLabel[bet.status]}</span>
+                      <StatusBadge status={bet.status} />
                     </td>
                     <td className="bet-cell bet-actions-cell">
                       {confirmDeleteId === bet.id ? (

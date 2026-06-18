@@ -115,10 +115,27 @@ export function Dashboard({
 
       {/* Banda 1 — Capital */}
       <div className="stat-band">
-        <article className="stat-card stat-card-primary">
-          <span className="stat-label">Saldo</span>
-          <strong className="stat-value text-mono">{money.format(metrics.totalBalance)}</strong>
-          <span className="stat-foot">livre para apostar</span>
+        <article className="stat-card stat-card-primary stat-card-spark">
+          <div className="stat-spark-copy">
+            <span className="stat-label">Saldo</span>
+            <strong className="stat-value text-mono">{money.format(metrics.totalBalance)}</strong>
+            <span className="stat-foot">livre para apostar</span>
+          </div>
+          {chartData.length > 1 && (
+            <div className="stat-sparkline">
+              <ResponsiveContainer width="100%" height={36}>
+                <AreaChart data={chartData} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={COLORS.green} stopOpacity={0.22} />
+                      <stop offset="100%" stopColor={COLORS.green} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <Area type="monotone" dataKey="balance" stroke={COLORS.green} strokeWidth={1.6} fill="url(#sparkGrad)" dot={false} isAnimationActive={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </article>
         <article className="stat-card">
           <span className="stat-label">Em aberto</span>
