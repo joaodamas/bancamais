@@ -33,7 +33,7 @@ import {
   potentialReturn,
 } from "./lib/metrics";
 import { getDerivedBookmakerBalance, reconcileBookmakerBalances } from "./lib/ledger";
-import { createBetId, createBookmakerId, createStrategyId, createTransactionId, emptyState, isFirstRun, loadStateForUser, resetState, saveState, saveStateForUser } from "./lib/storage";
+import { clearStateForUser, createBetId, createBookmakerId, createStrategyId, createTransactionId, emptyState, isFirstRun, loadStateForUser, resetState, saveState, saveStateForUser } from "./lib/storage";
 import { uploadBetSlip } from "./lib/storageRepository";
 import type { AppState, Bet, BookmakerAccount, NewBetDraft, NewBetFormValues, NewBetPrefill, ReportSnapshot, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
 import { checkHardStop, riskAlertsExtended } from "./lib/riskGuard";
@@ -123,6 +123,7 @@ export function App() {
   const [betMode, setBetMode] = useState<"quick" | "full">("quick");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [pendingMigration, setPendingMigration] = useState<{ guestState: AppState; guestUid: string } | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState("Sem sessao autenticada");
@@ -144,6 +145,7 @@ export function App() {
 
   useEffect(() => {
     const unsubscribe = watchAuth(async (nextUser) => {
+      const prevUser = latestUserRef.current;
       if (!nextUser) {
         setUser(null);
         hydratedUserRef.current = null;
@@ -180,6 +182,19 @@ export function App() {
       hydratedUserRef.current = nextUser.uid;
       applyHydratedState(loadedState, nextUser.uid);
       setAuthLoading(false);
+
+      // Migração demo → conta: autenticou numa conta vazia mas havia dados de
+      // um convidado anônimo → oferece importar (protege o progresso do trial).
+      if (!nextUser.isAnonymous && prevUser?.isAnonymous && prevUser.uid !== nextUser.uid) {
+        const guestState = loadStateForUser(prevUser.uid);
+        const guestHasData =
+          guestState.bets.length > 0 || guestState.bookmakers.length > 0 || guestState.transactions.length > 0;
+        const newAccountEmpty = loadedState.bets.length === 0 && loadedState.transactions.length === 0;
+        if (guestHasData && newAccountEmpty) {
+          setShowOnboarding(false);
+          setPendingMigration({ guestState, guestUid: prevUser.uid });
+        }
+      }
     });
     return unsubscribe;
   }, []);
@@ -654,6 +669,19 @@ export function App() {
   function dismissTour() {
     setShowTour(false);
     try { localStorage.setItem(TOUR_DONE_KEY, "1"); } catch { /* ignore */ }
+  }
+
+  function migrateGuestData() {
+    if (!pendingMigration) return;
+    syncToCloud(updateState(pendingMigration.guestState));
+    try { clearStateForUser(pendingMigration.guestUid); } catch { /* ignore */ }
+    setPendingMigration(null);
+    setShowOnboarding(false);
+    toast.success("Dados do modo demonstração importados");
+  }
+
+  function dismissMigration() {
+    setPendingMigration(null);
   }
 
   useEffect(() => {
@@ -1310,7 +1338,24 @@ export function App() {
           />
         )}
 
-        {showTour && !showOnboarding && cookieConsent !== null && <GuidedTour onDone={dismissTour} />}
+        {showTour && !showOnboarding && !pendingMigration && cookieConsent !== null && <GuidedTour onDone={dismissTour} />}
+
+        {pendingMigration && (
+          <div className="modal-overlay">
+            <div className="modal-panel migration-modal" onClick={(e) => e.stopPropagation()}>
+              <h2>Importar seus dados do teste?</h2>
+              <p>
+                Você registrou <strong>{pendingMigration.guestState.bets.length} aposta{pendingMigration.guestState.bets.length !== 1 ? "s" : ""}</strong>
+                {pendingMigration.guestState.bookmakers.length > 0 && <> e <strong>{pendingMigration.guestState.bookmakers.length} casa{pendingMigration.guestState.bookmakers.length !== 1 ? "s" : ""}</strong></>}
+                {" "}no modo de demonstração. Quer trazer tudo para a sua conta?
+              </p>
+              <div className="migration-actions">
+                <button onClick={dismissMigration}>Começar do zero</button>
+                <button className="primary" onClick={migrateGuestData}>Importar meus dados</button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -9382,6 +9382,22 @@ button.danger:hover {
 
 .tour-next:hover { background: var(--accent-bright); }
 
+/* Modal de migração demo → conta */
+.migration-modal {
+  max-width: 440px;
+  text-align: left;
+}
+
+.migration-modal h2 { margin: 0 0 10px; font-size: 19px; }
+.migration-modal p { margin: 0 0 20px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.migration-modal strong { color: var(--text); }
+
+.migration-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .exec-report-alert {
   padding: 14px 16px;
   border-radius: 10px;
