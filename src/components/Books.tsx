@@ -189,6 +189,20 @@ export function Books({
             <small>Adicione ao menos uma casa para operar stakes, saldos e movimentações.</small>
           </article>
         )}
+        {state.bookmakers.length > 0 && (
+          <button
+            type="button"
+            className="book-add-card"
+            onClick={() => {
+              const form = document.getElementById("add-house-form");
+              form?.scrollIntoView({ behavior: "smooth", block: "center" });
+              (form?.querySelector('input[name="name"]') as HTMLInputElement | null)?.focus();
+            }}
+          >
+            <span className="book-add-icon">+</span>
+            Adicionar casa
+          </button>
+        )}
       </div>
 
       {selectedBook && (
@@ -349,7 +363,7 @@ export function Books({
       )}
 
       <div className="grid two report-section">
-        <form className="panel transaction-form books-form-panel" onSubmit={addBookmaker}>
+        <form id="add-house-form" className="panel transaction-form books-form-panel" onSubmit={addBookmaker}>
           <h2>Adicionar casa</h2>
           <p className="panel-intro full">
             Cadastre a conta com o saldo inicial para manter a base operacional consistente desde o
