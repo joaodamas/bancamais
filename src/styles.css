@@ -9322,6 +9322,24 @@ button.danger:hover {
   letter-spacing: 0.03em;
 }
 
+/* Odds — logos das casas */
+.odds-cell { min-height: 56px; }
+.odds-cell-logo {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  object-fit: contain;
+  margin-top: 3px;
+}
+.odds-highlight-casa { display: inline-flex; align-items: center; gap: 5px; }
+.odds-highlight-logo {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 /* =========================================================
    DIÁRIO — extrato agrupado por mês / dia
    ========================================================= */

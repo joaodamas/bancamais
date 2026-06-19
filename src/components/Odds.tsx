@@ -34,6 +34,16 @@ function outcomeLabel(side: MarketOddsOutcome["side"]): string {
   return side === "home" ? "1" : side === "draw" ? "X" : "2";
 }
 
+/** Logo da casa via favicon do domínio (heurística no nome: "1xBet" -> 1xbet.com). */
+function bookmakerLogo(name: string): string {
+  const domain = name
+    .replace(/\(.*?\)/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  return `https://www.google.com/s2/favicons?domain=${domain}.com&sz=64`;
+}
+
 export function Odds({ onOpenNewBet }: { onOpenNewBet: (prefill: NewBetPrefill) => void }) {
   const [sportKey, setSportKey] = useState<string | null>(null);
   const [events, setEvents] = useState<MarketOddsEvent[]>([]);
@@ -166,7 +176,10 @@ export function Odds({ onOpenNewBet }: { onOpenNewBet: (prefill: NewBetPrefill) 
                   </span>
                   <span className="odds-highlight-line">
                     <strong>{outcome.best.toFixed(2)}</strong>
-                    <em>{outcome.bestBook}</em>
+                    <span className="odds-highlight-casa">
+                      <img className="odds-highlight-logo" src={bookmakerLogo(outcome.bestBook)} alt={outcome.bestBook} loading="lazy" />
+                      <em>{outcome.bestBook}</em>
+                    </span>
                   </span>
                 </button>
               ))}
@@ -199,7 +212,7 @@ export function Odds({ onOpenNewBet }: { onOpenNewBet: (prefill: NewBetPrefill) 
                       {isValue && <span className="odds-cell-edge">+{edge.toFixed(1)}%</span>}
                       <span className="odds-cell-label">{outcomeLabel(outcome.side)}</span>
                       <span className="odds-cell-odd">{outcome.best.toFixed(2)}</span>
-                      <span className="odds-cell-book">{outcome.bestBook}</span>
+                      <img className="odds-cell-logo" src={bookmakerLogo(outcome.bestBook)} alt={outcome.bestBook} title={outcome.bestBook} loading="lazy" />
                     </button>
                   );
                 })}
