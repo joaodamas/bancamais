@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 /* =========================================================
    BANCA+ DESIGN SYSTEM — v5.0
@@ -8582,6 +8582,7 @@ button.danger:hover {
 .bet-event-name {
   flex: 1;
   min-width: 0;
+  font-family: var(--font-display);
   font-weight: 600;
   font-size: 13.5px;
   color: var(--text);
@@ -8604,6 +8605,7 @@ button.danger:hover {
 
 .bet-market-name {
   display: block;
+  font-family: var(--font-display);
   font-weight: 600;
   font-size: 13px;
   color: var(--text);
