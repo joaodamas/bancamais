@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
 
 export interface BetLeg {
@@ -110,7 +111,7 @@ export function MultiBetPopover({
         <ChevronDown size={12} />
       </button>
 
-      {open && (
+      {open && createPortal(
         <div className="modal-overlay" onClick={() => setOpen(false)}>
           <div className="modal-panel multibet-modal" onClick={(event) => event.stopPropagation()}>
             <button className="modal-close" onClick={() => setOpen(false)} type="button">×</button>
@@ -146,7 +147,8 @@ export function MultiBetPopover({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
