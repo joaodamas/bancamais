@@ -152,7 +152,7 @@ export function Performance({
           </article>
         </div>
 
-        <div className="grid two">
+        <div className="segment-masonry">
           <article className="panel">
             <h2>Desempenho por faixa de cotação</h2>
             <SegmentTable rows={byOdds} />
@@ -161,9 +161,6 @@ export function Performance({
             <h2>Desempenho por tamanho de stake</h2>
             <SegmentTable rows={byStake} />
           </article>
-        </div>
-
-        <div className="grid two">
           <article className="panel">
             <h2>Desempenho por dia da semana</h2>
             <SegmentTable rows={byDay} />
@@ -172,12 +169,11 @@ export function Performance({
             <h2>Desempenho por mercado</h2>
             <SegmentTable rows={byMarket} />
           </article>
+          <article className="panel">
+            <h2>Desempenho por liga / campeonato</h2>
+            <SegmentTable rows={byLeague} />
+          </article>
         </div>
-
-        <article className="panel">
-          <h2>Desempenho por liga / campeonato</h2>
-          <SegmentTable rows={byLeague} />
-        </article>
         </>
       )}
     </section>

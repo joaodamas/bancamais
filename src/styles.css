@@ -1770,8 +1770,8 @@ textarea {
    ========================================================= */
 
 .settings-layout {
-  display: grid;
-  gap: 12px;
+  display: block;
+  column-gap: 12px;
 }
 
 .sync-status-row {
@@ -5150,8 +5150,6 @@ nav button:hover:not(.active) {
     var(--panel);
   border: 1px solid var(--line);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   transition:
     transform var(--transition),
     border-color var(--transition),
@@ -5247,14 +5245,12 @@ nav button:hover:not(.active) {
 }
 
 .balance-card::after,
-.metric::after,
-.panel::after,
-.table-card::after,
-.risk-card::after {
+.metric::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 42%);
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), transparent 42%);
   pointer-events: none;
 }
 
@@ -5290,6 +5286,24 @@ nav button:hover:not(.active) {
 
 .grid.two {
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+}
+
+.segment-masonry {
+  column-count: 2;
+  column-gap: 14px;
+}
+
+.segment-masonry > .panel {
+  display: block;
+  width: 100%;
+  margin-bottom: 14px;
+  break-inside: avoid;
+}
+
+@media (max-width: 860px) {
+  .segment-masonry {
+    column-count: 1;
+  }
 }
 
 .panel h2,
@@ -5617,8 +5631,14 @@ tr:hover td {
 }
 
 .settings-layout {
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  align-items: start;
+  column-width: 360px;
+  column-gap: 14px;
+}
+
+.settings-layout > .panel {
+  width: 100%;
+  margin-bottom: 14px;
+  break-inside: avoid;
 }
 
 .auth-page {
@@ -6269,13 +6289,13 @@ button.danger:hover {
 }
 
 .books-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  align-items: start;
 }
 
 .premium-book-card {
-  min-height: 208px;
   background:
-    radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(249, 115, 22, 0.06), transparent 30%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015)),
     var(--panel);
 }
@@ -6692,10 +6712,9 @@ button.danger:hover {
 }
 
 .books-command-card {
-  min-height: 144px;
   display: grid;
   align-content: start;
-  gap: 8px;
+  gap: 6px;
 }
 
 .books-command-card strong,
