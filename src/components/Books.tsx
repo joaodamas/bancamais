@@ -97,21 +97,16 @@ export function Books({
         </article>
       </div>
 
-      <div className="books-command-grid">
-        <article className="panel books-command-card">
+      <div className="section-subhead">
+        <div>
           <span className="dashboard-kicker">Carteira operacional</span>
-          <strong>{state.bookmakers.length === 0 ? "Configure as casas da operacao" : "Saldos reconciliados por casa"}</strong>
-          <small>
-            {state.bookmakers.length === 0
-              ? "Cadastre a primeira casa e defina um saldo inicial para iniciar o ledger."
-              : "Cada card abaixo usa o saldo derivado do ledger como fonte principal de leitura."}
-          </small>
-        </article>
-        <article className="panel books-command-card">
-          <span className="dashboard-kicker">Governanca</span>
-          <strong>{linkedBooksCount} conta(s) com historico protegido</strong>
-          <small>Casas com apostas ou movimentacoes vinculadas nao podem ser removidas sem preservar o historico.</small>
-        </article>
+          <h2>{state.bookmakers.length === 0 ? "Configure as casas da operação" : "Saldos reconciliados por casa"}</h2>
+        </div>
+        <p>
+          {state.bookmakers.length === 0
+            ? "Cadastre a primeira casa e defina um saldo inicial para iniciar o ledger."
+            : `${linkedBooksCount} conta(s) com histórico protegido · cada card usa o saldo derivado do ledger.`}
+        </p>
       </div>
 
       <div className="cards books-grid">
