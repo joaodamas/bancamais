@@ -29,16 +29,30 @@ export function parseLegs(selection: string): BetLeg[] {
   });
 }
 
+/** Quebra o eventName de uma múltipla nos confrontos individuais. */
+export function parseConfrontos(eventName: string): string[] {
+  const trimmed = eventName.trim();
+  if (!trimmed) return [];
+  let parts = trimmed.split(/\s*[/|;]\s*/).map((s) => s.trim()).filter(Boolean);
+  if (parts.length === 1 && (trimmed.match(/,/g)?.length ?? 0) >= 2) {
+    parts = trimmed.split(/\s*,\s*/).map((s) => s.trim()).filter(Boolean);
+  }
+  return parts;
+}
+
 export function MultiBetPopover({
   market,
   legs,
   oddTotal,
+  eventName,
 }: {
   market: string;
   legs: BetLeg[];
   oddTotal: number;
+  eventName?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const confrontos = eventName ? parseConfrontos(eventName) : [];
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -52,6 +66,17 @@ export function MultiBetPopover({
           <span className="multibet-head-title" title={market}>{market}</span>
           <span className="multibet-head-odd text-mono">@ {oddTotal.toFixed(2)}</span>
         </div>
+        {confrontos.length >= 2 && (
+          <div className="multibet-confrontos">
+            <span className="multibet-section-label">Confrontos</span>
+            <ul className="multibet-confrontos-list">
+              {confrontos.map((confronto, i) => (
+                <li key={i}>{confronto}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <span className="multibet-section-label">Seleções</span>
         <ol className="multibet-legs">
           {legs.map((leg, i) => (
             <li key={i} className="multibet-leg">

@@ -475,7 +475,7 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                     <td className="bet-cell bet-cell-market">
                       <strong className="bet-market-name" title={bet.market}>{bet.market}</strong>
                       {legs.length > 1 ? (
-                        <MultiBetPopover market={bet.market} legs={legs} oddTotal={bet.odds} />
+                        <MultiBetPopover market={bet.market} legs={legs} oddTotal={bet.odds} eventName={bet.eventName} />
                       ) : (
                         <small className="bet-market-sel" title={bet.selection}>{bet.selection}</small>
                       )}
