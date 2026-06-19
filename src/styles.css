@@ -646,7 +646,16 @@ nav button:hover:not(.active) {
   margin: 0 auto;
   padding: 20px 24px 40px;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   animation: fadeSlideUp 0.18s ease-out;
+}
+
+/* Ritmo vertical único: o gap da .page cuida da separação entre seções,
+   então zeramos margins soltos que antes criavam distâncias incoerentes. */
+.page > * {
+  margin-bottom: 0;
 }
 
 /* Dashboard: curva-herói no topo via order (sem mover JSX) */

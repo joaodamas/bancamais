@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -17,6 +17,16 @@ import type { AppState } from "../lib/types";
 import { COLORS, MoneyTooltip, PercentTooltip } from "./chartHelpers";
 import { EmptyState } from "./EmptyState";
 
+const SEGMENT_DIMS = [
+  { id: "odds", label: "Cotação" },
+  { id: "stake", label: "Stake" },
+  { id: "day", label: "Dia" },
+  { id: "market", label: "Mercado" },
+  { id: "league", label: "Liga" },
+] as const;
+
+type SegmentDim = (typeof SEGMENT_DIMS)[number]["id"];
+
 export function Performance({
   state,
   metrics,
@@ -24,6 +34,7 @@ export function Performance({
   state: AppState;
   metrics: ReturnType<typeof calculateMetrics>;
 }) {
+  const [segDim, setSegDim] = useState<SegmentDim>("odds");
   const monthlyData = useMemo(() => buildMonthlyData(state), [state]);
   const bySport = useMemo(
     () => groupProfitBySport(state).sort((a, b) => b.profit - a.profit).slice(0, 8),
@@ -40,6 +51,14 @@ export function Performance({
 
   const hasData = state.bets.some((b) => b.status !== "pending");
   const lowSample = metrics.settledCount > 0 && metrics.settledCount < 30;
+  const segmentRows: Record<SegmentDim, SegmentStats[]> = {
+    odds: byOdds,
+    stake: byStake,
+    day: byDay,
+    market: byMarket,
+    league: byLeague,
+  };
+  const activeDimLabel = SEGMENT_DIMS.find((d) => d.id === segDim)?.label.toLowerCase() ?? "";
 
   return (
     <section className="page">
@@ -159,28 +178,27 @@ export function Performance({
           </article>
         </div>
 
-        <div className="segment-masonry">
-          <article className="panel">
-            <h2>Desempenho por faixa de cotação</h2>
-            <SegmentTable rows={byOdds} />
-          </article>
-          <article className="panel">
-            <h2>Desempenho por tamanho de stake</h2>
-            <SegmentTable rows={byStake} />
-          </article>
-          <article className="panel">
-            <h2>Desempenho por dia da semana</h2>
-            <SegmentTable rows={byDay} />
-          </article>
-          <article className="panel">
-            <h2>Desempenho por mercado</h2>
-            <SegmentTable rows={byMarket} />
-          </article>
-          <article className="panel">
-            <h2>Desempenho por liga / campeonato</h2>
-            <SegmentTable rows={byLeague} />
-          </article>
-        </div>
+        <article className="panel">
+          <div className="edge-head">
+            <div className="edge-head-copy">
+              <h2>Desempenho por segmento</h2>
+              <p>O mesmo recorte de ROI e lucro, por {activeDimLabel}. Troque a aba para dissecar onde o resultado se concentra.</p>
+            </div>
+            <div className="edge-dims">
+              {SEGMENT_DIMS.map((d) => (
+                <button
+                  key={d.id}
+                  type="button"
+                  className={segDim === d.id ? "edge-dim active" : "edge-dim"}
+                  onClick={() => setSegDim(d.id)}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <SegmentTable rows={segmentRows[segDim]} />
+        </article>
         </>
       )}
     </section>
