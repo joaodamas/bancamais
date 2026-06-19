@@ -39,6 +39,7 @@ export function Performance({
   const pfPositive = pf === null ? metrics.settledCount > 0 : pf >= 1;
 
   const hasData = state.bets.some((b) => b.status !== "pending");
+  const lowSample = metrics.settledCount > 0 && metrics.settledCount < 30;
 
   return (
     <section className="page">
@@ -77,6 +78,12 @@ export function Performance({
           <span className="stat-foot">ganhos / perdas</span>
         </article>
       </div>
+
+      {lowSample && (
+        <p className="sample-note">
+          Amostra pequena: {metrics.settledCount} aposta{metrics.settledCount > 1 ? "s" : ""} liquidada{metrics.settledCount > 1 ? "s" : ""}. ROI e yield ainda carregam muito ruído de variância — trate como indicativo, não como verdade estatística (o sinal começa a valer na casa das centenas de apostas).
+        </p>
+      )}
 
       {!hasData ? (
         <article className="panel">

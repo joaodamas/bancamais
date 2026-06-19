@@ -35,7 +35,7 @@ export function calculateMetrics(state: AppState): DashboardMetrics {
   const settled = state.bets.filter((bet) => bet.status !== "pending" && bet.status !== "void");
   const stakedSettled = settled.reduce((sum, bet) => sum + bet.stake, 0);
   const profit = settled.reduce((sum, bet) => sum + betProfit(bet), 0);
-  const wins = settled.filter((bet) => bet.status === "won" || bet.status === "cashout").length;
+  const wins = settled.filter((bet) => betProfit(bet) > 0).length;
   const clvs = state.bets.map(clvPercent).filter((value): value is number => value !== null);
   // Odd média ponderada pelo stake — a média simples distorce quando os stakes variam.
   const stakeTotal = state.bets.reduce((sum, bet) => sum + bet.stake, 0);
@@ -88,7 +88,7 @@ export function groupProfitByStrategy(state: AppState) {
     const stake = bets.reduce((sum, bet) => sum + bet.stake, 0);
     const settledStake = settled.reduce((sum, bet) => sum + bet.stake, 0);
     const profit = bets.reduce((sum, bet) => sum + betProfit(bet), 0);
-    const wins = settled.filter((bet) => bet.status === "won" || bet.status === "cashout").length;
+    const wins = settled.filter((bet) => betProfit(bet) > 0).length;
     const clvs = bets.map(clvPercent).filter((value): value is number => value !== null);
 
     return {
@@ -157,7 +157,8 @@ function settledBets(bets: Bet[]): Bet[] {
 }
 
 function isWin(bet: Bet): boolean {
-  return bet.status === "won" || bet.status === "cashout";
+  // Acerto = a aposta deu lucro. Um cashout no prejuízo não é acerto.
+  return betProfit(bet) > 0;
 }
 
 /** Fator de Lucro = ganhos brutos / perdas brutas. null = sem perdas liquidadas (resultado ∞). */

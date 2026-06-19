@@ -5288,6 +5288,17 @@ nav button:hover:not(.active) {
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
 }
 
+.sample-note {
+  margin: -4px 0 6px;
+  padding: 10px 14px;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  background: rgba(245, 158, 11, 0.08);
+  border-radius: 12px;
+  color: #F59E0B;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
 .segment-masonry {
   column-count: 2;
   column-gap: 14px;

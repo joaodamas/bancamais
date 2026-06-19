@@ -86,7 +86,7 @@ export function buildExecutiveReport(state: AppState, month?: string): Executive
 
   const staked = monthBets.reduce((s, b) => s + b.stake, 0);
   const profit = monthBets.reduce((s, b) => s + betProfit(b), 0);
-  const wins = monthBets.filter((b) => b.status === "won" || b.status === "cashout").length;
+  const wins = monthBets.filter((b) => betProfit(b) > 0).length;
   const clvs = monthBets.map(clvPercent).filter((v): v is number => v !== null);
 
   const performance: ExecutivePerformance = {
