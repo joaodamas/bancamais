@@ -72,13 +72,6 @@ export function Books({
         </div>
       </div>
 
-      <div className="page-actions">
-        <div className="page-actions-copy">
-          <strong>{state.bookmakers.length} casas monitoradas</strong>
-          <span>Concentre saldo, cadastro e movimentações sem perder rastreabilidade por casa.</span>
-        </div>
-      </div>
-
       <div className="ops-summary-grid">
         <article className="ops-summary-card">
           <span>Saldo consolidado</span>
