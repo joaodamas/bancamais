@@ -100,28 +100,41 @@ describe("calculateMetrics", () => {
     expect(m.settledCount).toBe(0);
   });
 
-  it("calcula ROI corretamente", () => {
+  it("zera ROI e yield quando o lucro é zero", () => {
     const bets: Bet[] = [
       makeBet({ id: "1", status: "won", stake: 100, odds: 2.0, payout: 200 }),
       makeBet({ id: "2", status: "lost", stake: 100, odds: 2.0, payout: 0 }),
     ];
     const m = calculateMetrics(makeState(bets));
-    // Lucro = 100 - 100 = 0, ROI = 0/200 = 0
+    // Lucro = 100 - 100 = 0 → ROI (lucro/banca) e yield (lucro/turnover) = 0
     expect(m.profit).toBe(0);
     expect(m.roi).toBe(0);
+    expect(m.yield).toBe(0);
     expect(m.hitRate).toBe(0.5);
     expect(m.settledCount).toBe(2);
   });
 
-  it("calcula ROI positivo", () => {
+  it("separa ROI (lucro/banca) de yield (lucro/turnover liquidado)", () => {
     const bets: Bet[] = [
       makeBet({ id: "1", status: "won", stake: 100, odds: 3.0, payout: 300 }),
       makeBet({ id: "2", status: "lost", stake: 100, odds: 2.0, payout: 0 }),
     ];
     const m = calculateMetrics(makeState(bets));
-    expect(m.profit).toBe(100); // 200 - 100
-    expect(m.roi).toBe(0.5);    // 100 / 200
+    expect(m.profit).toBe(100);     // 200 - 100
+    expect(m.yield).toBe(0.5);      // 100 / 200 (turnover liquidado)
+    expect(m.roi).toBeCloseTo(0.1); // 100 / 1000 (banca = saldo da casa)
     expect(m.hitRate).toBe(0.5);
+  });
+
+  it("yield ignora o stake de apostas pendentes no denominador", () => {
+    const bets: Bet[] = [
+      makeBet({ id: "1", status: "won", stake: 100, odds: 3.0, payout: 300 }), // +200
+      makeBet({ id: "2", status: "lost", stake: 100, odds: 2.0, payout: 0 }),  // -100
+      makeBet({ id: "3", status: "pending", stake: 500 }),                     // não entra
+    ];
+    const m = calculateMetrics(makeState(bets));
+    // turnover liquidado = 200 (não 700); yield = 100 / 200 = 0.5
+    expect(m.yield).toBe(0.5);
   });
 
   it("exclui void do cálculo de profit e hitRate", () => {

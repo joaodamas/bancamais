@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { betsToCsv, downloadTextFile } from "../lib/csv";
 import { money, percent, betProfit } from "../lib/metrics";
+import { monitoredBankroll } from "../lib/ledger";
 import { ExecutiveReport } from "./ExecutiveReport";
 import type { AppState, ReportSnapshot } from "../lib/types";
 import type { calculateMetrics } from "../lib/metrics";
@@ -51,6 +52,7 @@ export function Reports({ state, metrics, onSaveSnapshot }: ReportsProps) {
   const drawdown = useMemo(() => {
     if (settled.length < 3) return null;
     const sortedSettled = [...settled].sort((a, b) => a.placedAt.localeCompare(b.placedAt));
+    const bankrollBase = monitoredBankroll(state);
     let peak = 0;
     let running = 0;
     let maxDrawdown = 0;
@@ -62,11 +64,13 @@ export function Reports({ state, metrics, onSaveSnapshot }: ReportsProps) {
       const dd = peak - running;
       if (dd > maxDrawdown) {
         maxDrawdown = dd;
-        maxDrawdownPct = peak > 0 ? dd / peak : 0;
+        // % sobre o capital no topo da curva (banca de referência + lucro acumulado no pico).
+        const capitalAtPeak = bankrollBase + peak;
+        maxDrawdownPct = capitalAtPeak > 0 ? dd / capitalAtPeak : 0;
       }
     });
     return { maxDrawdown, maxDrawdownPct };
-  }, [settled]);
+  }, [settled, state]);
 
   return (
     <section className="page">

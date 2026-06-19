@@ -1,6 +1,7 @@
 import type { AppState, Bet, RiskSettings } from "./types";
-import { calculateLedgerTotalBalance } from "./ledger";
+import { monitoredBankroll } from "./ledger";
 import { betProfit, money } from "./metrics";
+import { resolveUnitValue } from "./unit";
 
 export interface RiskAlert {
   level: "info" | "warning" | "danger";
@@ -43,7 +44,7 @@ export function checkHardStop(state: AppState): HardStopStatus | null {
   const rs = state.riskSettings;
   if (!rs.hardStopEnabled) return null;
 
-  const balance = calculateLedgerTotalBalance(state);
+  const balance = monitoredBankroll(state);
   if (balance <= 0) return null;
 
   const settled = state.bets.filter((b) => b.status !== "pending" && b.status !== "void");
@@ -100,11 +101,11 @@ export function checkHardStop(state: AppState): HardStopStatus | null {
 }
 
 export function riskAlertsExtended(state: AppState): RiskAlert[] {
-  const balance = calculateLedgerTotalBalance(state);
+  const balance = monitoredBankroll(state);
   if (balance <= 0) return [];
 
   const rs: RiskSettings = state.riskSettings;
-  const unit = balance * (rs.unitPercent / 100);
+  const unit = resolveUnitValue(rs, balance);
   const maxStake = unit * rs.maxStakeUnits;
   const maxExposure = balance * (rs.maxOpenExposurePercent / 100);
 
@@ -188,9 +189,9 @@ export function checkBetRisk(state: AppState, stake: number, bookmakerId: string
     return { canPlace: false, hardStop, warnings: [] };
   }
 
-  const balance = calculateLedgerTotalBalance(state);
+  const balance = monitoredBankroll(state);
   const rs = state.riskSettings;
-  const unit = balance * (rs.unitPercent / 100);
+  const unit = resolveUnitValue(rs, balance);
   const maxStake = unit * rs.maxStakeUnits;
   const warnings: RiskAlert[] = [];
 
@@ -239,7 +240,7 @@ export function getHardStopProgress(state: AppState): Array<{
   const rs = state.riskSettings;
   if (!rs.hardStopEnabled) return [];
 
-  const balance = calculateLedgerTotalBalance(state);
+  const balance = monitoredBankroll(state);
   if (balance <= 0) return [];
 
   const settled = state.bets.filter((b) => b.status !== "pending" && b.status !== "void");

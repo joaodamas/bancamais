@@ -78,6 +78,16 @@ export function calculateLedgerTotalBalance(state: AppState): number {
   return balances.reduce((sum, balance) => sum + balance.derivedBalance, 0);
 }
 
+/**
+ * Banca de referência para métricas e limites de risco: usa o saldo do ledger
+ * quando há saldo, senão cai para o `startingBalance` declarado. Evita que ROI,
+ * alertas e hard stop fiquem inertes só porque o ledger das casas ainda está em 0.
+ */
+export function monitoredBankroll(state: AppState): number {
+  const ledgerBalance = calculateLedgerTotalBalance(state);
+  return ledgerBalance > 0 ? ledgerBalance : state.startingBalance;
+}
+
 export function getDerivedBookmakerBalance(state: AppState, bookmakerId: string): number {
   const match = deriveBookmakerBalances(state).find((entry) => entry.bookmakerId === bookmakerId);
   if (!match) return 0;

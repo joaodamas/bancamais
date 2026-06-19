@@ -1,5 +1,6 @@
 import type { AppState, Bet, DashboardMetrics } from "./types";
-import { calculateLedgerTotalBalance } from "./ledger";
+import { calculateLedgerTotalBalance, monitoredBankroll } from "./ledger";
+import { resolveUnitValue } from "./unit";
 
 export const money = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -29,22 +30,26 @@ export function clvPercent(bet: Bet): number | null {
 
 export function calculateMetrics(state: AppState): DashboardMetrics {
   const totalBalance = calculateLedgerTotalBalance(state);
+  const bankroll = monitoredBankroll(state);
   const pending = state.bets.filter((bet) => bet.status === "pending");
   const settled = state.bets.filter((bet) => bet.status !== "pending" && bet.status !== "void");
   const stakedSettled = settled.reduce((sum, bet) => sum + bet.stake, 0);
-  const stakedAll = state.bets.reduce((sum, bet) => sum + bet.stake, 0);
   const profit = settled.reduce((sum, bet) => sum + betProfit(bet), 0);
   const wins = settled.filter((bet) => bet.status === "won" || bet.status === "cashout").length;
   const clvs = state.bets.map(clvPercent).filter((value): value is number => value !== null);
+  // Odd média ponderada pelo stake — a média simples distorce quando os stakes variam.
+  const stakeTotal = state.bets.reduce((sum, bet) => sum + bet.stake, 0);
+  const oddsStakeWeighted = state.bets.reduce((sum, bet) => sum + bet.odds * bet.stake, 0);
 
   return {
     totalBalance,
     openExposure: pending.reduce((sum, bet) => sum + bet.stake, 0),
     profit,
-    roi: stakedSettled > 0 ? profit / stakedSettled : 0,
-    yield: stakedAll > 0 ? profit / stakedAll : 0,
+    // ROI = retorno sobre o capital (lucro / banca). Yield = edge (lucro / turnover liquidado).
+    roi: bankroll > 0 ? profit / bankroll : 0,
+    yield: stakedSettled > 0 ? profit / stakedSettled : 0,
     hitRate: settled.length > 0 ? wins / settled.length : 0,
-    averageOdds: state.bets.length > 0 ? state.bets.reduce((sum, bet) => sum + bet.odds, 0) / state.bets.length : 0,
+    averageOdds: stakeTotal > 0 ? oddsStakeWeighted / stakeTotal : 0,
     clvAverage: clvs.length > 0 ? clvs.reduce((sum, value) => sum + value, 0) / clvs.length : 0,
     pendingCount: pending.length,
     settledCount: settled.length,
@@ -103,9 +108,10 @@ export function riskAlerts(state: AppState) {
   const lastBets = [...state.bets].sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
   const recentLosses = lastBets.slice(0, 3).filter((bet) => bet.status === "lost").length;
   const largestPending = state.bets.filter((bet) => bet.status === "pending").sort((a, b) => b.stake - a.stake)[0];
-  const unit = metrics.totalBalance * (state.riskSettings.unitPercent / 100);
+  const bankroll = monitoredBankroll(state);
+  const unit = resolveUnitValue(state.riskSettings, bankroll);
   const maxStake = unit * state.riskSettings.maxStakeUnits;
-  const maxExposure = metrics.totalBalance * (state.riskSettings.maxOpenExposurePercent / 100);
+  const maxExposure = bankroll * (state.riskSettings.maxOpenExposurePercent / 100);
   const alerts: Array<{ level: "warning" | "danger"; title: string; detail: string }> = [];
 
   if (recentLosses >= state.riskSettings.lossStreakLimit) {

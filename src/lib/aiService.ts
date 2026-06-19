@@ -63,20 +63,20 @@ function analyzePortfolioLocally(state: AppState): AIAnalysis {
   // --- suggestions ---------------------------------------------------------
   const suggestions: AISuggestion[] = [];
 
-  if (metrics.roi > 0.08) {
+  if (metrics.yield > 0.08) {
     suggestions.push({
       type: "increase",
       title: "Banca performando bem",
-      description: `ROI de ${percent.format(metrics.roi)} sugere edge real. Considere aumentar stake gradualmente na melhor estratégia.`,
+      description: `Yield de ${percent.format(metrics.yield)} sugere edge real. Considere aumentar stake gradualmente na melhor estratégia.`,
       priority: "medium",
     });
   }
 
-  if (metrics.roi < -0.05) {
+  if (metrics.yield < -0.05) {
     suggestions.push({
       type: "review",
       title: "Revisão de estratégia necessária",
-      description: `ROI negativo acima de 5% em ${state.bets.length} apostas. Analise quais mercados contribuem mais para as perdas.`,
+      description: `Yield negativo acima de 5% em ${state.bets.length} apostas. Analise quais mercados contribuem mais para as perdas.`,
       priority: "high",
     });
   }
@@ -166,7 +166,7 @@ function analyzePortfolioLocally(state: AppState): AIAnalysis {
   const firstSuggestionDesc =
     suggestions.length > 0 ? suggestions[0].description : "Performance dentro do esperado.";
 
-  const summary = `Banca com ${money.format(metrics.totalBalance)} em ${state.bets.length} apostas registradas. ROI: ${percent.format(metrics.roi)}, taxa de acerto: ${percent.format(metrics.hitRate)}. ${firstSuggestionDesc}`;
+  const summary = `Banca com ${money.format(metrics.totalBalance)} em ${state.bets.length} apostas registradas. ROI: ${percent.format(metrics.roi)}, yield: ${percent.format(metrics.yield)}, taxa de acerto: ${percent.format(metrics.hitRate)}. ${firstSuggestionDesc}`;
 
   // --- topInsight ----------------------------------------------------------
   const highSuggestion = suggestions.find((s) => s.priority === "high");
@@ -236,7 +236,8 @@ export function buildPortfolioPrompt(state: AppState): string {
 - Banca total: ${money.format(metrics.totalBalance)}
 - Exposição aberta: ${money.format(metrics.openExposure)}
 - Lucro/Prejuízo: ${money.format(metrics.profit)}
-- ROI: ${percent.format(metrics.roi)}
+- ROI (lucro / banca): ${percent.format(metrics.roi)}
+- Yield (lucro / turnover liquidado): ${percent.format(metrics.yield)}
 - Taxa de acerto: ${percent.format(metrics.hitRate)}
 - ${clvLine}
 - Apostas liquidadas: ${metrics.settledCount}
