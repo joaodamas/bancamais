@@ -7363,6 +7363,15 @@ button.danger:hover {
     min-height: 100dvh;
   }
 
+  /* ── Safe-area: notch no topo, bottom-nav + home indicator embaixo ── */
+  .topbar {
+    padding-top: calc(10px + env(safe-area-inset-top));
+  }
+
+  .main {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+
   /* ── Sidebar → bottom nav fixo ── */
   .sidebar {
     position: fixed;
@@ -7373,7 +7382,7 @@ button.danger:hover {
     height: auto;
     flex-direction: row;
     flex-wrap: nowrap;
-    padding: 0;
+    padding: 0 0 env(safe-area-inset-bottom);
     border-right: 0;
     border-top: 1px solid var(--line);
     background: rgba(16, 15, 13, 0.97);
