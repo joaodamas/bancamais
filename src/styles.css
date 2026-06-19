@@ -8790,6 +8790,84 @@ button.danger:hover {
   font-weight: 700;
 }
 
+/* Múltipla — modal detalhado */
+.multibet-modal {
+  max-width: 460px;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+.multibet-modal-head {
+  position: relative;
+  padding: 18px 46px 14px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.multibet-modal-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+.multibet-modal-head h2 {
+  margin: 5px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+}
+.multibet-modal-odd {
+  display: inline-block;
+  margin-top: 7px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-bright);
+}
+.multibet-modal-body {
+  padding: 6px 20px 18px;
+  max-height: 62vh;
+  overflow-y: auto;
+}
+.multibet-game {
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+.multibet-game:last-child { border-bottom: 0; }
+.multibet-game-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.multibet-game-outras {
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+.multibet-game-picks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.multibet-game-picks li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-left: 15px;
+  position: relative;
+}
+.multibet-game-picks li::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+.multibet-pick-text { font-size: 12.5px; color: var(--text); }
+.multibet-pick-odd { font-size: 12px; color: var(--muted); flex-shrink: 0; font-weight: 600; }
+.multibet-game-empty { font-size: 11.5px; color: var(--soft); padding-left: 15px; }
+
 .multibet-head {
   display: flex;
   align-items: flex-start;

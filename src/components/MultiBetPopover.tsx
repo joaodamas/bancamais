@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
 
 export interface BetLeg {
   text: string;
@@ -40,6 +39,51 @@ export function parseConfrontos(eventName: string): string[] {
   return parts;
 }
 
+function normalize(value: string): string {
+  return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
+function extractTeams(confronto: string): string[] {
+  return confronto
+    .split(/\s+(?:vs|x|×|-|–)\s+/i)
+    .map((team) => normalize(team).replace(/[^a-z0-9 ]/g, "").trim())
+    .filter((team) => team.length >= 3);
+}
+
+interface GamePicks {
+  confronto: string;
+  picks: BetLeg[];
+}
+
+/** Pareia cada perna ao confronto cujo nome de time aparece na seleção. */
+function pairLegs(confrontos: string[], legs: BetLeg[]): { games: GamePicks[]; outras: BetLeg[] } {
+  const games: GamePicks[] = confrontos.map((confronto) => ({ confronto, picks: [] }));
+  const teamsByGame = confrontos.map(extractTeams);
+  const outras: BetLeg[] = [];
+
+  for (const leg of legs) {
+    const legNorm = normalize(leg.text);
+    const idx = teamsByGame.findIndex((teams) => teams.some((team) => team && legNorm.includes(team)));
+    if (idx >= 0) games[idx].picks.push(leg);
+    else outras.push(leg);
+  }
+
+  return { games, outras };
+}
+
+function PickList({ picks }: { picks: BetLeg[] }) {
+  return (
+    <ul className="multibet-game-picks">
+      {picks.map((pick, i) => (
+        <li key={i}>
+          <span className="multibet-pick-text">{pick.text}</span>
+          {pick.odd && <span className="multibet-pick-odd text-mono">{pick.odd}</span>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function MultiBetPopover({
   market,
   legs,
@@ -53,40 +97,57 @@ export function MultiBetPopover({
 }) {
   const [open, setOpen] = useState(false);
   const confrontos = eventName ? parseConfrontos(eventName) : [];
+  const paired = confrontos.length >= 2 ? pairLegs(confrontos, legs) : null;
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button className={`multibet-trigger${open ? " active" : ""}`} type="button">
-          {legs.length} seleções
-          <ChevronDown size={12} />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="multibet-popover" align="start">
-        <div className="multibet-head">
-          <span className="multibet-head-title" title={market}>{market}</span>
-          <span className="multibet-head-odd text-mono">@ {oddTotal.toFixed(2)}</span>
-        </div>
-        {confrontos.length >= 2 && (
-          <div className="multibet-confrontos">
-            <span className="multibet-section-label">Confrontos</span>
-            <ul className="multibet-confrontos-list">
-              {confrontos.map((confronto, i) => (
-                <li key={i}>{confronto}</li>
-              ))}
-            </ul>
+    <>
+      <button
+        className={`multibet-trigger${open ? " active" : ""}`}
+        type="button"
+        onClick={() => setOpen(true)}
+      >
+        {legs.length} seleções
+        <ChevronDown size={12} />
+      </button>
+
+      {open && (
+        <div className="modal-overlay" onClick={() => setOpen(false)}>
+          <div className="modal-panel multibet-modal" onClick={(event) => event.stopPropagation()}>
+            <button className="modal-close" onClick={() => setOpen(false)} type="button">×</button>
+            <div className="multibet-modal-head">
+              <span className="multibet-modal-tag">Múltipla · {legs.length} seleções</span>
+              <h2 title={market}>{market}</h2>
+              <span className="multibet-modal-odd text-mono">@ {oddTotal.toFixed(2)}</span>
+            </div>
+            <div className="multibet-modal-body">
+              {paired ? (
+                <>
+                  {paired.games.map((game, i) => (
+                    <div key={i} className="multibet-game">
+                      <div className="multibet-game-name">{game.confronto}</div>
+                      {game.picks.length > 0 ? (
+                        <PickList picks={game.picks} />
+                      ) : (
+                        <span className="multibet-game-empty">sem seleção identificada</span>
+                      )}
+                    </div>
+                  ))}
+                  {paired.outras.length > 0 && (
+                    <div className="multibet-game">
+                      <div className="multibet-game-name multibet-game-outras">Demais seleções</div>
+                      <PickList picks={paired.outras} />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="multibet-game">
+                  <PickList picks={legs} />
+                </div>
+              )}
+            </div>
           </div>
-        )}
-        <span className="multibet-section-label">Seleções</span>
-        <ol className="multibet-legs">
-          {legs.map((leg, i) => (
-            <li key={i} className="multibet-leg">
-              <span className="multibet-leg-num text-mono">{i + 1}</span>
-              <span className="multibet-leg-text">{leg.text}</span>
-              {leg.odd && <span className="multibet-leg-odd text-mono">{leg.odd}</span>}
-            </li>
-          ))}
-        </ol>
-      </PopoverContent>
-    </Popover>
+        </div>
+      )}
+    </>
   );
 }
