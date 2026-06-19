@@ -41,7 +41,7 @@ function bookmakerLogo(name: string): string {
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "");
-  return `https://www.google.com/s2/favicons?domain=${domain}.com&sz=64`;
+  return `https://www.google.com/s2/favicons?domain=${domain}.com&sz=128`;
 }
 
 export function Odds({ onOpenNewBet }: { onOpenNewBet: (prefill: NewBetPrefill) => void }) {
@@ -176,10 +176,7 @@ export function Odds({ onOpenNewBet }: { onOpenNewBet: (prefill: NewBetPrefill) 
                   </span>
                   <span className="odds-highlight-line">
                     <strong>{outcome.best.toFixed(2)}</strong>
-                    <span className="odds-highlight-casa">
-                      <img className="odds-highlight-logo" src={bookmakerLogo(outcome.bestBook)} alt={outcome.bestBook} loading="lazy" />
-                      <em>{outcome.bestBook}</em>
-                    </span>
+                    <img className="odds-highlight-logo" src={bookmakerLogo(outcome.bestBook)} alt={outcome.bestBook} title={outcome.bestBook} loading="lazy" />
                   </span>
                 </button>
               ))}

@@ -9323,19 +9323,18 @@ button.danger:hover {
 }
 
 /* Odds — logos das casas */
-.odds-cell { min-height: 56px; }
+.odds-cell { min-height: 66px; }
 .odds-cell-logo {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   object-fit: contain;
-  margin-top: 3px;
+  margin-top: 4px;
 }
-.odds-highlight-casa { display: inline-flex; align-items: center; gap: 5px; }
 .odds-highlight-logo {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   object-fit: contain;
   flex-shrink: 0;
 }
