@@ -58,6 +58,15 @@ interface GamePicks {
 
 /** Pareia cada perna ao confronto cujo nome de time aparece na seleção. */
 function pairLegs(confrontos: string[], legs: BetLeg[]): { games: GamePicks[]; outras: BetLeg[] } {
+  // Caso comum: 1 seleção por jogo, na mesma ordem -> pareia por índice.
+  if (legs.length === confrontos.length) {
+    return {
+      games: confrontos.map((confronto, i) => ({ confronto, picks: [legs[i]] })),
+      outras: [],
+    };
+  }
+
+  // Contagens diferentes: casa por nome de time; o que sobrar vai pra "Demais".
   const games: GamePicks[] = confrontos.map((confronto) => ({ confronto, picks: [] }));
   const teamsByGame = confrontos.map(extractTeams);
   const outras: BetLeg[] = [];
