@@ -19,7 +19,6 @@ import {
   loadCloudState,
   resetEmailPassword,
   saveCloudState,
-  signInDemoUser,
   signInEmailUser,
   signInWithGoogle,
   signOutDemoUser,
@@ -459,20 +458,6 @@ export function App() {
     updateState(next);
     track("onboarding_complete", { bookmakers: patch.bookmakers.length });
     setShowOnboarding(false);
-  }
-
-  async function connectCloud() {
-    setSyncStatus("Conectando ao Firebase...");
-    try {
-      const signedUser = await signInDemoUser();
-      setSyncStatus(`Sessao temporaria iniciada: ${signedUser.uid.slice(0, 8)}`);
-      track("demo_start");
-      toast.success("Sessão temporária iniciada.");
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : "Falha ao conectar";
-      setSyncStatus(msg);
-      toast.error(msg);
-    }
   }
 
   async function createAccount(event: FormEvent<HTMLFormElement>) {
@@ -1135,7 +1120,6 @@ export function App() {
           onSignIn={signInAccount}
           onSignUp={createAccount}
           onReset={sendReset}
-          onDemoMode={async () => { await connectCloud(); }}
           onGoogleSignIn={signInWithGoogleAccount}
           message={authMessage}
         />

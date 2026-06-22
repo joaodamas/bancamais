@@ -8,7 +8,6 @@ interface AuthPageProps {
   onSignIn: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onSignUp: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onReset: (event: FormEvent<HTMLFormElement>) => Promise<void>;
-  onDemoMode: () => void;
   onGoogleSignIn: () => Promise<void>;
   message: string;
 }
@@ -42,7 +41,7 @@ const STATS = [
   { value: "Hard stop", label: "proteção automática" },
 ];
 
-export function AuthPage({ onSignIn, onSignUp, onReset, onDemoMode, onGoogleSignIn, message }: AuthPageProps) {
+export function AuthPage({ onSignIn, onSignUp, onReset, onGoogleSignIn, message }: AuthPageProps) {
   const [mode, setMode] = useState<AuthMode>("signin");
 
   return (
@@ -136,15 +135,6 @@ export function AuthPage({ onSignIn, onSignUp, onReset, onDemoMode, onGoogleSign
             </button>
           </form>
         )}
-
-        <div className="auth-divider">
-          <span>ou</span>
-        </div>
-
-        <button className="auth-demo-btn" onClick={onDemoMode}>
-          Usar sessão temporária
-          <small>Sem cadastro · dados salvos localmente · sem sincronização</small>
-        </button>
       </div>
 
       <div className="auth-page-features">
