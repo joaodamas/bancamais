@@ -7298,9 +7298,17 @@ button.danger:hover {
 
 /* Hard Stop toggle */
 .settings-hardstop {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+}
+
+.settings-hardstop .risk-settings-grid {
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  margin-bottom: 0;
 }
 
 .settings-hardstop-header {
@@ -7376,10 +7384,10 @@ button.danger:hover {
 
 .risk-settings-grid label small {
   display: block;
-  font-size: 10px;
-  color: var(--soft);
-  margin-top: 4px;
-  line-height: 1.4;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 5px;
+  line-height: 1.45;
 }
 
 /* =========================================================
