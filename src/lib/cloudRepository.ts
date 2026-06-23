@@ -78,6 +78,8 @@ export async function loadCloudState(userId: string): Promise<AppState | null> {
     strategies: data.strategies,
     bets: data.bets,
     transactions: data.transactions,
+    betTemplates: data.betTemplates,
+    reportSnapshots: data.reportSnapshots,
   });
 }
 

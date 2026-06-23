@@ -22,6 +22,7 @@ service cloud.firestore {
       return request.resource.data.keys().hasOnly([
         'bankrollName', 'currency', 'startingBalance', 'lastModifiedAt',
         'riskSettings', 'bookmakers', 'strategies', 'bets', 'transactions',
+        'betTemplates', 'reportSnapshots',
         'updatedAt', 'schemaVersion'
       ]);
     }
