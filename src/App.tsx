@@ -8,6 +8,7 @@ import {
   ShieldAlert, Activity, Coins, CalendarDays, Lightbulb
 } from "lucide-react";
 import { BrandLogo } from "./components/BrandLogo";
+import { MobileNav } from "./components/MobileNav";
 import { CookieBanner, getStoredConsent, type CookieConsent } from "./components/CookieBanner";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { BetsSkeleton } from "./components/BetsSkeleton";
@@ -1401,6 +1402,14 @@ export function App() {
           </div>
         )}
       </main>
+
+      <MobileNav
+        view={view}
+        onNavigate={(next) => setView(next as View)}
+        groups={navGroups}
+        bankrollName={state.bankrollName}
+        totalBalance={money.format(metrics.totalBalance)}
+      />
     </div>
   );
 
