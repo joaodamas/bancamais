@@ -5130,6 +5130,43 @@ nav button:hover:not(.active) {
   border-color: rgba(249, 115, 22, 0.3);
 }
 
+/* Topbar desktop — identidade à esquerda, busca + ações agrupadas à direita */
+@media (min-width: 721px) {
+  .topbar {
+    gap: 14px;
+  }
+
+  .topbar-meta {
+    order: 0;
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .search-wrapper {
+    order: 1;
+    flex: 0 1 320px;
+    margin-left: auto;
+  }
+
+  .topbar-actions {
+    order: 2;
+  }
+}
+
+/* Salvar como CTA primário do topo */
+.topbar-actions button.sync-btn {
+  padding: 0 14px;
+  background: var(--accent-dim);
+  border-color: rgba(249, 115, 22, 0.32);
+  color: var(--accent);
+}
+
+.topbar-actions button.sync-btn:hover {
+  background: rgba(249, 115, 22, 0.18);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .page {
   max-width: none;
   padding: 24px 32px 48px;

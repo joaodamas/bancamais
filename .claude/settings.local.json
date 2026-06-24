@@ -8,7 +8,37 @@
       "Bash(git push *)",
       "WebSearch",
       "WebFetch",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(git commit -q -m ' *)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "context7",
+    "memory",
+    "filesystem",
+    "github",
+    "firecrawl-mcp",
+    "chrome-devtools",
+    "playwright-server",
+    "executeautomation-playwright-server",
+    "automatalabs-playwright-server",
+    "browserbase",
+    "ios-simulator",
+    "DeepGraph Next.js MCP",
+    "DeepGraph React MCP",
+    "DeepGraph TypeScript MCP",
+    "DeepGraph Vue MCP",
+    "Figma Dev Mode MCP",
+    "notionApi",
+    "MongoDB",
+    "postgres-documentation",
+    "sentry",
+    "bitbucket",
+    "@microsoft/clarity-mcp-server",
+    "circleci-mcp-server",
+    "TestSprite",
+    "codacy",
+    "pulumi",
+    "devplan"
+  ]
 }
