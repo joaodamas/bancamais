@@ -1,5 +1,5 @@
 import type { AppState } from "./types";
-import { potentialReturn, groupProfitBySport, groupProfitByBookmaker, groupProfitByStrategy, clvPercent } from "./metrics";
+import { potentialReturn, groupProfitBySport, groupProfitByBookmaker, groupProfitByStrategy, clvPercent, betProfit } from "./metrics";
 import { buildLedgerTimeline, deriveBookmakerBalances } from "./ledger";
 
 export interface TimeSeriesPoint {
@@ -80,6 +80,43 @@ export function buildBankrollTimeSeries(state: AppState): TimeSeriesPoint[] {
   }
 
   return points.length > 1 ? points : [];
+}
+
+export interface DailyProfitPoint {
+  date: string;
+  axisLabel: string;
+  tooltipLabel: string;
+  profit: number;
+  cumulative: number;
+}
+
+/** Lucro por data (apostas liquidadas) + acumulado — histórico desde a 1ª aposta.
+ *  Distinto da curva da banca: isola o desempenho das apostas (sem depósitos/saques). */
+export function buildDailyProfitSeries(state: AppState): DailyProfitPoint[] {
+  const byDay = new Map<string, number>();
+  for (const bet of state.bets) {
+    if (bet.status === "pending") continue;
+    const day = (bet.eventAt || bet.placedAt || "").slice(0, 10);
+    if (!day) continue;
+    byDay.set(day, (byDay.get(day) ?? 0) + betProfit(bet));
+  }
+
+  let cumulative = 0;
+  return [...byDay.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, profit]) => {
+      cumulative += profit;
+      const d = new Date(`${day}T12:00:00`);
+      const axisLabel = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+      const tooltipLabel = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+      return {
+        date: day,
+        axisLabel,
+        tooltipLabel,
+        profit: Number(profit.toFixed(2)),
+        cumulative: Number(cumulative.toFixed(2)),
+      };
+    });
 }
 
 export function buildSportProfitData(state: AppState): SportProfitPoint[] {

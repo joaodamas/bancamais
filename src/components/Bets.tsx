@@ -472,7 +472,7 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                         )}
                       </small>
                     </td>
-                    <td className="bet-cell bet-cell-market">
+                    <td className="bet-cell bet-cell-market" data-label="Mercado">
                       <strong className="bet-market-name" title={bet.market}>{bet.market}</strong>
                       {legs.length > 1 ? (
                         <MultiBetPopover market={bet.market} legs={legs} oddTotal={bet.odds} eventName={bet.eventName} />
@@ -480,21 +480,21 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                         <small className="bet-market-sel" title={bet.selection}>{bet.selection}</small>
                       )}
                     </td>
-                    <td className="bet-cell">
+                    <td className="bet-cell" data-label="Casa">
                       <span className="bet-book">{bookmakerById.get(bet.bookmakerId) ?? "—"}</span>
                       {bet.strategyId && <small className="bet-strat">{strategyById.get(bet.strategyId) ?? ""}</small>}
                     </td>
-                    <td className="bet-cell num">
+                    <td className="bet-cell num" data-label="Stake">
                       <strong className="text-mono">{money.format(bet.stake)}</strong>
                       <small className="text-mono bet-odd">@ {bet.odds.toFixed(2)} · {(100 / bet.odds).toFixed(0)}%</small>
                     </td>
-                    <td className="bet-cell num">
+                    <td className="bet-cell num" data-label="Retorno">
                       <strong className="text-mono">{money.format(getReturnValue(bet))}</strong>
                       <small className={`text-mono ${gain >= 0 ? "pos" : "neg"}`}>
                         {gain >= 0 ? "+" : ""}{money.format(gain)}
                       </small>
                     </td>
-                    <td className="bet-cell bet-status-cell">
+                    <td className="bet-cell bet-status-cell" data-label="Status">
                       <StatusBadge status={bet.status} />
                     </td>
                     <td className="bet-cell bet-actions-cell">

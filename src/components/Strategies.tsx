@@ -22,6 +22,7 @@ export function Strategies({ state, addStrategy, toggleStrategy }: StrategiesPro
         </form>
 
         <div className="table-card">
+          <div className="table-scroll-x">
           <table>
             <thead>
               <tr>
@@ -63,6 +64,7 @@ export function Strategies({ state, addStrategy, toggleStrategy }: StrategiesPro
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </section>

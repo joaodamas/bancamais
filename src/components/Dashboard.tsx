@@ -11,9 +11,11 @@ import {
   PieChart,
   Pie,
   Cell,
+  BarChart,
+  Bar,
 } from "recharts";
 import { calculateMetrics, money, percent, bettingStreaks } from "../lib/metrics";
-import { buildBankrollTimeSeries } from "../lib/chartData";
+import { buildBankrollTimeSeries, buildDailyProfitSeries } from "../lib/chartData";
 import { resolveUnitValue } from "../lib/unit";
 import type { AppState } from "../lib/types";
 import { EmptyState } from "./EmptyState";
@@ -33,6 +35,7 @@ export function Dashboard({
   const [chartPeriod, setChartPeriod] = useState<"7d" | "30d" | "90d" | "all">("all");
 
   const timeSeries = useMemo(() => buildBankrollTimeSeries(state), [state]);
+  const dailyProfit = useMemo(() => buildDailyProfitSeries(state), [state]);
 
   const periodCutoff = useMemo(() => {
     if (chartPeriod === "all") return null;
@@ -149,23 +152,6 @@ export function Dashboard({
           <span className="stat-label">Saldo</span>
           <strong className="stat-value text-mono">{money.format(metrics.totalBalance)}</strong>
           <span className="stat-foot">livre para apostar</span>
-          {chartData.length > 1 && (
-            <div className="stat-spark">
-              <ResponsiveContainer width="100%" height={34}>
-                <AreaChart data={chartData} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
-                  <Area
-                    type="stepAfter"
-                    dataKey="balance"
-                    stroke={COLORS.accent}
-                    strokeWidth={1.5}
-                    fill={COLORS.accent}
-                    fillOpacity={0.12}
-                    dot={false}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          )}
         </article>
         <article className="stat-card">
           <span className="stat-label">Em aberto</span>
@@ -447,6 +433,60 @@ export function Dashboard({
           )}
         </article>
       </div>
+
+      {dailyProfit.length > 0 && (
+        <div className="grid two">
+          {/* Lucro acumulado (só apostas — distinto da banca) */}
+          <article className="panel chart-panel">
+            <div className="chart-header">
+              <div className="chart-title-block">
+                <h2>Lucro acumulado</h2>
+                <span className="chart-subtitle text-mono">desde a 1ª aposta · só apostas</span>
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={dailyProfit} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="cumGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLORS.accent} stopOpacity={0.2} />
+                    <stop offset="95%" stopColor={COLORS.accent} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke={COLORS.line} vertical={false} />
+                <XAxis dataKey="axisLabel" tick={{ fill: COLORS.muted, fontSize: 11 }} axisLine={false} tickLine={false} minTickGap={28} interval="preserveStartEnd" tickMargin={10} />
+                <YAxis tickFormatter={(v: number) => formatCompactMoneyTick(v)} tick={{ fill: COLORS.muted, fontSize: 11 }} axisLine={false} tickLine={false} width={64} />
+                <Tooltip content={<MoneyTooltip />} cursor={{ stroke: COLORS.accent, strokeDasharray: "4 4", strokeOpacity: 0.45 }} />
+                <ReferenceLine y={0} stroke={COLORS.muted} strokeDasharray="4 4" strokeOpacity={0.5} />
+                <Area type="stepAfter" dataKey="cumulative" name="Lucro acumulado" stroke={COLORS.accent} strokeWidth={2.5} fill="url(#cumGrad)" dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </article>
+
+          {/* Lucro por dia */}
+          <article className="panel chart-panel">
+            <div className="chart-header">
+              <div className="chart-title-block">
+                <h2>Lucro por dia</h2>
+                <span className="chart-subtitle text-mono">resultado diário</span>
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={dailyProfit} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={COLORS.line} vertical={false} />
+                <XAxis dataKey="axisLabel" tick={{ fill: COLORS.muted, fontSize: 11 }} axisLine={false} tickLine={false} minTickGap={20} interval="preserveStartEnd" tickMargin={10} />
+                <YAxis tickFormatter={(v: number) => formatCompactMoneyTick(v)} tick={{ fill: COLORS.muted, fontSize: 11 }} axisLine={false} tickLine={false} width={64} />
+                <Tooltip content={<MoneyTooltip />} cursor={{ fill: "rgba(249, 115, 22, 0.06)" }} />
+                <ReferenceLine y={0} stroke={COLORS.line} />
+                <Bar dataKey="profit" name="Lucro do dia" radius={[3, 3, 0, 0]}>
+                  {dailyProfit.map((d, i) => (
+                    <Cell key={i} fill={d.profit >= 0 ? COLORS.green : COLORS.red} fillOpacity={0.85} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </article>
+        </div>
+      )}
     </section>
   );
 }

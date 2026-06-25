@@ -2571,12 +2571,6 @@ nav button:hover svg {
   grid-column: 1 / -1;
 }
 
-.stat-spark {
-  margin-top: 10px;
-  margin-left: -2px;
-  opacity: 0.9;
-}
-
 .result-mix {
   display: flex;
   align-items: center;
@@ -6282,6 +6276,95 @@ tr:hover td {
 
 .bets-table-expanded {
   min-width: 1520px;
+}
+
+/* Tabela larga com scroll horizontal contido (não estoura a página) */
+.table-scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .strategy-form { grid-template-columns: 1fr; }
+  .strategy-layout .table-card { min-width: 0; }
+}
+
+/* ── Apostas: tabela vira cards no mobile (sem quebrar interatividade) ── */
+@media (max-width: 768px) {
+  .bets-table-wrapper { overflow: visible; margin: 0; padding: 0; }
+  .bets-table,
+  .bets-table tbody,
+  .bets-table tr,
+  .bets-table td { display: block; width: auto; }
+  .bets-table thead { display: none; }
+
+  .bets-table tr {
+    position: relative;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    background: var(--panel);
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+
+  .bets-table td {
+    border: 0 !important;
+    padding: 5px 0;
+    background: transparent !important;
+  }
+
+  .bets-table td.bet-cell {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .bets-table td.bet-cell::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+
+  /* Evento = título do card */
+  .bets-table td.bet-cell-event {
+    padding: 0 36px 8px 0;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--line) !important;
+  }
+  .bets-table td.bet-cell-event::before { content: none; }
+
+  /* Mercado empilhado */
+  .bets-table td.bet-cell-market { padding-bottom: 5px; }
+  .bets-table td.bet-cell-market::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 2px;
+  }
+
+  /* Checkbox de seleção no canto do card */
+  .bets-table td.bet-select-col {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 0;
+  }
+
+  /* Ações em largura cheia */
+  .bets-table td.bet-actions-cell {
+    padding-top: 8px;
+    margin-top: 6px;
+    border-top: 1px solid var(--line) !important;
+  }
+  .bets-table td.bet-actions-cell::before { content: none; }
+  .bet-settle-actions { justify-content: flex-start; }
 }
 
 .bets-table tbody tr,
