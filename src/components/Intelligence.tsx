@@ -178,19 +178,6 @@ export function Intelligence({
         </article>
       </div>
 
-      {/* Risk warnings from AI */}
-      {analysis && analysis.riskWarnings.length > 0 && (
-        <div className="risk-grid" style={{ marginTop: 14 }}>
-          {analysis.riskWarnings.map((w, i) => (
-            <article key={i} className={`panel risk-card ${w.severity === "critical" ? "danger" : w.severity === "warning" ? "warning" : ""}`}>
-              <span>{w.severity === "critical" ? "Crítico" : w.severity === "warning" ? "Atenção" : "Info"}</span>
-              <strong>{w.title}</strong>
-              <p>{w.detail}</p>
-            </article>
-          ))}
-        </div>
-      )}
-
       {/* Strategy performance */}
       <div className="insight-grid" style={{ marginTop: 14 }}>
         <article className="panel">

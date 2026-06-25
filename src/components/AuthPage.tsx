@@ -42,11 +42,12 @@ const STATS = [
 ];
 
 export function AuthPage({ onSignIn, onSignUp, onReset, onGoogleSignIn, message }: AuthPageProps) {
-  const [mode, setMode] = useState<AuthMode>("signin");
+  const [mode, setMode] = useState<AuthMode>("signup");
 
   return (
     <div className="auth-page">
       <div className="auth-page-panel">
+        <div className="auth-panel-inner">
         <div className="auth-page-brand">
           <BrandLogo />
           <p>Gestão profissional de apostas esportivas</p>
@@ -135,6 +136,12 @@ export function AuthPage({ onSignIn, onSignUp, onReset, onGoogleSignIn, message 
             </button>
           </form>
         )}
+        </div>
+
+        <div className="auth-panel-foot">
+          <span>+18 · Aposte com responsabilidade</span>
+          <span>Seus dados são seus · LGPD</span>
+        </div>
       </div>
 
       <div className="auth-page-features">
@@ -173,7 +180,7 @@ export function AuthPage({ onSignIn, onSignUp, onReset, onGoogleSignIn, message 
               <span className="auth-terminal-dot" />
               <span className="auth-terminal-dot" />
               <span className="auth-terminal-dot" />
-              <span className="auth-terminal-title">banca+ · live metrics</span>
+              <span className="auth-terminal-title">banca+ · exemplo</span>
             </div>
             <div className="auth-terminal-body">
               <div className="auth-terminal-row">

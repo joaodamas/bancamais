@@ -5,7 +5,7 @@ import {
   LayoutDashboard, ListChecks, Upload, Brain, FileBarChart,
   TrendingUp, Wallet, Target, Settings2,
   CloudUpload, Bell, Search, X,
-  ShieldAlert, Activity, Coins, CalendarDays, Lightbulb
+  ShieldAlert, Activity, Coins, CalendarDays
 } from "lucide-react";
 import { BrandLogo } from "./components/BrandLogo";
 import { MobileNav } from "./components/MobileNav";
@@ -46,9 +46,13 @@ import { buildBookmaker, buildManualTransaction, buildVoidEntry } from "./servic
 import { buildBetTemplate, addBetTemplate, removeBetTemplate } from "./services/template.service";
 import { saveReportSnapshot } from "./services/report.service";
 
-type View = "dashboard" | "bets" | "diario" | "new-bet" | "import" | "risk" | "performance" | "intelligence" | "insights" | "reports" | "clv" | "odds" | "books" | "strategies" | "settings";
+type View = "dashboard" | "bets" | "diario" | "new-bet" | "import" | "risk" | "performance" | "intelligence" | "reports" | "clv" | "odds" | "books" | "strategies" | "settings";
 
 type NavItem = { id: View; label: string; badge?: string; Icon: React.ElementType };
+type NavGroup = { label: string; items: NavItem[]; advanced?: boolean };
+
+// Telas avançadas só aparecem depois que o usuário tem histórico suficiente.
+const ADVANCED_UNLOCK_SETTLED = 20;
 
 const Onboarding = lazy(() => import("./components/Onboarding").then((module) => ({ default: module.Onboarding })));
 const Dashboard = lazy(() => import("./components/Dashboard").then((module) => ({ default: module.Dashboard })));
@@ -59,7 +63,6 @@ const NewBet = lazy(() => import("./components/NewBet").then((module) => ({ defa
 const QuickBet = lazy(() => import("./components/QuickBet").then((module) => ({ default: module.QuickBet })));
 const Import = lazy(() => import("./components/Import").then((module) => ({ default: module.Import })));
 const Intelligence = lazy(() => import("./components/Intelligence").then((module) => ({ default: module.Intelligence })));
-const Insights = lazy(() => import("./components/Insights").then((module) => ({ default: module.Insights })));
 const ClvEdge = lazy(() => import("./components/ClvEdge").then((module) => ({ default: module.ClvEdge })));
 const Odds = lazy(() => import("./components/Odds").then((module) => ({ default: module.Odds })));
 const Diario = lazy(() => import("./components/Diario").then((module) => ({ default: module.Diario })));
@@ -90,7 +93,7 @@ function formatSyncTimestamp(value: string | null | undefined) {
   return date.toLocaleString("pt-BR");
 }
 
-const navGroups: Array<{ label: string; items: NavItem[] }> = [
+const navGroups: NavGroup[] = [
   {
     label: "Inicio",
     items: [
@@ -106,8 +109,13 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
       { id: "risk" as View, label: "Risco", Icon: ShieldAlert },
       { id: "performance" as View, label: "Performance", Icon: Activity },
       { id: "intelligence" as View, label: "Inteligência", badge: "IA", Icon: Brain },
-      { id: "insights" as View, label: "Insights", Icon: Lightbulb },
       { id: "reports" as View, label: "Relatórios", Icon: FileBarChart },
+    ],
+  },
+  {
+    label: "Avançado",
+    advanced: true,
+    items: [
       { id: "clv" as View, label: "CLV & Edge", Icon: TrendingUp },
       { id: "odds" as View, label: "Odds", badge: "novo", Icon: Coins },
     ],
@@ -1179,7 +1187,13 @@ export function App() {
         </button>
 
         <nav>
-          {navGroups.map((group) => (
+          {navGroups
+            .filter((group) =>
+              !group.advanced ||
+              metrics.settledCount >= ADVANCED_UNLOCK_SETTLED ||
+              group.items.some((it) => it.id === view)
+            )
+            .map((group) => (
             <div className="nav-group" key={group.label}>
               <span>{group.label}</span>
               {group.items.map((item) => (
@@ -1434,8 +1448,6 @@ export function App() {
         return <Performance state={state} metrics={metrics} />;
       case "intelligence":
         return <Intelligence state={state} metrics={metrics} onOpenNewBet={openNewBet} />;
-      case "insights":
-        return <Insights state={state} />;
       case "reports":
         return <Reports state={state} metrics={metrics} onSaveSnapshot={persistReportSnapshot} />;
       case "clv":

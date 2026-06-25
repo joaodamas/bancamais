@@ -10,9 +10,10 @@ import {
   Cell,
   ReferenceLine,
 } from "recharts";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Lightbulb } from "lucide-react";
 import { calculateMetrics, groupProfitBySport, money, percent, profitFactor, segmentByOddsBand, segmentByStakeBand, segmentByDayOfWeek, segmentByMarket, segmentByLeague, type SegmentStats } from "../lib/metrics";
 import { buildMonthlyData } from "../lib/chartData";
+import { buildInsights } from "../lib/insights";
 import type { AppState } from "../lib/types";
 import { COLORS, MoneyTooltip, PercentTooltip } from "./chartHelpers";
 import { EmptyState } from "./EmptyState";
@@ -41,6 +42,7 @@ export function Performance({
     [state]
   );
   const pf = useMemo(() => profitFactor(state), [state]);
+  const insights = useMemo(() => buildInsights(state), [state]);
   const byOdds = useMemo(() => segmentByOddsBand(state), [state]);
   const byStake = useMemo(() => segmentByStakeBand(state), [state]);
   const byDay = useMemo(() => segmentByDayOfWeek(state), [state]);
@@ -177,6 +179,28 @@ export function Performance({
             )}
           </article>
         </div>
+
+        {insights.length > 0 && (
+          <article className="panel">
+            <div className="section-head section-head-inline">
+              <div>
+                <h2><Lightbulb size={16} className="inline-head-icon" /> Leitura automática</h2>
+                <p>Onde você ganha e onde sangra — derivado dos segmentos abaixo.</p>
+              </div>
+            </div>
+            <div className="insights-list">
+              {insights.map((insight, index) => (
+                <article key={index} className={`insight-card insight-${insight.tone}`}>
+                  <span className="insight-dot" />
+                  <div className="insight-body">
+                    <strong className="insight-title">{insight.title}</strong>
+                    <span className="insight-detail">{insight.detail}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </article>
+        )}
 
         <article className="panel">
           <div className="edge-head">
