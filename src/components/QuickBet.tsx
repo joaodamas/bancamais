@@ -125,6 +125,7 @@ export function QuickBet({ state, onSubmit, onClose, onSwitchToFull }: QuickBetP
                 name="eventAt"
                 required
                 type="datetime-local"
+                lang="pt-BR"
                 onKeyDown={handleKeyDown("event")}
               />
             </label>

@@ -764,7 +764,7 @@ export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange, 
               <div className="nb-inline-grid nb-inline-grid-3">
                 <label>
                   {renderFieldLabel("Data do evento", "eventAt")}
-                  <input className={getFieldStateClass("eventAt")} name="eventAt" required type="datetime-local" value={formValues.eventAt} onChange={handleTextInput("eventAt")} />
+                  <input className={getFieldStateClass("eventAt")} name="eventAt" required type="datetime-local" lang="pt-BR" value={formValues.eventAt} onChange={handleTextInput("eventAt")} />
                   {renderOcrFieldMeta("eventAt")}
                 </label>
                 <label>
