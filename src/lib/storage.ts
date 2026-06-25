@@ -114,6 +114,24 @@ export function resetState() {
   return initialState;
 }
 
+const demoFlagKey = "bancamais.demo.active";
+
+export function clearDemoState() {
+  localStorage.removeItem(key);
+}
+
+export function isDemoActive(): boolean {
+  try { return localStorage.getItem(demoFlagKey) === "1"; }
+  catch { return false; }
+}
+
+export function setDemoActive(active: boolean) {
+  try {
+    if (active) localStorage.setItem(demoFlagKey, "1");
+    else localStorage.removeItem(demoFlagKey);
+  } catch { /* ignore */ }
+}
+
 export function createBetId() {
   return `bet-${crypto.randomUUID()}`;
 }

@@ -3536,6 +3536,29 @@ nav button:hover svg {
   background: var(--bg);
 }
 
+/* Pitch curto só no mobile (onde o painel de features fica oculto) */
+.auth-mobile-pitch {
+  display: none;
+}
+
+.demo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: var(--accent-dim);
+  border-bottom: 1px solid rgba(249, 115, 22, 0.25);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.demo-banner .primary {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
 @media (max-width: 768px) {
   .auth-page {
     grid-template-columns: 1fr;
@@ -3545,6 +3568,23 @@ nav button:hover svg {
   }
   .auth-page-panel {
     padding: 28px 20px;
+  }
+  .auth-mobile-pitch {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    background: var(--accent-dim);
+    border: 1px solid rgba(249, 115, 22, 0.2);
+  }
+  .auth-mobile-pitch strong {
+    color: var(--text);
+    font-size: 15px;
+  }
+  .auth-mobile-pitch span {
+    color: var(--muted);
+    font-size: 12px;
   }
 }
 

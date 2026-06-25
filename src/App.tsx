@@ -34,7 +34,8 @@ import {
   potentialReturn,
 } from "./lib/metrics";
 import { getDerivedBookmakerBalance, reconcileBookmakerBalances } from "./lib/ledger";
-import { clearStateForUser, createBetId, createBookmakerId, createStrategyId, createTransactionId, emptyState, isFirstRun, loadStateForUser, resetState, saveState, saveStateForUser } from "./lib/storage";
+import { clearDemoState, clearStateForUser, createBetId, createBookmakerId, createStrategyId, createTransactionId, emptyState, isDemoActive, isFirstRun, loadState, loadStateForUser, resetState, saveState, saveStateForUser, setDemoActive } from "./lib/storage";
+import { buildDemoState } from "./lib/demoData";
 import { uploadBetSlip } from "./lib/storageRepository";
 import type { AppState, Bet, BookmakerAccount, NewBetDraft, NewBetFormValues, NewBetPrefill, ReportSnapshot, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
 import { checkHardStop, riskAlertsExtended } from "./lib/riskGuard";
@@ -139,6 +140,7 @@ export function App() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showTour, setShowTour] = useState(false);
   const [pendingMigration, setPendingMigration] = useState<{ guestState: AppState; guestUid: string } | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState("Sem sessao autenticada");
@@ -166,13 +168,21 @@ export function App() {
       if (!nextUser) {
         setUser(null);
         hydratedUserRef.current = null;
-        setState(emptyState());
+        if (isDemoActive()) {
+          const demo = loadState();
+          setState(reconcileBookmakerBalances(demo.bets.length > 0 ? demo : buildDemoState()));
+          setDemoMode(true);
+        } else {
+          setState(emptyState());
+          setDemoMode(false);
+        }
         setShowOnboarding(false);
         setSyncStatus("Sem sessao autenticada");
         setAuthLoading(false);
         return;
       }
       setUser(nextUser);
+      setDemoMode(false);
       const label = nextUser.isAnonymous ? `sessao temporaria ${nextUser.uid.slice(0, 8)}` : nextUser.email ?? "usuario autenticado";
       setSyncStatus(`Conectado como ${label}`);
       let loadedState: AppState;
@@ -202,16 +212,25 @@ export function App() {
 
       // Migração demo → conta: autenticou numa conta vazia mas havia dados de
       // um convidado anônimo → oferece importar (protege o progresso do trial).
+      const newAccountEmpty = loadedState.bets.length === 0 && loadedState.transactions.length === 0;
       if (!nextUser.isAnonymous && prevUser?.isAnonymous && prevUser.uid !== nextUser.uid) {
         const guestState = loadStateForUser(prevUser.uid);
         const guestHasData =
           guestState.bets.length > 0 || guestState.bookmakers.length > 0 || guestState.transactions.length > 0;
-        const newAccountEmpty = loadedState.bets.length === 0 && loadedState.transactions.length === 0;
         if (guestHasData && newAccountEmpty) {
           setShowOnboarding(false);
           setPendingMigration({ guestState, guestUid: prevUser.uid });
           track("demo_migration_offered", { bets: guestState.bets.length });
         }
+      } else if (newAccountEmpty) {
+        // Conta nova/vazia e há dados do modo demonstração local → oferece trazer.
+        const demoState = loadState();
+        if (demoState.bets.length > 0) {
+          setShowOnboarding(false);
+          setPendingMigration({ guestState: demoState, guestUid: "demo" });
+          track("demo_migration_offered", { bets: demoState.bets.length });
+        }
+        setDemoActive(false);
       }
     });
     return unsubscribe;
@@ -730,11 +749,32 @@ export function App() {
   function migrateGuestData() {
     if (!pendingMigration) return;
     syncToCloud(updateState(pendingMigration.guestState));
-    try { clearStateForUser(pendingMigration.guestUid); } catch { /* ignore */ }
+    try {
+      if (pendingMigration.guestUid === "demo") clearDemoState();
+      else clearStateForUser(pendingMigration.guestUid);
+    } catch { /* ignore */ }
     track("demo_data_imported", { bets: pendingMigration.guestState.bets.length });
     setPendingMigration(null);
     setShowOnboarding(false);
     toast.success("Dados do modo demonstração importados");
+  }
+
+  function enterDemo() {
+    const existing = loadState();
+    const demoState = existing.bets.length > 0 ? existing : buildDemoState();
+    setDemoActive(true);
+    applyHydratedState(demoState);
+    setDemoMode(true);
+    setAuthLoading(false);
+    setView("dashboard");
+    track("demo_start");
+  }
+
+  function exitDemo() {
+    setDemoActive(false);
+    setDemoMode(false);
+    setState(emptyState());
+    setAuthMessage("Crie sua conta para salvar o que explorou.");
   }
 
   function dismissMigration() {
@@ -1122,7 +1162,7 @@ export function App() {
 
   if (authLoading) return <LoadingScreen />;
 
-  if (!user) {
+  if (!user && !demoMode) {
     return (
       <Suspense fallback={<LoadingScreen />}>
         <AuthPage
@@ -1130,6 +1170,7 @@ export function App() {
           onSignUp={createAccount}
           onReset={sendReset}
           onGoogleSignIn={signInWithGoogleAccount}
+          onDemo={enterDemo}
           message={authMessage}
         />
       </Suspense>
@@ -1216,6 +1257,12 @@ export function App() {
       </aside>
 
       <main className="main">
+        {demoMode && (
+          <div className="demo-banner">
+            <span><strong>Modo demonstração</strong> — dados de exemplo, nada é salvo na nuvem.</span>
+            <button className="primary" onClick={exitDemo}>Criar conta para salvar</button>
+          </div>
+        )}
         <header className="topbar">
           <div className="search-wrapper">
             <div className="search-box">

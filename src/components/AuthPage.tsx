@@ -9,6 +9,7 @@ interface AuthPageProps {
   onSignUp: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onReset: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onGoogleSignIn: () => Promise<void>;
+  onDemo: () => void;
   message: string;
 }
 
@@ -41,7 +42,7 @@ const STATS = [
   { value: "Hard stop", label: "proteção automática" },
 ];
 
-export function AuthPage({ onSignIn, onSignUp, onReset, onGoogleSignIn, message }: AuthPageProps) {
+export function AuthPage({ onSignIn, onSignUp, onReset, onGoogleSignIn, onDemo, message }: AuthPageProps) {
   const [mode, setMode] = useState<AuthMode>("signup");
 
   return (
@@ -51,6 +52,11 @@ export function AuthPage({ onSignIn, onSignUp, onReset, onGoogleSignIn, message 
         <div className="auth-page-brand">
           <BrandLogo />
           <p>Gestão profissional de apostas esportivas</p>
+        </div>
+
+        <div className="auth-mobile-pitch">
+          <strong>Controle real. Dados que importam.</strong>
+          <span>CLV &amp; Edge · Hard stops · Sincronização em nuvem</span>
         </div>
 
         <div className="auth-tabs">
@@ -136,6 +142,12 @@ export function AuthPage({ onSignIn, onSignUp, onReset, onGoogleSignIn, message 
             </button>
           </form>
         )}
+
+        <div className="auth-divider"><span>só quer ver?</span></div>
+        <button type="button" className="auth-demo-btn" onClick={onDemo}>
+          <span>Explorar demonstração</span>
+          <small>Banca-exemplo completa, sem criar conta</small>
+        </button>
         </div>
 
         <div className="auth-panel-foot">
