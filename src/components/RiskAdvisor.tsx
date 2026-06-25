@@ -126,7 +126,7 @@ export function RiskAdvisor({ state, metrics }: RiskAdvisorProps) {
           <div className="risk-tilt-header">
             <Activity size={13} style={{ color: tiltColor }} />
             <strong style={{ color: tiltColor }}>Tilt: {tiltLevelLabel(tilt.level)}</strong>
-            <span className="risk-tilt-score" style={{ color: tiltColor }}>{tilt.score}/100</span>
+            <span className="risk-tilt-score" style={{ color: tiltColor }}>{Math.round(tilt.score)}/100</span>
           </div>
           <p className="risk-tilt-recommendation">{tilt.recommendation}</p>
           {tilt.signals.length > 0 && (

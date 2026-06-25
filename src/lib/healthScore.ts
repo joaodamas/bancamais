@@ -188,11 +188,11 @@ export function calculateHealthScore(state: AppState, metrics: DashboardMetrics)
     grade,
     interpretation: interpretations[grade],
     dimensions: {
-      risk: { score: riskScore, label: "Risco", detail: riskDetail },
-      performance: { score: perfScore, label: "Performance", detail: perfDetail },
-      clv: { score: clvScore, label: "CLV", detail: clvDetail },
-      discipline: { score: discScore, label: "Disciplina", detail: discDetail },
-      behavior: { score: behaviorScore, label: "Comportamento", detail: behaviorDetail },
+      risk: { score: Math.round(riskScore), label: "Risco", detail: riskDetail },
+      performance: { score: Math.round(perfScore), label: "Performance", detail: perfDetail },
+      clv: { score: Math.round(clvScore), label: "CLV", detail: clvDetail },
+      discipline: { score: Math.round(discScore), label: "Disciplina", detail: discDetail },
+      behavior: { score: Math.round(behaviorScore), label: "Comportamento", detail: behaviorDetail },
     },
     improvementTip: tips[worstDimension[0]] ?? "Continue monitorando as métricas regularmente.",
   };
