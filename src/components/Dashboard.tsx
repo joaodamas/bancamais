@@ -8,13 +8,16 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import { calculateMetrics, money, percent, bettingStreaks } from "../lib/metrics";
 import { buildBankrollTimeSeries } from "../lib/chartData";
 import { resolveUnitValue } from "../lib/unit";
 import type { AppState } from "../lib/types";
 import { EmptyState } from "./EmptyState";
-import { COLORS, MoneyTooltip, formatCompactMoneyTick } from "./chartHelpers";
+import { COLORS, MoneyTooltip, PercentTooltip, formatCompactMoneyTick } from "./chartHelpers";
 
 export function Dashboard({
   state,
@@ -65,6 +68,20 @@ export function Dashboard({
   const chartStart = chartData[0]?.balance ?? 0;
   const chartEnd = chartData[chartData.length - 1]?.balance ?? 0;
 
+  // Underwater: quanto a banca está abaixo do pico histórico (sempre <= 0).
+  const drawdownData = useMemo(() => {
+    let peak = 0;
+    return chartData.map((point) => {
+      peak = Math.max(peak, point.balance);
+      const dd = peak > 0 ? point.balance / peak - 1 : 0;
+      return { axisLabel: point.axisLabel, tooltipLabel: point.tooltipLabel, drawdown: dd };
+    });
+  }, [chartData]);
+  const maxDrawdown = useMemo(
+    () => drawdownData.reduce((min, point) => Math.min(min, point.drawdown), 0),
+    [drawdownData],
+  );
+
   const monitoredCapital = metrics.totalBalance + metrics.openExposure;
   const unitValue = resolveUnitValue(state.riskSettings, monitoredCapital);
   const deposited = state.transactions
@@ -73,6 +90,13 @@ export function Dashboard({
   const progression = deposited > 0 ? metrics.profit / deposited : null;
   const pending = state.bets.filter((bet) => bet.status === "pending");
   const streaks = bettingStreaks(state);
+  const voidCount = state.bets.filter((bet) => bet.status === "void").length;
+  const resultMix = [
+    { name: "Green", value: streaks.greens, color: COLORS.green },
+    { name: "Red", value: streaks.reds, color: COLORS.red },
+    { name: "Anuladas", value: voidCount, color: COLORS.muted },
+  ].filter((slice) => slice.value > 0);
+  const resultTotal = resultMix.reduce((sum, slice) => sum + slice.value, 0);
 
   const isEmpty = state.bets.length === 0;
   const hasBookmakers = state.bookmakers.length > 0;
@@ -125,6 +149,23 @@ export function Dashboard({
           <span className="stat-label">Saldo</span>
           <strong className="stat-value text-mono">{money.format(metrics.totalBalance)}</strong>
           <span className="stat-foot">livre para apostar</span>
+          {chartData.length > 1 && (
+            <div className="stat-spark">
+              <ResponsiveContainer width="100%" height={34}>
+                <AreaChart data={chartData} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+                  <Area
+                    type="stepAfter"
+                    dataKey="balance"
+                    stroke={COLORS.accent}
+                    strokeWidth={1.5}
+                    fill={COLORS.accent}
+                    fillOpacity={0.12}
+                    dot={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </article>
         <article className="stat-card">
           <span className="stat-label">Em aberto</span>
@@ -287,7 +328,7 @@ export function Dashboard({
                 label={{ value: "início", position: "insideTopLeft", fill: COLORS.muted, fontSize: 10 }}
               />
               <Area
-                type="monotone"
+                type="stepAfter"
                 dataKey="balance"
                 name="Saldo"
                 stroke={COLORS.accent}
@@ -304,6 +345,108 @@ export function Dashboard({
           </div>
         )}
       </article>
+
+      <div className="grid two">
+        {/* Underwater — queda abaixo do pico */}
+        <article className="panel chart-panel">
+          <div className="chart-header">
+            <div className="chart-title-block">
+              <h2>Drawdown</h2>
+              <span className="chart-subtitle text-mono">
+                {maxDrawdown < 0 ? `pior: ${percent.format(maxDrawdown)}` : "sem queda registrada"}
+              </span>
+            </div>
+          </div>
+          {drawdownData.length > 1 ? (
+            <ResponsiveContainer width="100%" height={200}>
+              <AreaChart data={drawdownData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="ddGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLORS.red} stopOpacity={0} />
+                    <stop offset="95%" stopColor={COLORS.red} stopOpacity={0.25} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke={COLORS.line} vertical={false} />
+                <XAxis
+                  dataKey="axisLabel"
+                  tick={{ fill: COLORS.muted, fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
+                  minTickGap={28}
+                  interval="preserveStartEnd"
+                  tickMargin={10}
+                />
+                <YAxis
+                  tickFormatter={(v: number) => `${(v * 100).toFixed(0)}%`}
+                  tick={{ fill: COLORS.muted, fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={48}
+                />
+                <Tooltip content={<PercentTooltip />} cursor={{ stroke: COLORS.red, strokeDasharray: "4 4", strokeOpacity: 0.45 }} />
+                <ReferenceLine y={0} stroke={COLORS.line} />
+                <Area type="stepAfter" dataKey="drawdown" name="Drawdown" stroke={COLORS.red} strokeWidth={2} fill="url(#ddGrad)" dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="chart-empty"><span>Liquide apostas para acompanhar o drawdown</span></div>
+          )}
+        </article>
+
+        {/* Distribuição de resultados */}
+        <article className="panel chart-panel">
+          <div className="chart-header">
+            <div className="chart-title-block">
+              <h2>Resultados</h2>
+              <span className="chart-subtitle text-mono">{resultTotal} liquidadas</span>
+            </div>
+          </div>
+          {resultTotal > 0 ? (
+            <div className="result-mix">
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={resultMix}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={52}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    stroke="none"
+                  >
+                    {resultMix.map((slice) => (
+                      <Cell key={slice.name} fill={slice.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) =>
+                      active && payload?.length ? (
+                        <div className="chart-tooltip">
+                          <span className="chart-tooltip-label">{payload[0].name}</span>
+                          <div className="chart-tooltip-row">
+                            <strong>{payload[0].value} ({percent.format((payload[0].value as number) / resultTotal)})</strong>
+                          </div>
+                        </div>
+                      ) : null
+                    }
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="result-mix-legend">
+                {resultMix.map((slice) => (
+                  <div key={slice.name} className="result-mix-legend-item">
+                    <span className="result-mix-dot" style={{ background: slice.color }} />
+                    <span>{slice.name}</span>
+                    <strong className="text-mono">{slice.value}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="chart-empty"><span>Sem apostas liquidadas ainda</span></div>
+          )}
+        </article>
+      </div>
     </section>
   );
 }

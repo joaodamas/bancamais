@@ -43,6 +43,22 @@ export function Performance({
   );
   const pf = useMemo(() => profitFactor(state), [state]);
   const insights = useMemo(() => buildInsights(state), [state]);
+  const stakeHistogram = useMemo(() => {
+    const stakes = state.bets.map((b) => b.stake).filter((s) => s > 0);
+    if (stakes.length === 0) return [];
+    const max = Math.max(...stakes);
+    const buckets = 6;
+    const size = max / buckets || 1;
+    const rows = Array.from({ length: buckets }, (_, i) => ({
+      label: `${money.format(i * size)}`,
+      count: 0,
+    }));
+    for (const s of stakes) {
+      const idx = Math.min(buckets - 1, Math.floor(s / size));
+      rows[idx].count += 1;
+    }
+    return rows;
+  }, [state]);
   const byOdds = useMemo(() => segmentByOddsBand(state), [state]);
   const byStake = useMemo(() => segmentByStakeBand(state), [state]);
   const byDay = useMemo(() => segmentByDayOfWeek(state), [state]);
@@ -221,8 +237,65 @@ export function Performance({
               ))}
             </div>
           </div>
+          {segmentRows[segDim].length > 0 && (
+            <ResponsiveContainer width="100%" height={Math.max(150, segmentRows[segDim].length * 40)}>
+              <BarChart
+                data={segmentRows[segDim]}
+                layout="vertical"
+                margin={{ top: 4, right: 12, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={COLORS.line} horizontal={false} />
+                <XAxis
+                  type="number"
+                  tickFormatter={(v: number) => money.format(v)}
+                  tick={{ fill: COLORS.muted, fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="label"
+                  tick={{ fill: COLORS.muted, fontSize: 11 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={96}
+                />
+                <Tooltip content={<MoneyTooltip />} cursor={{ fill: "rgba(249, 115, 22, 0.06)" }} />
+                <ReferenceLine x={0} stroke={COLORS.line} />
+                <Bar dataKey="profit" name="Lucro" radius={[0, 3, 3, 0]}>
+                  {segmentRows[segDim].map((row, i) => (
+                    <Cell key={i} fill={row.profit >= 0 ? COLORS.green : COLORS.red} fillOpacity={0.85} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
           <SegmentTable rows={segmentRows[segDim]} />
         </article>
+
+        {stakeHistogram.length > 0 && (
+          <article className="panel chart-panel">
+            <div className="edge-head">
+              <div className="edge-head-copy">
+                <h2>Distribuição de stakes</h2>
+                <p>Frequência de apostas por tamanho de stake — consistência e disciplina de entrada.</p>
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={stakeHistogram} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={COLORS.line} vertical={false} />
+                <XAxis dataKey="label" tick={{ fill: COLORS.muted, fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={{ fill: COLORS.muted, fontSize: 11 }} axisLine={false} tickLine={false} width={32} />
+                <Tooltip
+                  cursor={{ fill: "rgba(249, 115, 22, 0.06)" }}
+                  formatter={(v) => [`${Number(v)} aposta(s)`, "Frequência"]}
+                  contentStyle={{ background: COLORS.panel, border: `1px solid ${COLORS.line}`, borderRadius: 8 }}
+                />
+                <Bar dataKey="count" name="Apostas" radius={[3, 3, 0, 0]} fill={COLORS.accent} fillOpacity={0.85} />
+              </BarChart>
+            </ResponsiveContainer>
+          </article>
+        )}
         </>
       )}
     </section>

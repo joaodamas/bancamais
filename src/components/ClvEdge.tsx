@@ -11,6 +11,9 @@ import {
   BarChart,
   Bar,
   Cell,
+  ScatterChart,
+  Scatter,
+  ZAxis,
 } from "recharts";
 import { Crosshair } from "lucide-react";
 import { calculateMetrics, groupProfitByBookmaker, clvPercent, percent } from "../lib/metrics";
@@ -190,6 +193,57 @@ export function ClvEdge({
         ) : (
           <p style={{ color: "var(--muted)", padding: "16px 0" }}>
             Nenhuma aposta com odd de fechamento registrada ainda.
+          </p>
+        )}
+      </article>
+
+      <article className="panel" style={{ marginTop: 14 }}>
+        <h2>CLV por faixa de cotação</h2>
+        {clvSeries.length > 1 ? (
+          <ResponsiveContainer width="100%" height={220}>
+            <ScatterChart margin={{ top: 8, right: 16, left: 0, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={COLORS.line} />
+              <XAxis
+                type="number"
+                dataKey="odds"
+                name="Odd"
+                tickFormatter={(v: number) => v.toFixed(2)}
+                tick={{ fill: COLORS.muted, fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+                domain={["dataMin", "dataMax"]}
+              />
+              <YAxis
+                type="number"
+                dataKey="clv"
+                name="CLV"
+                tickFormatter={(v: number) => `${v}%`}
+                tick={{ fill: COLORS.muted, fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+                width={40}
+              />
+              <ZAxis range={[50, 50]} />
+              <ReferenceLine y={0} stroke={COLORS.line} strokeDasharray="4 4" />
+              <Tooltip
+                cursor={{ strokeDasharray: "4 4", stroke: COLORS.line }}
+                formatter={(v, name) => [name === "Odd" ? Number(v).toFixed(2) : `${Number(v)}%`, name]}
+                contentStyle={{
+                  background: COLORS.panel,
+                  border: `1px solid ${COLORS.line}`,
+                  borderRadius: 8,
+                }}
+              />
+              <Scatter data={clvSeries} name="Aposta">
+                {clvSeries.map((point, i) => (
+                  <Cell key={i} fill={point.clv >= 0 ? COLORS.accent : COLORS.red} fillOpacity={0.7} />
+                ))}
+              </Scatter>
+            </ScatterChart>
+          </ResponsiveContainer>
+        ) : (
+          <p style={{ color: "var(--muted)", padding: "16px 0" }}>
+            Registre odds de fechamento em mais apostas para mapear o edge por cotação.
           </p>
         )}
       </article>

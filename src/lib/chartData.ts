@@ -44,7 +44,8 @@ export function buildBankrollTimeSeries(state: AppState): TimeSeriesPoint[] {
 
   // Parte do 0: o saldo inicial vem das transações de depósito,
   // não do startingBalance (que não entra no ledger de bookmakers).
-  // Isso mantém consistência com calculateLedgerTotalBalance().
+  // O running sem clamp garante que o ponto final == calculateLedgerTotalBalance()
+  // (a soma do ledger). Clampar em 0 a cada evento descolava a curva do Saldo real.
   let balance = 0;
   const points: TimeSeriesPoint[] = [
     { label: "Início", axisLabel: "Início", tooltipLabel: "Início da série", balance, date: "" },
@@ -57,7 +58,7 @@ export function buildBankrollTimeSeries(state: AppState): TimeSeriesPoint[] {
   const intradayView = uniqueDays.size <= 1;
 
   for (const event of events) {
-    balance = Math.max(0, balance + event.amount);
+    balance = Number((balance + event.amount).toFixed(2));
     const d = new Date(event.date);
     const axisLabel = intradayView
       ? d.toLocaleTimeString("pt-BR", {

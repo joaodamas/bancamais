@@ -2571,6 +2571,50 @@ nav button:hover svg {
   grid-column: 1 / -1;
 }
 
+.stat-spark {
+  margin-top: 10px;
+  margin-left: -2px;
+  opacity: 0.9;
+}
+
+.result-mix {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.result-mix > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.result-mix-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.result-mix-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.result-mix-legend-item strong {
+  margin-left: auto;
+  color: var(--text);
+}
+
+.result-mix-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 .chart-header {
   display: flex;
   align-items: center;
