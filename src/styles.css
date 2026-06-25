@@ -2082,6 +2082,60 @@ textarea {
   max-width: 1040px;
 }
 
+/* ── Overlay de leitura OCR (carregamento por cima de tudo) ── */
+.nb-ocr-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-modal) + 5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: overlayIn 0.15s ease-out;
+}
+
+.nb-ocr-overlay-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  max-width: 360px;
+  padding: 34px 30px;
+  border-radius: var(--radius-lg);
+  background: var(--panel-2);
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  animation: panelIn 0.18s ease-out;
+}
+
+.nb-ocr-overlay-card strong {
+  font-size: 16px;
+  color: var(--text);
+}
+
+.nb-ocr-overlay-card span {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.nb-ocr-spinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid rgba(249, 115, 22, 0.2);
+  border-top-color: var(--accent);
+  animation: nbOcrSpin 0.7s linear infinite;
+}
+
+@keyframes nbOcrSpin {
+  to { transform: rotate(360deg); }
+}
+
 .nb-section {
   background: var(--panel);
   border: 1px solid var(--line-strong);

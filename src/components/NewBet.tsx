@@ -605,6 +605,15 @@ export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange, 
 
   return (
     <div className="modal-overlay">
+      {ocrStatus === "loading" && (
+        <div className="nb-ocr-overlay" role="status" aria-live="polite">
+          <div className="nb-ocr-overlay-card">
+            <span className="nb-ocr-spinner" aria-hidden="true" />
+            <strong>Lendo o bilhete…</strong>
+            <span>{ocrMessage}</span>
+          </div>
+        </div>
+      )}
       <div className="modal-panel modal-wide" onClick={(event) => event.stopPropagation()}>
         <button className="modal-close" onClick={handleCloseRequest} type="button">×</button>
         <h2>Nova Aposta</h2>
