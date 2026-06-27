@@ -5,7 +5,7 @@ import {
   LayoutDashboard, ListChecks, Upload, Brain, FileBarChart,
   TrendingUp, Wallet, Target, Settings2,
   CloudUpload, Bell, Search, X,
-  ShieldAlert, Activity, Coins, CalendarDays
+  ShieldAlert, Activity, Coins, CalendarDays, Receipt
 } from "lucide-react";
 import { BrandLogo } from "./components/BrandLogo";
 import { MobileNav } from "./components/MobileNav";
@@ -47,7 +47,7 @@ import { buildBookmaker, buildManualTransaction, buildVoidEntry } from "./servic
 import { buildBetTemplate, addBetTemplate, removeBetTemplate } from "./services/template.service";
 import { saveReportSnapshot } from "./services/report.service";
 
-type View = "dashboard" | "bets" | "diario" | "new-bet" | "import" | "risk" | "performance" | "intelligence" | "reports" | "clv" | "odds" | "books" | "strategies" | "settings";
+type View = "dashboard" | "bets" | "diario" | "new-bet" | "import" | "risk" | "performance" | "intelligence" | "reports" | "clv" | "odds" | "books" | "statement" | "strategies" | "settings";
 
 type NavItem = { id: View; label: string; badge?: string; Icon: React.ElementType };
 type NavGroup = { label: string; items: NavItem[]; advanced?: boolean };
@@ -68,6 +68,7 @@ const ClvEdge = lazy(() => import("./components/ClvEdge").then((module) => ({ de
 const Odds = lazy(() => import("./components/Odds").then((module) => ({ default: module.Odds })));
 const Diario = lazy(() => import("./components/Diario").then((module) => ({ default: module.Diario })));
 const Books = lazy(() => import("./components/Books").then((module) => ({ default: module.Books })));
+const Statement = lazy(() => import("./components/Statement").then((module) => ({ default: module.Statement })));
 const Strategies = lazy(() => import("./components/Strategies").then((module) => ({ default: module.Strategies })));
 const Reports = lazy(() => import("./components/Reports").then((module) => ({ default: module.Reports })));
 const Settings = lazy(() => import("./components/Settings").then((module) => ({ default: module.Settings })));
@@ -125,6 +126,7 @@ const navGroups: NavGroup[] = [
     label: "Gestão",
     items: [
       { id: "books" as View, label: "Bancas & Casas", Icon: Wallet },
+      { id: "statement" as View, label: "Extrato", Icon: Receipt },
       { id: "strategies" as View, label: "Estratégias", Icon: Target },
       { id: "settings" as View, label: "Configurações", Icon: Settings2 },
     ],
@@ -1514,6 +1516,8 @@ export function App() {
             voidTransaction={voidTransaction}
           />
         );
+      case "statement":
+        return <Statement state={state} onOpenBets={() => setView("bets")} />;
       case "strategies":
         return <Strategies state={state} addStrategy={addStrategy} toggleStrategy={toggleStrategy} />;
       case "settings":
