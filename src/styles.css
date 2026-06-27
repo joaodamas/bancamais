@@ -8542,6 +8542,42 @@ button.danger:hover {
   color: var(--muted);
 }
 
+/* Selo de status do CLV (linha de fechamento) */
+.bet-clv-chip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.bet-clv-pos {
+  color: var(--positive);
+  border-color: color-mix(in srgb, var(--positive) 35%, transparent);
+  background: color-mix(in srgb, var(--positive) 12%, transparent);
+}
+
+.bet-clv-neg {
+  color: var(--negative);
+  border-color: color-mix(in srgb, var(--negative) 35%, transparent);
+  background: color-mix(in srgb, var(--negative) 12%, transparent);
+}
+
+.bet-clv-warn {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 35%, transparent);
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+}
+
+.bet-clv-muted {
+  color: var(--muted);
+  border-style: dashed;
+}
+
 .bet-row-imminent td {
   box-shadow: inset 3px 0 0 var(--warning);
 }

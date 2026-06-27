@@ -10,7 +10,7 @@ import {
 } from "@tanstack/react-table";
 import { MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown, SlidersHorizontal, X, Check, Search } from "lucide-react";
 import { betsToCsv, downloadTextFile } from "../lib/csv";
-import { betProfit, money, potentialReturn } from "../lib/metrics";
+import { betProfit, money, potentialReturn, clvPercent } from "../lib/metrics";
 import { eventDelta, isImminent } from "../lib/betTime";
 import { StatusBadge } from "./StatusBadge";
 import { MultiBetPopover, parseLegs } from "./MultiBetPopover";
@@ -23,6 +23,35 @@ const statusLabel: Record<Bet["status"], string> = {
   cashout: "Cashout",
   void: "Cancelada",
 };
+
+/** Selo de status do CLV por aposta: captura, espera ou ausência da linha de fechamento. */
+function clvChip(bet: Bet): { label: string; tone: string; title: string } | null {
+  if (bet.closingOdds != null) {
+    const clv = clvPercent(bet);
+    if (clv == null) return null;
+    const pct = clv * 100;
+    return {
+      label: `CLV ${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`,
+      tone: pct >= 0 ? "pos" : "neg",
+      title: `Sua odd ${bet.odds.toFixed(2)} vs. fechamento ${bet.closingOdds.toFixed(2)}`,
+    };
+  }
+  if (bet.status !== "pending") return null;
+  const eventTime = Date.parse(bet.eventAt);
+  if (Number.isNaN(eventTime)) return null;
+  if (eventTime > Date.now()) {
+    return {
+      label: "CLV aguardando",
+      tone: "muted",
+      title: "O app tenta capturar a odd de fechamento perto do início do evento.",
+    };
+  }
+  return {
+    label: "CLV sem captura",
+    tone: "warn",
+    title: "O evento começou sem a linha de fechamento capturada. Lance manualmente em Editar.",
+  };
+}
 
 type DateRange = "all" | "today" | "7d" | "30d" | "month" | "year";
 
@@ -463,6 +492,12 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                         {isPending && delta.label && (
                           <span className={`bet-time-chip bet-time-${delta.state}`}>{delta.label}</span>
                         )}
+                        {(() => {
+                          const chip = clvChip(bet);
+                          return chip ? (
+                            <span className={`bet-clv-chip bet-clv-${chip.tone}`} title={chip.title}>{chip.label}</span>
+                          ) : null;
+                        })()}
                       </div>
                       <small className="bet-event-sub">
                         {bet.sport} · {bet.league} · {bet.mode === "live" ? "Live" : "Pré-live"}
