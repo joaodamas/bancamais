@@ -146,6 +146,7 @@ export function App() {
   const [pendingMigration, setPendingMigration] = useState<{ guestState: AppState; guestUid: string } | null>(null);
   const [demoMode, setDemoMode] = useState(false);
   const [authView, setAuthView] = useState<"signin" | "signup" | null>(null);
+  const initialPathRef = useRef(typeof window !== "undefined" ? window.location.pathname : "/");
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState("Sem sessao autenticada");
@@ -780,6 +781,24 @@ export function App() {
     await joinWaitlist(email, "edge");
     track("waitlist_joined", { plan: "edge" });
   }
+
+  // Deep-link /app deslogado abre o login direto
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user && !demoMode && authView === null && initialPathRef.current.startsWith("/app")) {
+      setAuthView("signin");
+    }
+  }, [authLoading, user, demoMode, authView]);
+
+  // Espelha a URL: deslogado/landing => "/", produto (logado ou demo) => "/app"
+  useEffect(() => {
+    if (authLoading) return;
+    const inApp = Boolean(user) || demoMode;
+    const desired = inApp ? "/app" : "/";
+    if (window.location.pathname !== desired) {
+      window.history.replaceState(null, "", desired);
+    }
+  }, [authLoading, user, demoMode]);
 
   function exitDemo() {
     setDemoActive(false);

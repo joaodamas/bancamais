@@ -15,10 +15,11 @@ Tipos de mudança: **Adicionado**, **Alterado**, **Corrigido**, **Removido**.
 - Logo: o símbolo "+" da marca ficou maior e com traços mais grossos.
 - Copy da landing e do login: removidos os travessões das frases para um texto mais natural.
 - Landing: plano Edge marcado como "Em breve" (sem cobrança até existir billing); honestidade de pré-lançamento.
+- URL espelha o contexto: `/` para a landing (deslogado) e `/app` para o produto (logado/demo); deep-link `/app` deslogado abre o login.
+- Tela de Odds: removida a copy de "plano grátis · 500/mês · créditos" (era setup de teste da API), agora neutra ("buscas no mês · odds ao vivo").
 
 ### Pendente
 - Sistema de planos/gating no backend (entitlements + Cloud Functions + pagamento). Hoje não existe; todo recurso está liberado.
-- Rotas reais `/` (landing) e `/app` (produto).
 
 ### Adicionado
 - **Landing page (vitrine deslogada)** — visitante deslogado cai na landing; os CTAs levam para cadastro, login ou modo demonstração.

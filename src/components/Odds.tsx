@@ -131,7 +131,7 @@ export function Odds({ onOpenNewBet }: { onOpenNewBet: (prefill: NewBetPrefill) 
           ))}
         </div>
         <span className="odds-quota">
-          {remaining != null ? `${remaining}/500 créditos` : "cada busca = 1 crédito"}
+          {remaining != null ? `${remaining}/500 buscas no mês` : "odds ao vivo"}
         </span>
       </div>
 
@@ -142,7 +142,7 @@ export function Odds({ onOpenNewBet }: { onOpenNewBet: (prefill: NewBetPrefill) 
           <EmptyState
             icon={<Coins size={24} />}
             title="Escolha um campeonato"
-            description="Selecione acima para ver os jogos e comparar o melhor preço entre casas. Cada busca consome 1 crédito do plano grátis (500/mês)."
+            description="Selecione acima para ver os jogos e comparar o melhor preço entre casas, com odds ao vivo."
           />
         </article>
       ) : events.length === 0 ? (
