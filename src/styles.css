@@ -11165,3 +11165,229 @@ button.danger:hover {
   .lp-hero { padding-top: 48px; }
   .lp-hero-cta .lp-btn { flex: 1 1 auto; }
 }
+
+/* ============================================================
+   Landing — seções adicionais (dor, passos, IA, features, trust, FAQ, CTA)
+   ============================================================ */
+.lp-section {
+  max-width: 1080px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 56px 24px;
+}
+.lp-section-head { text-align: center; margin-bottom: 40px; }
+.lp-section-head .lp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+/* Dor */
+.lp-pain-grid,
+.lp-step-grid,
+.lp-feat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.lp-pain-card {
+  padding: 26px 22px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.lp-pain-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--negative);
+  margin-bottom: 16px;
+}
+.lp-pain-card h3 { font-size: 17px; font-weight: 600; margin: 0 0 8px; }
+.lp-pain-card p { font-size: 14px; line-height: 1.55; color: var(--muted); margin: 0; }
+
+/* Passos */
+.lp-step-card {
+  padding: 26px 22px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.lp-step-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.lp-step-num {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.lp-step-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius);
+  background: rgba(249, 115, 22, 0.1);
+  color: var(--accent-bright);
+}
+.lp-step-card h3 { font-size: 17px; font-weight: 600; margin: 0 0 8px; }
+.lp-step-card p { font-size: 14px; line-height: 1.55; color: var(--muted); margin: 0; }
+
+/* IA em destaque */
+.lp-ai-inner {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 40px;
+  align-items: center;
+  padding: 40px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  background:
+    radial-gradient(600px 300px at 80% 0%, rgba(249, 115, 22, 0.08), transparent 60%),
+    var(--panel);
+}
+.lp-ai-copy .lp-section-title { text-align: left; }
+.lp-ai-copy .lp-eyebrow { color: var(--accent-bright); }
+.lp-ai-copy .lp-section-sub { text-align: left; margin: 0 0 20px; }
+.lp-ai-list { list-style: none; padding: 0; margin: 0 0 26px; display: flex; flex-direction: column; gap: 10px; }
+.lp-ai-list li { display: flex; align-items: center; gap: 9px; font-size: 14px; }
+.lp-ai-list li svg { color: var(--positive); flex-shrink: 0; }
+
+.lp-ai-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+}
+.lp-ai-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-bright);
+  background: rgba(249, 115, 22, 0.1);
+  padding: 6px 11px;
+  border-radius: 100px;
+  margin-bottom: 4px;
+}
+.lp-ai-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--muted);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.lp-ai-row strong { font-family: var(--font-mono); font-size: 14px; color: var(--text); }
+.lp-ai-row strong.pos { color: var(--positive); }
+.lp-ai-row strong.warn { color: var(--accent-bright); }
+.lp-ai-bar { height: 6px; border-radius: 100px; background: var(--panel-2); overflow: hidden; margin-top: 4px; }
+.lp-ai-bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-bright)); }
+.lp-ai-tip { font-size: 12px; color: var(--muted); margin: 4px 0 0; line-height: 1.4; }
+
+/* Features grid */
+.lp-feat-card {
+  padding: 22px 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.lp-feat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--accent-bright);
+  margin-bottom: 14px;
+}
+.lp-feat-card h3 { font-size: 15px; font-weight: 600; margin: 0 0 6px; }
+.lp-feat-card p { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 0; }
+
+/* Trust */
+.lp-trust-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.lp-trust-card {
+  padding: 28px 26px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.lp-trust-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius);
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--positive);
+  margin-bottom: 16px;
+}
+.lp-trust-card h3 { font-size: 17px; font-weight: 600; margin: 0 0 8px; }
+.lp-trust-card p { font-size: 14px; line-height: 1.55; color: var(--muted); margin: 0; }
+
+/* FAQ */
+.lp-faq-list { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+.lp-faq-item {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 4px 18px;
+}
+.lp-faq-item summary {
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 14px 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lp-faq-item summary::-webkit-details-marker { display: none; }
+.lp-faq-item summary::after { content: "+"; color: var(--accent); font-size: 20px; font-weight: 400; }
+.lp-faq-item[open] summary::after { content: "−"; }
+.lp-faq-item p { font-size: 14px; line-height: 1.6; color: var(--muted); margin: 0 0 16px; max-width: 620px; }
+
+/* CTA final */
+.lp-cta-final { text-align: center; }
+.lp-cta-final .lp-section-sub { margin-bottom: 28px; }
+.lp-cta-final .lp-hero-cta { justify-content: center; }
+
+@media (max-width: 860px) {
+  .lp-ai-inner { grid-template-columns: 1fr; padding: 28px; }
+  .lp-ai-copy .lp-section-title,
+  .lp-ai-copy .lp-section-sub { text-align: center; }
+  .lp-ai-list { align-items: center; }
+}
+
+@media (max-width: 720px) {
+  .lp-pain-grid,
+  .lp-step-grid,
+  .lp-feat-grid,
+  .lp-trust-grid { grid-template-columns: 1fr; }
+  .lp-feat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .lp-feat-grid { grid-template-columns: 1fr; }
+}

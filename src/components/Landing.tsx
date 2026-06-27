@@ -1,4 +1,7 @@
-import { Check, Lock, Zap, ArrowRight, ShieldCheck } from "lucide-react";
+import {
+  Check, Lock, Zap, ArrowRight, ShieldCheck, Brain, ScanLine,
+  TrendingUp, LineChart, Target, CalendarDays, ListChecks, ShieldAlert,
+} from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 
 interface LandingProps {
@@ -8,6 +11,77 @@ interface LandingProps {
 }
 
 type PlanFeature = { label: string; included: boolean };
+
+const PAINS = [
+  {
+    Icon: TrendingUp,
+    title: "Você sabe seu ROI real?",
+    body: "Ou só sente que está no lucro? Sem registro disciplinado, a sensação engana e a banca derrete sem você perceber.",
+  },
+  {
+    Icon: ShieldAlert,
+    title: "O tilt te pega no escuro",
+    body: "Sequência de perda, stake subindo, decisão emocional. Sem limites e alertas, o tilt vira prejuízo antes de você reagir.",
+  },
+  {
+    Icon: Target,
+    title: "Aposta sem edge é sorte",
+    body: "Se você não mede CLV nem valor esperado, não sabe se ganha por skill ou por acaso — e acaso não paga no longo prazo.",
+  },
+];
+
+const STEPS = [
+  {
+    Icon: ScanLine,
+    step: "01",
+    title: "Registre",
+    body: "Escaneie o bilhete por OCR ou use a Entrada Rápida. Cada aposta vira dado estruturado em segundos.",
+  },
+  {
+    Icon: LineChart,
+    step: "02",
+    title: "Controle",
+    body: "Dashboard, risco e hard stops mostram exatamente onde está sua banca, seu tilt e sua disciplina.",
+  },
+  {
+    Icon: Brain,
+    step: "03",
+    title: "Ganhe edge",
+    body: "IA analisa seu portfólio, CLV mede se você bate a linha de fechamento e o valor esperado guia as próximas entradas.",
+  },
+];
+
+const FEATURES = [
+  { Icon: ListChecks, title: "Apostas & Diário", body: "Histórico completo, busca, filtros e calendário das suas entradas." },
+  { Icon: LineChart, title: "Dashboard & Performance", body: "ROI, yield, hit rate, lucro e a evolução da banca em tempo real." },
+  { Icon: ShieldAlert, title: "Risco & Hard stops", body: "Travas diárias, semanais e mensais que protegem a banca do tilt." },
+  { Icon: TrendingUp, title: "CLV, Edge & Odds", body: "Meça closing line value, valor esperado e compare linhas entre casas." },
+  { Icon: CalendarDays, title: "Extrato & Estratégias", body: "Fluxo de caixa por casa e performance separada por estratégia." },
+  { Icon: ScanLine, title: "OCR de bilhete", body: "Escaneie o print e preencha a aposta sem digitar nada." },
+];
+
+const FAQS = [
+  {
+    q: "Banca+ é um site de apostas?",
+    a: "Não. Banca+ não aceita apostas nem paga prêmios. É uma ferramenta de gestão e disciplina — um terminal analítico para você controlar sua própria banca.",
+  },
+  {
+    q: "O plano grátis é realmente grátis?",
+    a: "Sim, grátis pra sempre. Você controla sua banca com dashboard, diário, risco e estratégias. Os limites são de volume (50 apostas/mês, 2 casas, 90 dias de histórico) e os recursos de IA, OCR e Odds.",
+  },
+  {
+    q: "Preciso colocar cartão pra começar?",
+    a: "Não. Você cria conta grátis ou testa direto no modo demonstração, sem cadastro. Só paga se quiser fazer upgrade pro Edge.",
+  },
+  {
+    q: "Meus dados ficam seguros?",
+    a: "Seus dados são seus. Ficam sincronizados na sua conta em nuvem, acessíveis em qualquer dispositivo. Não vendemos nem compartilhamos seu histórico.",
+  },
+  {
+    q: "Posso cancelar quando quiser?",
+    a: "Sim. O Edge é uma assinatura sem fidelidade — cancela quando quiser e seus dados continuam no plano grátis.",
+  },
+];
 
 const FREE_FEATURES: PlanFeature[] = [
   { label: "Dashboard com ROI, lucro e evolução da banca", included: true },
@@ -43,6 +117,7 @@ export function Landing({ onGetStarted, onSignIn, onDemo }: LandingProps) {
         </div>
       </header>
 
+      {/* Hero */}
       <section className="lp-hero">
         <p className="lp-eyebrow">Terminal analítico para apostadores</p>
         <h1 className="lp-hero-title">
@@ -66,8 +141,94 @@ export function Landing({ onGetStarted, onSignIn, onDemo }: LandingProps) {
         </p>
       </section>
 
-      <section className="lp-pricing" id="planos">
+      {/* A dor */}
+      <section className="lp-section lp-pains">
         <div className="lp-section-head">
+          <p className="lp-eyebrow">O problema</p>
+          <h2 className="lp-section-title">Apostar no escuro custa caro.</h2>
+        </div>
+        <div className="lp-pain-grid">
+          {PAINS.map((p) => (
+            <article key={p.title} className="lp-pain-card">
+              <span className="lp-pain-icon"><p.Icon size={20} /></span>
+              <h3>{p.title}</h3>
+              <p>{p.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* Como funciona */}
+      <section className="lp-section lp-steps">
+        <div className="lp-section-head">
+          <p className="lp-eyebrow">Como funciona</p>
+          <h2 className="lp-section-title">Do bilhete ao edge, em três passos.</h2>
+        </div>
+        <div className="lp-step-grid">
+          {STEPS.map((s) => (
+            <article key={s.step} className="lp-step-card">
+              <div className="lp-step-top">
+                <span className="lp-step-num">{s.step}</span>
+                <span className="lp-step-icon"><s.Icon size={18} /></span>
+              </div>
+              <h3>{s.title}</h3>
+              <p>{s.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* IA em destaque */}
+      <section className="lp-section lp-ai">
+        <div className="lp-ai-inner">
+          <div className="lp-ai-copy">
+            <p className="lp-eyebrow"><Brain size={13} /> Inteligência</p>
+            <h2 className="lp-section-title">A IA te diz onde você está errando.</h2>
+            <p className="lp-section-sub">
+              Análise automática do seu portfólio: detecta tilt, aponta estratégias furadas,
+              mede eficiência de execução e sugere ajustes. É o copiloto que apostador amador não tem.
+            </p>
+            <ul className="lp-ai-list">
+              <li><Check size={15} /> Detecção de tilt e padrões de risco</li>
+              <li><Check size={15} /> Insights de estratégia e execução</li>
+              <li><Check size={15} /> Sugestões acionáveis por aposta</li>
+            </ul>
+            <button type="button" className="lp-btn lp-btn-primary" onClick={onGetStarted}>
+              Ver minha análise com IA <ArrowRight size={16} />
+            </button>
+          </div>
+          <div className="lp-ai-visual" aria-hidden="true">
+            <div className="lp-ai-chip"><Brain size={14} /> Análise de portfólio</div>
+            <div className="lp-ai-row"><span>Risco de tilt</span><strong className="warn">Atenção</strong></div>
+            <div className="lp-ai-row"><span>CLV médio</span><strong className="pos">+2,3%</strong></div>
+            <div className="lp-ai-row"><span>Estratégia mais eficiente</span><strong>Over 2.5 FT</strong></div>
+            <div className="lp-ai-bar"><span style={{ width: "72%" }} /></div>
+            <p className="lp-ai-tip">Stake média 18% acima do recomendado nos últimos 7 dias.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Features grid */}
+      <section className="lp-section lp-features">
+        <div className="lp-section-head">
+          <p className="lp-eyebrow">Tudo num só lugar</p>
+          <h2 className="lp-section-title">O terminal completo do apostador.</h2>
+        </div>
+        <div className="lp-feat-grid">
+          {FEATURES.map((f) => (
+            <article key={f.title} className="lp-feat-card">
+              <span className="lp-feat-icon"><f.Icon size={18} /></span>
+              <h3>{f.title}</h3>
+              <p>{f.body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* Planos */}
+      <section className="lp-section lp-pricing" id="planos">
+        <div className="lp-section-head">
+          <p className="lp-eyebrow">Planos</p>
           <h2 className="lp-section-title">Comece grátis. Evolua quando quiser vantagem.</h2>
           <p className="lp-section-sub">Sem pegadinha: o plano grátis é completo pra controlar sua banca de verdade.</p>
         </div>
@@ -118,6 +279,52 @@ export function Landing({ onGetStarted, onSignIn, onDemo }: LandingProps) {
             </button>
             <p className="lp-plan-note">Comece no grátis. Faça upgrade quando bater no limite.</p>
           </article>
+        </div>
+      </section>
+
+      {/* Privacidade + jogo responsável */}
+      <section className="lp-section lp-trust">
+        <div className="lp-trust-grid">
+          <article className="lp-trust-card">
+            <span className="lp-trust-icon"><ShieldCheck size={20} /></span>
+            <h3>Seus dados são seus</h3>
+            <p>Histórico sincronizado na sua conta, acessível em qualquer dispositivo. Não vendemos nem compartilhamos nada.</p>
+          </article>
+          <article className="lp-trust-card">
+            <span className="lp-trust-icon"><ShieldAlert size={20} /></span>
+            <h3>Ferramenta de disciplina</h3>
+            <p>Banca+ não incentiva apostar mais — incentiva apostar melhor. Hard stops e limites existem pra proteger sua banca.</p>
+          </article>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="lp-section lp-faq">
+        <div className="lp-section-head">
+          <p className="lp-eyebrow">Dúvidas</p>
+          <h2 className="lp-section-title">Perguntas frequentes</h2>
+        </div>
+        <div className="lp-faq-list">
+          {FAQS.map((f) => (
+            <details key={f.q} className="lp-faq-item">
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA final */}
+      <section className="lp-section lp-cta-final">
+        <h2 className="lp-section-title">Pronto pra apostar com método?</h2>
+        <p className="lp-section-sub">Crie sua conta grátis em segundos. Sem cartão, sem compromisso.</p>
+        <div className="lp-hero-cta">
+          <button type="button" className="lp-btn lp-btn-primary" onClick={onGetStarted}>
+            Criar conta grátis <ArrowRight size={16} />
+          </button>
+          <button type="button" className="lp-btn lp-btn-ghost" onClick={onDemo}>
+            Testar sem conta
+          </button>
         </div>
       </section>
 
