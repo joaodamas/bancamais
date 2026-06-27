@@ -1844,6 +1844,57 @@ textarea {
   margin-top: 12px;
 }
 
+/* Jogo responsável — pausa e canais de ajuda */
+.pause-actions { display: grid; gap: 8px; }
+.pause-actions-label { font-size: 13px; color: var(--text); font-weight: 500; }
+.pause-actions-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.pause-actions-buttons button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+.pause-actions-buttons button:hover { border-color: var(--warning); color: var(--warning); }
+.pause-actions small, .help-channels li { color: var(--muted); font-size: 12px; }
+
+.pause-active {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+}
+.pause-active > div { display: grid; gap: 3px; }
+.pause-active strong { color: var(--warning); font-size: 13px; }
+.pause-active small { color: var(--muted); font-size: 12px; }
+.pause-active button {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.help-channels {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 6px;
+}
+.help-channels strong { color: var(--text); font-size: 13px; }
+.help-channels ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; line-height: 1.5; }
+.help-channels a { color: var(--accent); }
+
 .lgpd-action-row {
   align-items: flex-start;
   border-top: 1px solid var(--line);

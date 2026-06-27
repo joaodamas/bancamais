@@ -40,6 +40,15 @@ function lossInWindow(bets: Bet[]): number {
   }, 0);
 }
 
+/** Pausa responsável ativa: devolve o ISO até quando está pausado, ou null. */
+export function isBettingPaused(state: AppState, now: number = Date.now()): string | null {
+  const until = state.riskSettings.pausedUntil;
+  if (!until) return null;
+  const ts = Date.parse(until);
+  if (Number.isNaN(ts) || ts <= now) return null;
+  return until;
+}
+
 export function checkHardStop(state: AppState): HardStopStatus | null {
   const rs = state.riskSettings;
   if (!rs.hardStopEnabled) return null;

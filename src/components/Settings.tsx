@@ -1,6 +1,7 @@
 import type { User } from "firebase/auth";
 import { type FormEvent, useState } from "react";
 import { callDeleteUserData, callExportUserData } from "../lib/cloudRepository";
+import { isBettingPaused } from "../lib/riskGuard";
 import type { AppState } from "../lib/types";
 
 interface SettingsProps {
@@ -13,6 +14,7 @@ interface SettingsProps {
   onGoToAuth: () => void;
   updateBankrollSettings: (event: FormEvent<HTMLFormElement>) => void;
   updateRiskSettings: (event: FormEvent<HTMLFormElement>) => void;
+  setBettingPause: (until: string | null) => void;
 }
 
 function SyncDot({ status }: { status: "online" | "temp" | "offline" }) {
@@ -29,9 +31,15 @@ export function Settings({
   onGoToAuth,
   updateBankrollSettings,
   updateRiskSettings,
+  setBettingPause,
 }: SettingsProps) {
   const isAnonymous = user?.isAnonymous ?? false;
   const isAuthenticated = user !== null && !isAnonymous;
+  const pausedUntil = isBettingPaused(state);
+
+  function pauseFor(days: number) {
+    setBettingPause(new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString());
+  }
 
   const [lgpdExporting, setLgpdExporting] = useState(false);
   const [lgpdDeleting, setLgpdDeleting] = useState(false);
@@ -263,6 +271,43 @@ export function Settings({
 
           <button className="primary" type="submit">Salvar limites</button>
         </form>
+
+        <article className="panel settings-panel">
+          <h2>Jogo responsável</h2>
+          <p className="sync-description">
+            Aposta é entretenimento, não fonte de renda nem forma de recuperar prejuízo. Se sentir
+            que perdeu o controle, faça uma pausa — e busque ajuda.
+          </p>
+
+          {pausedUntil ? (
+            <div className="pause-active">
+              <div>
+                <strong>Pausa ativa</strong>
+                <small>Novas apostas bloqueadas até {new Date(pausedUntil).toLocaleString("pt-BR")}.</small>
+              </div>
+              <button type="button" onClick={() => setBettingPause(null)}>Retomar apostas</button>
+            </div>
+          ) : (
+            <div className="pause-actions">
+              <span className="pause-actions-label">Pausar novas apostas por:</span>
+              <div className="pause-actions-buttons">
+                <button type="button" onClick={() => pauseFor(1)}>24 horas</button>
+                <button type="button" onClick={() => pauseFor(7)}>7 dias</button>
+                <button type="button" onClick={() => pauseFor(30)}>30 dias</button>
+              </div>
+              <small>Durante a pausa, o registro de novas apostas fica bloqueado. Você pode retomar quando quiser.</small>
+            </div>
+          )}
+
+          <div className="help-channels">
+            <strong>Precisa de ajuda?</strong>
+            <ul>
+              <li><a href="https://www.jogadoresanonimos.com.br/" target="_blank" rel="noreferrer">Jogadores Anônimos</a> — grupos de apoio gratuitos.</li>
+              <li><a href="https://www.cvv.org.br/" target="_blank" rel="noreferrer">CVV</a> — apoio emocional, ligue <strong>188</strong> (24h, gratuito).</li>
+              <li>Apostas para maiores de 18 anos. Estabeleça limites e respeite-os.</li>
+            </ul>
+          </div>
+        </article>
 
         {isAuthenticated && (
           <article className="panel settings-panel">

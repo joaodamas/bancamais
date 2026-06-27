@@ -41,7 +41,7 @@ import { clearDemoState, clearStateForUser, createBetId, createBookmakerId, crea
 import { buildDemoState } from "./lib/demoData";
 import { uploadBetSlip } from "./lib/storageRepository";
 import type { AppState, Bet, BookmakerAccount, NewBetDraft, NewBetFormValues, NewBetPrefill, ReportSnapshot, RiskSettings, Strategy, Transaction, TransactionType } from "./lib/types";
-import { checkHardStop, riskAlertsExtended } from "./lib/riskGuard";
+import { checkHardStop, riskAlertsExtended, isBettingPaused } from "./lib/riskGuard";
 import { detectTilt } from "./lib/tiltDetection";
 import { buildBetFromForm, buildBetEdit, buildSettlement, buildBulkSettlement, buildDeletedBetState, mergeImportedBets } from "./services/bets.service";
 import { EditBetModal } from "./components/EditBetModal";
@@ -682,6 +682,12 @@ export function App() {
     const uploadedSlipImagePath = String(data.get("uploadedSlipImagePath") || "");
     const uploadedSlipImageUrl = String(data.get("uploadedSlipImageUrl") || "");
 
+    const pausedUntil = isBettingPaused(state);
+    if (pausedUntil) {
+      toast.error(`Pausa responsável ativa até ${new Date(pausedUntil).toLocaleString("pt-BR")}. Novas apostas estão bloqueadas.`, { duration: 6000 });
+      return;
+    }
+
     const hardStop = checkHardStop(state);
     if (hardStop?.blocked) {
       toast.error(`Hard Stop ativo: ${hardStop.reason}`, { duration: 6000 });
@@ -1262,10 +1268,19 @@ export function App() {
       dailyLossLimitPercent: Number(data.get("dailyLossLimitPercent")),
       weeklyLossLimitPercent: Number(data.get("weeklyLossLimitPercent")),
       monthlyDrawdownPercent: Number(data.get("monthlyDrawdownPercent")),
+      pausedUntil: state.riskSettings.pausedUntil,
     };
 
     updateState({ ...state, riskSettings });
     toast.success("Limites de risco atualizados.");
+  }
+
+  function setBettingPause(until: string | null) {
+    syncToCloud(updateState({
+      ...state,
+      riskSettings: { ...state.riskSettings, pausedUntil: until ?? undefined },
+    }));
+    toast.success(until ? "Pausa responsável ativada. Novas apostas bloqueadas." : "Pausa removida.");
   }
 
   function updateBankrollSettings(event: FormEvent<HTMLFormElement>) {
@@ -1689,6 +1704,7 @@ export function App() {
             onGoToAuth={() => { /* auth is now the gate — logging out redirects automatically */ }}
             updateBankrollSettings={updateBankrollSettings}
             updateRiskSettings={updateRiskSettings}
+            setBettingPause={setBettingPause}
           />
         );
       default:

@@ -202,6 +202,8 @@ export interface RiskSettings {
   dailyLossLimitPercent: number;
   weeklyLossLimitPercent: number;
   monthlyDrawdownPercent: number;
+  /** Pausa responsável: ISO date até quando novas apostas ficam bloqueadas. */
+  pausedUntil?: string;
 }
 
 export interface DashboardMetrics {

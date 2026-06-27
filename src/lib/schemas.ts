@@ -90,6 +90,7 @@ export const RiskSettingsSchema = z.object({
   dailyLossLimitPercent: z.number().min(1).max(100),
   weeklyLossLimitPercent: z.number().min(1).max(100),
   monthlyDrawdownPercent: z.number().min(1).max(100),
+  pausedUntil: z.string().optional(),
 });
 
 // ── Transaction ───────────────────────────────────────────────────────────────
