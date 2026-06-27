@@ -23,6 +23,7 @@ import { fetchClosingOddsForBets, listSportOdds } from "./services/oddsData.js";
 import { getTeamContext } from "./services/teamContext.js";
 import { estimateEdge } from "./services/edgeEstimator.js";
 import { downloadUserSlip } from "./services/storage.js";
+import { ensureEdge } from "./billing/entitlement.js";
 
 if (getApps().length === 0) {
   initializeApp();
@@ -46,6 +47,7 @@ export const parseBetSlipFromStorage = onCall(
     if (!uid) {
       throw new HttpsError("unauthenticated", "Authentication is required.");
     }
+    await ensureEdge(uid);
 
     const payload = parseRequest(request.data);
     const slip = await downloadUserSlip(uid, payload.storagePath);
@@ -140,7 +142,7 @@ export const fetchTeamNewsCallable = onCall(
     secrets: [GNEWS_API_KEY],
   },
   async (request) => {
-    ensureAuthenticated(request.auth?.uid);
+    await ensureEdge(ensureAuthenticated(request.auth?.uid));
     const payload = parseFetchTeamNewsRequest(request.data);
     const apiKey = GNEWS_API_KEY.value();
 
@@ -169,7 +171,7 @@ export const getTeamContextCallable = onCall(
     secrets: [APISPORTS_API_KEY],
   },
   async (request) => {
-    ensureAuthenticated(request.auth?.uid);
+    await ensureEdge(ensureAuthenticated(request.auth?.uid));
     const payload = parseGetTeamContextRequest(request.data);
     const apiKey = APISPORTS_API_KEY.value();
 
@@ -198,7 +200,7 @@ export const estimateEdgeCallable = onCall(
     secrets: [APISPORTS_API_KEY],
   },
   async (request) => {
-    ensureAuthenticated(request.auth?.uid);
+    await ensureEdge(ensureAuthenticated(request.auth?.uid));
     const payload = parseEstimateEdgeRequest(request.data);
     const apiKey = APISPORTS_API_KEY.value();
 
@@ -228,7 +230,7 @@ export const fetchClosingOddsCallable = onCall(
     secrets: [THEODDS_API_KEY],
   },
   async (request) => {
-    ensureAuthenticated(request.auth?.uid);
+    await ensureEdge(ensureAuthenticated(request.auth?.uid));
     const payload = parseFetchClosingOddsRequest(request.data);
     const apiKey = THEODDS_API_KEY.value();
 
@@ -254,7 +256,7 @@ export const listSportOddsCallable = onCall(
     secrets: [THEODDS_API_KEY],
   },
   async (request) => {
-    ensureAuthenticated(request.auth?.uid);
+    await ensureEdge(ensureAuthenticated(request.auth?.uid));
     const payload = parseListSportOddsRequest(request.data);
     const apiKey = THEODDS_API_KEY.value();
 
@@ -371,10 +373,11 @@ function parseRequest(data: unknown): ParseBetSlipRequest {
   };
 }
 
-function ensureAuthenticated(uid: string | undefined) {
+function ensureAuthenticated(uid: string | undefined): string {
   if (!uid) {
     throw new HttpsError("unauthenticated", "Authentication is required.");
   }
+  return uid;
 }
 
 function parseSearchSportsFixturesRequest(data: unknown): Required<SearchSportsFixturesRequest> {

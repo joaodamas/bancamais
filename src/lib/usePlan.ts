@@ -24,8 +24,11 @@ export function usePlan(user: User | null, demoMode: boolean, entitlementPlan?: 
     if (demoMode) plan = "edge";
     if (isMasterAccount(user?.uid, user?.email)) plan = "edge";
 
-    const override = typeof localStorage !== "undefined" ? localStorage.getItem(DEV_OVERRIDE_KEY) : null;
-    if (override === "free" || override === "edge") plan = override;
+    // Override de dev — só em desenvolvimento. Em produção seria bypass de paywall.
+    if (import.meta.env.DEV) {
+      const override = typeof localStorage !== "undefined" ? localStorage.getItem(DEV_OVERRIDE_KEY) : null;
+      if (override === "free" || override === "edge") plan = override;
+    }
 
     return {
       plan,
