@@ -171,6 +171,47 @@ export function computeBookmakerLedger(bookmakerId: string, transactions: Transa
   });
 }
 
+/**
+ * Builds a single chronological timeline across the whole bankroll (all houses),
+ * with a running consolidated balance that reconciles with `calculateLedgerTotalBalance`.
+ * Internal transfers between own houses net to zero on the global balance.
+ * Voided transactions remain visible (`isVoided = true`) to preserve the audit trail.
+ */
+export function computeGlobalLedger(state: AppState): LedgerEntry[] {
+  const { transactions, bookmakers } = state;
+  const voidedIds = new Set(
+    transactions.filter((t) => t.voidsCancelledId).map((t) => t.voidsCancelledId as string),
+  );
+
+  const booksWithHistory = new Set(
+    bookmakers
+      .filter((book) => transactions.some(
+        (t) => t.bookmakerId === book.id || t.targetBookmakerId === book.id,
+      ))
+      .map((book) => book.id),
+  );
+
+  const staticBase = bookmakers
+    .filter((book) => !booksWithHistory.has(book.id))
+    .reduce((sum, book) => sum + book.balance, 0);
+
+  const ordered = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
+
+  let running = staticBase;
+  return ordered.map((t) => {
+    const impact = bookmakers.reduce(
+      (sum, book) => sum + transactionImpactForBookmaker(t, book.id, transactions),
+      0,
+    );
+    running = Number((running + impact).toFixed(2));
+    return {
+      transaction: t,
+      runningBalance: running,
+      isVoided: voidedIds.has(t.id),
+    };
+  });
+}
+
 export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
   deposit: "Depósito",
   withdrawal: "Saque",
