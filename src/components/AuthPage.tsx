@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { ShieldCheck, TrendingUp, Brain, CloudUpload } from "lucide-react";
+import { ShieldCheck, TrendingUp, Brain, CloudUpload, ArrowLeft } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 
 type AuthMode = "signin" | "signup" | "reset";
@@ -11,6 +11,8 @@ interface AuthPageProps {
   onGoogleSignIn: () => Promise<void>;
   onDemo: () => void;
   message: string;
+  initialMode?: AuthMode;
+  onBack?: () => void;
 }
 
 const FEATURES = [
@@ -42,13 +44,18 @@ const STATS = [
   { value: "Hard stop", label: "proteção automática" },
 ];
 
-export function AuthPage({ onSignIn, onSignUp, onReset, onGoogleSignIn, onDemo, message }: AuthPageProps) {
-  const [mode, setMode] = useState<AuthMode>("signup");
+export function AuthPage({ onSignIn, onSignUp, onReset, onGoogleSignIn, onDemo, message, initialMode = "signup", onBack }: AuthPageProps) {
+  const [mode, setMode] = useState<AuthMode>(initialMode);
 
   return (
     <div className="auth-page">
       <div className="auth-page-panel">
         <div className="auth-panel-inner">
+        {onBack && (
+          <button type="button" className="auth-back" onClick={onBack}>
+            <ArrowLeft size={14} /> Voltar
+          </button>
+        )}
         <div className="auth-page-brand">
           <BrandLogo />
           <p>Gestão profissional de apostas esportivas</p>

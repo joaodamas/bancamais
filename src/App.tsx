@@ -73,6 +73,7 @@ const Strategies = lazy(() => import("./components/Strategies").then((module) =>
 const Reports = lazy(() => import("./components/Reports").then((module) => ({ default: module.Reports })));
 const Settings = lazy(() => import("./components/Settings").then((module) => ({ default: module.Settings })));
 const AuthPage = lazy(() => import("./components/AuthPage").then((module) => ({ default: module.AuthPage })));
+const Landing = lazy(() => import("./components/Landing").then((module) => ({ default: module.Landing })));
 
 
 function withStateTimestamp(state: AppState): AppState {
@@ -143,6 +144,7 @@ export function App() {
   const [showTour, setShowTour] = useState(false);
   const [pendingMigration, setPendingMigration] = useState<{ guestState: AppState; guestUid: string } | null>(null);
   const [demoMode, setDemoMode] = useState(false);
+  const [authView, setAuthView] = useState<"signin" | "signup" | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState("Sem sessao autenticada");
@@ -1166,14 +1168,27 @@ export function App() {
   if (authLoading) return <LoadingScreen />;
 
   if (!user && !demoMode) {
+    if (!authView) {
+      return (
+        <Suspense fallback={<LoadingScreen />}>
+          <Landing
+            onGetStarted={() => setAuthView("signup")}
+            onSignIn={() => setAuthView("signin")}
+            onDemo={enterDemo}
+          />
+        </Suspense>
+      );
+    }
     return (
       <Suspense fallback={<LoadingScreen />}>
         <AuthPage
+          initialMode={authView}
           onSignIn={signInAccount}
           onSignUp={createAccount}
           onReset={sendReset}
           onGoogleSignIn={signInWithGoogleAccount}
           onDemo={enterDemo}
+          onBack={() => setAuthView(null)}
           message={authMessage}
         />
       </Suspense>
