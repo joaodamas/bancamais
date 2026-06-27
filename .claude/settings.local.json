@@ -9,7 +9,10 @@
       "WebSearch",
       "WebFetch",
       "Bash(npm run *)",
-      "Bash(git commit -q -m ' *)"
+      "Bash(git commit -q -m ' *)",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "Bash(firebase deploy *)"
     ]
   },
   "enabledMcpjsonServers": [

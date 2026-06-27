@@ -34,14 +34,20 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
 
 /**
  * Contas com acesso master (Edge vitalício, sem limites) — ponte até o billing
- * existir. Migrar para entitlement no backend depois. Para adicionar, basta o UID.
+ * existir. Migrar para entitlement no backend depois. Para adicionar uma conta,
+ * inclua o UID do Firebase (mais seguro) ou o e-mail em minúsculas.
  */
 export const MASTER_UIDS: ReadonlySet<string> = new Set<string>([
   "W7Cln1scw6YH6EebJeeQRr0qUCw1", // zfluush@gmail.com — criada 26/06/2026
 ]);
 
-export function isMasterAccount(uid: string | undefined | null): boolean {
-  return !!uid && MASTER_UIDS.has(uid);
+export const MASTER_EMAILS: ReadonlySet<string> = new Set<string>([
+  "joaodamasit@gmail.com", // conta principal (dono do produto)
+]);
+
+export function isMasterAccount(uid?: string | null, email?: string | null): boolean {
+  if (uid && MASTER_UIDS.has(uid)) return true;
+  return !!email && MASTER_EMAILS.has(email.trim().toLowerCase());
 }
 
 export function planHasFeature(plan: PlanTier, feature: GatedFeature): boolean {

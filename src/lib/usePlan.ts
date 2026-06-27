@@ -22,7 +22,7 @@ export function usePlan(user: User | null, demoMode: boolean, entitlementPlan?: 
     // Base: entitlement do backend (fonte de verdade quando o billing existir).
     let plan: PlanTier = entitlementPlan ?? "free";
     if (demoMode) plan = "edge";
-    if (isMasterAccount(user?.uid)) plan = "edge";
+    if (isMasterAccount(user?.uid, user?.email)) plan = "edge";
 
     const override = typeof localStorage !== "undefined" ? localStorage.getItem(DEV_OVERRIDE_KEY) : null;
     if (override === "free" || override === "edge") plan = override;
