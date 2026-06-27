@@ -29,6 +29,7 @@ import {
 import { useFirestoreSync } from "./lib/useFirestoreSync";
 import { track } from "./lib/analytics";
 import { collectBetsNeedingClosing, fetchClosingOdds, isClosingOddsConfigured } from "./lib/closingOdds";
+import { usePlan } from "./lib/usePlan";
 import {
   calculateMetrics,
   money,
@@ -68,6 +69,7 @@ const Intelligence = lazy(() => import("./components/Intelligence").then((module
 const ClvEdge = lazy(() => import("./components/ClvEdge").then((module) => ({ default: module.ClvEdge })));
 const Odds = lazy(() => import("./components/Odds").then((module) => ({ default: module.Odds })));
 const Diario = lazy(() => import("./components/Diario").then((module) => ({ default: module.Diario })));
+const PlanLock = lazy(() => import("./components/PlanLock").then((module) => ({ default: module.PlanLock })));
 const Books = lazy(() => import("./components/Books").then((module) => ({ default: module.Books })));
 const Statement = lazy(() => import("./components/Statement").then((module) => ({ default: module.Statement })));
 const Strategies = lazy(() => import("./components/Strategies").then((module) => ({ default: module.Strategies })));
@@ -160,6 +162,22 @@ export function App() {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const notifRef = useRef<HTMLDivElement | null>(null);
   const metrics = useMemo(() => calculateMetrics(state), [state]);
+  const planAccess = usePlan(user, demoMode);
+
+  async function handleUpgrade() {
+    const email = user?.email;
+    if (email) {
+      try {
+        await joinWaitlist(email, "edge");
+        track("waitlist_joined", { plan: "edge" });
+        toast.success("Você está na lista do Edge! Avisaremos quando lançar.");
+      } catch {
+        toast.error("Não foi possível registrar. Tente de novo.");
+      }
+    } else {
+      toast("O Edge está chegando. Avisaremos quando lançar.", { icon: "⏳" });
+    }
+  }
   const hydratedUserRef = useRef<string | null>(null);
   const latestStateRef = useRef<AppState>(state);
   const latestUserRef = useRef<User | null>(user);
@@ -1539,13 +1557,19 @@ export function App() {
       case "performance":
         return <Performance state={state} metrics={metrics} />;
       case "intelligence":
-        return <Intelligence state={state} metrics={metrics} onOpenNewBet={openNewBet} />;
+        return planAccess.locked("intelligence")
+          ? <PlanLock feature="intelligence" onUpgrade={handleUpgrade} />
+          : <Intelligence state={state} metrics={metrics} onOpenNewBet={openNewBet} />;
       case "reports":
         return <Reports state={state} metrics={metrics} onSaveSnapshot={persistReportSnapshot} />;
       case "clv":
-        return <ClvEdge state={state} metrics={metrics} />;
+        return planAccess.locked("clv")
+          ? <PlanLock feature="clv" onUpgrade={handleUpgrade} />
+          : <ClvEdge state={state} metrics={metrics} />;
       case "odds":
-        return <Odds onOpenNewBet={openNewBet} />;
+        return planAccess.locked("odds")
+          ? <PlanLock feature="odds" onUpgrade={handleUpgrade} />
+          : <Odds onOpenNewBet={openNewBet} />;
       case "diario":
         return <Diario state={state} />;
       case "books":
