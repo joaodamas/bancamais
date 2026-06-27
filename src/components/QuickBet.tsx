@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { Zap, ChevronRight, ScanLine, Loader2 } from "lucide-react";
+import { Zap, ChevronRight, ScanLine, Loader2, Lock } from "lucide-react";
 import type { AppState, BetStatus } from "../lib/types";
 import { money } from "../lib/metrics";
 import { uploadAndParseBetSlip, buildOcrSubmissionMetadata, type ParseBetSlipResponse } from "../lib/ocr";
@@ -7,9 +7,11 @@ import { uploadAndParseBetSlip, buildOcrSubmissionMetadata, type ParseBetSlipRes
 interface QuickBetProps {
   state: AppState;
   userId?: string | null;
+  canUseOcr?: boolean;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   onClose: () => void;
   onSwitchToFull: () => void;
+  onUpgrade?: () => void;
 }
 
 type SettleStatus = Extract<BetStatus, "pending" | "won" | "lost" | "cashout" | "void">;
@@ -41,7 +43,7 @@ function isoToLocalInput(iso: string): string {
  * Fluxo linear por Tab/Enter: Evento → Stake → Odd → Casa → [Salvar]
  * Suporta OCR leve (escanear print) e liquidação imediata (status + cashout).
  */
-export function QuickBet({ state, userId, onSubmit, onClose, onSwitchToFull }: QuickBetProps) {
+export function QuickBet({ state, userId, canUseOcr = true, onSubmit, onClose, onSwitchToFull, onUpgrade }: QuickBetProps) {
   const [submitting, setSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -183,7 +185,7 @@ export function QuickBet({ state, userId, onSubmit, onClose, onSwitchToFull }: Q
           Navegue pelos campos com <kbd>Tab</kbd> ou <kbd>Enter</kbd>. Escaneie um print para preencher automaticamente.
         </p>
 
-        {userId && (
+        {userId && canUseOcr && (
           <div className="quick-bet-ocr">
             <input
               ref={fileRef}
@@ -204,6 +206,18 @@ export function QuickBet({ state, userId, onSubmit, onClose, onSwitchToFull }: Q
             {ocrMessage && (
               <span className={`quick-bet-ocr-msg quick-bet-ocr-${ocrState}`}>{ocrMessage}</span>
             )}
+          </div>
+        )}
+        {userId && !canUseOcr && (
+          <div className="quick-bet-ocr">
+            <button
+              type="button"
+              className="quick-bet-ocr-btn quick-bet-ocr-locked"
+              onClick={() => onUpgrade?.()}
+              title="Escanear bilhete é do plano Edge"
+            >
+              <Lock size={13} /> Escanear print é do Edge
+            </button>
           </div>
         )}
 

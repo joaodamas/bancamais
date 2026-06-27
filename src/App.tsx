@@ -686,6 +686,19 @@ export function App() {
       return;
     }
 
+    const monthlyLimit = planAccess.limits.maxBetsPerMonth;
+    if (Number.isFinite(monthlyLimit)) {
+      const now = new Date();
+      const monthBets = state.bets.filter((b) => {
+        const d = new Date(b.placedAt);
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      }).length;
+      if (monthBets >= monthlyLimit) {
+        toast.error(`Limite de ${monthlyLimit} apostas/mês do plano grátis atingido. Desbloqueie ilimitado com o Edge.`, { duration: 6000 });
+        return;
+      }
+    }
+
     let slipImagePath: string | undefined;
     let slipImageUrl: string | undefined;
 
@@ -937,6 +950,12 @@ export function App() {
 
     if (state.bookmakers.some((book) => book.name.toLowerCase() === name.toLowerCase())) {
       toast.error("Esta casa ja esta cadastrada.");
+      return;
+    }
+
+    const maxBooks = planAccess.limits.maxBookmakers;
+    if (Number.isFinite(maxBooks) && state.bookmakers.length >= maxBooks) {
+      toast.error(`Plano grátis permite até ${maxBooks} casas. Desbloqueie ilimitado com o Edge.`, { duration: 6000 });
       return;
     }
 
@@ -1254,9 +1273,11 @@ export function App() {
         <QuickBet
           state={state}
           userId={user?.uid ?? null}
+          canUseOcr={!planAccess.locked("ocr")}
           onSubmit={addBet}
           onClose={() => { setNewBetPrefill(null); setView("bets"); }}
           onSwitchToFull={() => setBetMode("full")}
+          onUpgrade={handleUpgrade}
         />
       </Suspense>
     ) : (
@@ -1264,6 +1285,8 @@ export function App() {
         <NewBet
           state={state}
           addBet={addBet}
+          canUseOcr={!planAccess.locked("ocr")}
+          onUpgrade={handleUpgrade}
           onClose={() => {
             setNewBetPrefill(null);
             setBetMode("quick");

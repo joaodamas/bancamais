@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Lock } from "lucide-react";
 import { auth } from "../lib/firebase";
 import {
   buildOcrSubmissionMetadata,
@@ -38,6 +38,8 @@ interface NewBetProps {
   templates?: BetTemplate[];
   onSaveTemplate?: (name: string, values: NewBetFormValues) => void;
   onDeleteTemplate?: (id: string) => void;
+  canUseOcr?: boolean;
+  onUpgrade?: () => void;
 }
 
 type FormFieldName = keyof NewBetFormValues;
@@ -103,7 +105,7 @@ function isReviewFlagForField(flag: OcrReviewFlag, field: OcrFieldName) {
   return flag.field === field;
 }
 
-export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange, templates = [], onSaveTemplate, onDeleteTemplate }: NewBetProps) {
+export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange, templates = [], onSaveTemplate, onDeleteTemplate, canUseOcr = true, onUpgrade }: NewBetProps) {
   const [formValues, setFormValues] = useState<NewBetFormValues>(initialFormValues);
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [templateName, setTemplateName] = useState("");
@@ -679,6 +681,15 @@ export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange, 
               <span className="nb-section-label">Bilhete</span>
               <span className="nb-section-title">Comprovante e leitura automática</span>
             </div>
+            {!canUseOcr ? (
+              <div className="nb-section-body nb-row-1">
+                <div className="dropzone nb-ocr-locked" onClick={() => onUpgrade?.()} role="button" tabIndex={0}>
+                  <strong><Lock size={14} /> Leitura automática é do Edge</strong>
+                  <span>Escaneie o print e preencha a aposta sem digitar. Desbloqueie com o Edge.</span>
+                  <button type="button" className="nb-ocr-locked-cta" onClick={() => onUpgrade?.()}>Entrar na lista de espera</button>
+                </div>
+              </div>
+            ) : (
             <div className="nb-section-body nb-row-1">
               <div className="dropzone">
                 <strong>Cole, arraste ou selecione o print do bilhete</strong>
@@ -708,6 +719,7 @@ export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange, 
                 </div>
               </div>
             </div>
+            )}
           </div>
 
           <div className="nb-section full">
