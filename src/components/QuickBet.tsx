@@ -113,7 +113,7 @@ export function QuickBet({ state, userId, onSubmit, onClose, onSwitchToFull }: Q
     e.target.value = "";
     if (!file || !userId) return;
     setOcrState("loading");
-    setOcrMessage("Lendo o print...");
+    setOcrMessage("Enviando print e lendo campos do bilhete…");
     try {
       const { ocr, upload } = await uploadAndParseBetSlip(userId, file);
       applyOcr(ocr, upload);
