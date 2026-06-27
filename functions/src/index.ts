@@ -556,4 +556,11 @@ function parseListSportOddsRequest(data: unknown): ListSportOddsRequest {
 }
 
 // ── Billing (Mercado Pago) ────────────────────────────────────────────────
-export { createSubscriptionCheckout, mercadoPagoWebhook } from "./billing/mercadoPago.js";
+// TEMPORARIAMENTE DESATIVADO: estas funções dependem do secret
+// MERCADOPAGO_ACCESS_TOKEN, que ainda não foi criado (cobrança não ligada).
+// Enquanto exportadas, bloqueiam QUALQUER deploy de functions em modo
+// não-interativo. Não estavam deployadas. Para reativar a cobrança:
+//   1) firebase functions:secrets:set MERCADOPAGO_ACCESS_TOKEN
+//   2) descomentar a linha abaixo
+//   3) firebase deploy --only functions:createSubscriptionCheckout,functions:mercadoPagoWebhook
+// export { createSubscriptionCheckout, mercadoPagoWebhook } from "./billing/mercadoPago.js";
