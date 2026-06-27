@@ -32,6 +32,18 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   edge: { maxBookmakers: Infinity, maxBetsPerMonth: Infinity, historyDays: Infinity },
 };
 
+/**
+ * Contas com acesso master (Edge vitalício, sem limites) — ponte até o billing
+ * existir. Migrar para entitlement no backend depois. Para adicionar, basta o UID.
+ */
+export const MASTER_UIDS: ReadonlySet<string> = new Set<string>([
+  "W7Cln1scw6YH6EebJeeQRr0qUCw1", // zfluush@gmail.com — criada 26/06/2026
+]);
+
+export function isMasterAccount(uid: string | undefined | null): boolean {
+  return !!uid && MASTER_UIDS.has(uid);
+}
+
 export function planHasFeature(plan: PlanTier, feature: GatedFeature): boolean {
   return PLAN_FEATURES[plan].includes(feature);
 }

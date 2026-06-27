@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { User } from "firebase/auth";
 import type { GatedFeature, PlanTier } from "./plan";
-import { getLimits, isFeatureLocked } from "./plan";
+import { getLimits, isFeatureLocked, isMasterAccount } from "./plan";
 
 const DEV_OVERRIDE_KEY = "bancamais_dev_plan";
 
@@ -21,6 +21,7 @@ export function usePlan(user: User | null, demoMode: boolean) {
   return useMemo(() => {
     let plan: PlanTier = "free";
     if (demoMode) plan = "edge";
+    if (isMasterAccount(user?.uid)) plan = "edge";
 
     const override = typeof localStorage !== "undefined" ? localStorage.getItem(DEV_OVERRIDE_KEY) : null;
     if (override === "free" || override === "edge") plan = override;
