@@ -219,11 +219,15 @@ export type BetEditResult =
   | { ok: true; updatedBet: Bet; updatedTransactions: Transaction[] }
   | { ok: false; error: string };
 
-/** Atualiza campos de uma aposta pendente e ajusta a transação de stake. */
+/**
+ * Atualiza campos de uma aposta e ajusta as transações relacionadas.
+ * Funciona para qualquer status: em apostas liquidadas, recalcula o retorno
+ * (payout/refund) conforme stake/odd. Cashout mantém o valor recebido.
+ */
 export function buildBetEdit(data: FormData, state: AppState, betId: string): BetEditResult {
   const existing = state.bets.find((b) => b.id === betId);
-  if (!existing || existing.status !== "pending") {
-    return { ok: false, error: "Só é possível editar apostas pendentes." };
+  if (!existing) {
+    return { ok: false, error: "Aposta não encontrada." };
   }
 
   const bookmakerId = String(data.get("bookmakerId"));
@@ -241,13 +245,24 @@ export function buildBetEdit(data: FormData, state: AppState, betId: string): Be
     return { ok: false, error: "Odd inválida. O valor mínimo é 1.01." };
   }
 
-  const available = getDerivedBookmakerBalance(state, bookmakerId);
-  const effectiveAvailable =
-    bookmakerId === existing.bookmakerId ? available + existing.stake : available;
-
-  if (stake > effectiveAvailable) {
-    return { ok: false, error: `Saldo insuficiente na ${selectedBookmaker.name}.` };
+  // Saldo só trava em aposta pendente (dinheiro ainda alocado). Em apostas
+  // liquidadas a edição é correção retroativa — o fluxo de caixa já aconteceu.
+  if (existing.status === "pending") {
+    const available = getDerivedBookmakerBalance(state, bookmakerId);
+    const effectiveAvailable =
+      bookmakerId === existing.bookmakerId ? available + existing.stake : available;
+    if (stake > effectiveAvailable) {
+      return { ok: false, error: `Saldo insuficiente na ${selectedBookmaker.name}.` };
+    }
   }
+
+  // Recalcula o retorno conforme o status. Cashout é manual: preserva o valor.
+  const payout =
+    existing.status === "won" ? stake * odds :
+    existing.status === "void" ? stake :
+    existing.status === "lost" ? 0 :
+    existing.status === "cashout" ? existing.payout :
+    undefined;
 
   const updatedBet: Bet = {
     ...existing,
@@ -262,15 +277,26 @@ export function buildBetEdit(data: FormData, state: AppState, betId: string): Be
     tags: String(data.get("tags")).split(",").map((t) => t.trim()).filter(Boolean),
     stake,
     odds,
+    payout,
     closingOdds: Number(data.get("closingOdds")) || undefined,
     mode: String(data.get("mode")) as Bet["mode"],
   };
 
-  const updatedTransactions = state.transactions.map((t) =>
-    t.referenceId === betId && t.type === "bet_stake"
-      ? { ...t, amount: -stake, bookmakerId, description: `Stake - ${updatedBet.eventName}` }
-      : t,
-  );
+  const updatedTransactions = state.transactions.map((t) => {
+    if (t.referenceId !== betId) return t;
+    if (t.type === "bet_stake") {
+      return { ...t, amount: -stake, bookmakerId, description: `Stake - ${updatedBet.eventName}` };
+    }
+    if (t.type === "bet_payout" || t.type === "bet_refund") {
+      return {
+        ...t,
+        amount: payout ?? t.amount,
+        bookmakerId,
+        description: t.description.replace(/ - .*/, ` - ${updatedBet.eventName}`),
+      };
+    }
+    return t;
+  });
 
   return { ok: true, updatedBet, updatedTransactions };
 }
