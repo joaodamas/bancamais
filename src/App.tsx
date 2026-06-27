@@ -685,9 +685,10 @@ export function App() {
       return;
     }
 
-    const { bet, transaction } = result;
+    const { bet, transaction, settlementTransaction } = result;
+    const newTransactions = settlementTransaction ? [settlementTransaction, transaction] : [transaction];
     const isFirstBet = state.bets.length === 0;
-    syncToCloud(updateState({ ...state, bets: [bet, ...state.bets], transactions: [transaction, ...state.transactions] }));
+    syncToCloud(updateState({ ...state, bets: [bet, ...state.bets], transactions: [...newTransactions, ...state.transactions] }));
     if (isFirstBet) track("first_bet_recorded");
     track("bet_recorded", { source: bet.source ?? "manual", mode: bet.mode });
     if (bet.source === "ocr") track("ocr_used");
@@ -1193,6 +1194,7 @@ export function App() {
       <Suspense fallback={<ModalFallback />}>
         <QuickBet
           state={state}
+          userId={user?.uid ?? null}
           onSubmit={addBet}
           onClose={() => { setNewBetPrefill(null); setView("bets"); }}
           onSwitchToFull={() => setBetMode("full")}

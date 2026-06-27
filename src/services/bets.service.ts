@@ -10,8 +10,10 @@ import { potentialReturn } from "../lib/metrics";
 import { parseOcrMetadata, isSuccessfulOcr, getOcrConfidenceScore } from "../lib/ocr";
 
 export type BetBuildResult =
-  | { ok: true; bet: Bet; transaction: Transaction }
+  | { ok: true; bet: Bet; transaction: Transaction; settlementTransaction?: Transaction | null }
   | { ok: false; error: string; redirectTo?: "books" };
+
+const SETTLEABLE_STATUSES: Bet["status"][] = ["pending", "won", "lost", "cashout", "void"];
 
 /** Constrói um novo Bet e sua Transaction de stake a partir do FormData. */
 export function buildBetFromForm(
@@ -41,6 +43,13 @@ export function buildBetFromForm(
   if (stake > availableBalance) {
     return { ok: false, error: `Saldo insuficiente na ${selectedBookmaker.name}.` };
   }
+
+  const finalSlipPath = slipImagePath ?? (String(data.get("uploadedSlipImagePath") || "") || undefined);
+  const finalSlipUrl = slipImageUrl ?? (String(data.get("uploadedSlipImageUrl") || "") || undefined);
+
+  const statusInput = String(data.get("status") || "pending") as Bet["status"];
+  const status = SETTLEABLE_STATUSES.includes(statusInput) ? statusInput : "pending";
+  const cashoutAmount = Number(data.get("cashoutAmount"));
 
   const ocrMetadata = parseOcrMetadata(data.get("ocrMetadata"));
   const hasSuccessfulOcr = isSuccessfulOcr(ocrMetadata);
@@ -77,8 +86,8 @@ export function buildBetFromForm(
         ? getOcrConfidenceScore(ocrMetadata)
         : undefined,
     mode: String(data.get("mode")) as Bet["mode"],
-    slipImagePath,
-    slipImageUrl,
+    slipImagePath: finalSlipPath,
+    slipImageUrl: finalSlipUrl,
     ocrMetadata,
   };
 
@@ -93,7 +102,39 @@ export function buildBetFromForm(
     referenceId: bet.id,
   };
 
-  return { ok: true, bet, transaction };
+  let settlementTransaction: Transaction | null = null;
+  if (status !== "pending") {
+    const payout =
+      status === "won"
+        ? potentialReturn(bet)
+        : status === "cashout"
+          ? (Number.isFinite(cashoutAmount) && cashoutAmount > 0 ? cashoutAmount : potentialReturn(bet))
+          : status === "void"
+            ? stake
+            : 0;
+
+    bet.status = status;
+    bet.payout = payout;
+    bet.settlementSource = "manual";
+
+    if (payout > 0) {
+      settlementTransaction = {
+        id: createTransactionId(),
+        date: bet.placedAt,
+        type: status === "won" || status === "cashout" ? "bet_payout" : "bet_refund",
+        bookmakerId,
+        description:
+          status === "won" ? `Retorno - ${bet.eventName}` :
+          status === "cashout" ? `Cashout - ${bet.eventName}` :
+          `Void - ${bet.eventName}`,
+        amount: payout,
+        referenceType: "bet",
+        referenceId: bet.id,
+      };
+    }
+  }
+
+  return { ok: true, bet, transaction, settlementTransaction };
 }
 
 export type SettlementResult = {

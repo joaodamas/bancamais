@@ -8244,6 +8244,45 @@ button.danger:hover {
   color: var(--muted);
 }
 
+.quick-bet-ocr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.quick-bet-file { display: none; }
+
+.quick-bet-ocr-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.quick-bet-ocr-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-bright);
+}
+
+.quick-bet-ocr-btn:disabled { opacity: 0.6; cursor: default; }
+
+.quick-bet-ocr-msg { font-size: 11px; line-height: 1.4; flex: 1 1 140px; }
+.quick-bet-ocr-loading { color: var(--muted); }
+.quick-bet-ocr-done { color: var(--positive); }
+.quick-bet-ocr-error { color: var(--negative); }
+
+.spin { animation: spin 0.8s linear infinite; }
+
 .quick-bet-form {
   display: flex;
   flex-direction: column;

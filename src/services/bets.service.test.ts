@@ -94,6 +94,62 @@ describe("buildBetFromForm — sucesso", () => {
   });
 });
 
+describe("buildBetFromForm — liquidação imediata (status)", () => {
+  it("status ausente mantém pending sem transaction de payout", () => {
+    const result = buildBetFromForm(fd(VALID_FIELDS), stateWithBalance());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.bet.status).toBe("pending");
+    expect(result.settlementTransaction).toBeNull();
+  });
+
+  it("status won liquida na criação com payout = stake * odds", () => {
+    const result = buildBetFromForm(fd({ ...VALID_FIELDS, status: "won" }), stateWithBalance());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.bet.status).toBe("won");
+    expect(result.bet.payout).toBe(200);
+    expect(result.bet.settlementSource).toBe("manual");
+    expect(result.settlementTransaction?.type).toBe("bet_payout");
+    expect(result.settlementTransaction?.amount).toBe(200);
+    expect(result.settlementTransaction?.referenceId).toBe(result.bet.id);
+  });
+
+  it("status lost não gera transaction de payout", () => {
+    const result = buildBetFromForm(fd({ ...VALID_FIELDS, status: "lost" }), stateWithBalance());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.bet.status).toBe("lost");
+    expect(result.bet.payout).toBe(0);
+    expect(result.settlementTransaction).toBeNull();
+  });
+
+  it("status cashout usa o valor informado", () => {
+    const result = buildBetFromForm(fd({ ...VALID_FIELDS, status: "cashout", cashoutAmount: "150" }), stateWithBalance());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.bet.payout).toBe(150);
+    expect(result.settlementTransaction?.type).toBe("bet_payout");
+    expect(result.settlementTransaction?.amount).toBe(150);
+  });
+
+  it("status cashout sem valor cai para o retorno potencial", () => {
+    const result = buildBetFromForm(fd({ ...VALID_FIELDS, status: "cashout" }), stateWithBalance());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.bet.payout).toBe(200);
+  });
+
+  it("status void reembolsa a stake", () => {
+    const result = buildBetFromForm(fd({ ...VALID_FIELDS, status: "void" }), stateWithBalance());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.bet.payout).toBe(100);
+    expect(result.settlementTransaction?.type).toBe("bet_refund");
+    expect(result.settlementTransaction?.amount).toBe(100);
+  });
+});
+
 describe("buildBetFromForm — validações", () => {
   it("rejeita quando bookmaker não existe", () => {
     const result = buildBetFromForm(fd({ ...VALID_FIELDS, bookmakerId: "inexistente" }), makeState());

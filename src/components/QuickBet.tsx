@@ -1,30 +1,70 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { Zap, X, ChevronRight } from "lucide-react";
-import type { AppState } from "../lib/types";
+import { Zap, ChevronRight, ScanLine, Loader2 } from "lucide-react";
+import type { AppState, BetStatus } from "../lib/types";
 import { money } from "../lib/metrics";
+import { uploadAndParseBetSlip, buildOcrSubmissionMetadata, type ParseBetSlipResponse } from "../lib/ocr";
 
 interface QuickBetProps {
   state: AppState;
+  userId?: string | null;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   onClose: () => void;
   onSwitchToFull: () => void;
 }
 
+type SettleStatus = Extract<BetStatus, "pending" | "won" | "lost" | "cashout" | "void">;
+
+const STATUS_OPTIONS: { value: SettleStatus; label: string }[] = [
+  { value: "pending", label: "Pendente" },
+  { value: "won", label: "Ganha" },
+  { value: "lost", label: "Perdida" },
+  { value: "cashout", label: "Cashout" },
+  { value: "void", label: "Reembolso" },
+];
+
+/** Datetime-local no fuso local, formato yyyy-MM-ddTHH:mm. */
+function nowLocalInput(): string {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
+
+function isoToLocalInput(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
+
 /**
  * Modo Rápido de registro de aposta.
  * Fluxo linear por Tab/Enter: Evento → Stake → Odd → Casa → [Salvar]
- * Sem seções, sem OCR, sem wizard. Ideal para entrada em sequência.
+ * Suporta OCR leve (escanear print) e liquidação imediata (status + cashout).
  */
-export function QuickBet({ state, onSubmit, onClose, onSwitchToFull }: QuickBetProps) {
+export function QuickBet({ state, userId, onSubmit, onClose, onSwitchToFull }: QuickBetProps) {
   const [submitting, setSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Refs dos campos para navegação por Enter
+  // Refs dos campos para navegação por Enter e preenchimento via OCR
   const eventRef = useRef<HTMLInputElement>(null);
+  const eventAtRef = useRef<HTMLInputElement>(null);
   const stakeRef = useRef<HTMLInputElement>(null);
   const oddsRef = useRef<HTMLInputElement>(null);
   const bookmakerRef = useRef<HTMLSelectElement>(null);
   const submitRef = useRef<HTMLButtonElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const [stake, setStake] = useState("");
+  const [odds, setOdds] = useState("");
+  const [status, setStatus] = useState<SettleStatus>("pending");
+  const [cashoutAmount, setCashoutAmount] = useState("");
+
+  // OCR
+  const [ocrState, setOcrState] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [ocrMessage, setOcrMessage] = useState("");
+  const [ocrMeta, setOcrMeta] = useState("");
+  const [slipPath, setSlipPath] = useState("");
+  const [slipUrl, setSlipUrl] = useState("");
 
   function focusNext(current: "event" | "stake" | "odds" | "bookmaker") {
     const map = { event: stakeRef, stake: oddsRef, odds: bookmakerRef, bookmaker: submitRef };
@@ -40,6 +80,51 @@ export function QuickBet({ state, onSubmit, onClose, onSwitchToFull }: QuickBetP
     };
   }
 
+  function applyOcr(ocr: ParseBetSlipResponse, upload: { path: string; url: string }) {
+    const f = ocr.fields;
+    if (f.eventName.value && eventRef.current) eventRef.current.value = f.eventName.value;
+    if (f.eventAtIso.value && eventAtRef.current) {
+      const local = isoToLocalInput(f.eventAtIso.value);
+      if (local) eventAtRef.current.value = local;
+    }
+    if (typeof f.stake.value === "number" && f.stake.value > 0) setStake(String(f.stake.value));
+    if (typeof f.odds.value === "number" && f.odds.value > 1) setOdds(String(f.odds.value));
+    if (f.bookmakerName.value && bookmakerRef.current) {
+      const match = state.bookmakers.find(
+        (b) => b.name.toLowerCase() === String(f.bookmakerName.value).toLowerCase(),
+      );
+      if (match) bookmakerRef.current.value = match.id;
+    }
+
+    const currentValues = {
+      eventName: f.eventName.value,
+      eventAtIso: f.eventAtIso.value,
+      stake: f.stake.value,
+      odds: f.odds.value,
+      bookmakerName: f.bookmakerName.value,
+    };
+    setOcrMeta(buildOcrSubmissionMetadata(ocr, currentValues, {}, upload));
+    setSlipPath(upload.path);
+    setSlipUrl(upload.url);
+  }
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !userId) return;
+    setOcrState("loading");
+    setOcrMessage("Lendo o print...");
+    try {
+      const { ocr, upload } = await uploadAndParseBetSlip(userId, file);
+      applyOcr(ocr, upload);
+      setOcrState("done");
+      setOcrMessage("Campos preenchidos pelo print. Confira antes de salvar.");
+    } catch {
+      setOcrState("error");
+      setOcrMessage("Não foi possível ler o print. Preencha manualmente.");
+    }
+  }
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSubmitting(true);
@@ -50,12 +135,18 @@ export function QuickBet({ state, onSubmit, onClose, onSwitchToFull }: QuickBetP
     }
   }
 
-  // Prevê o retorno potencial para feedback imediato
-  const [stake, setStake] = useState("");
-  const [odds, setOdds] = useState("");
   const potentialReturn = Number(stake) > 0 && Number(odds) > 1
     ? Number(stake) * Number(odds)
     : null;
+
+  // Retorno efetivo conforme o status escolhido (para feedback imediato)
+  const settledReturn = (() => {
+    if (status === "pending" || potentialReturn === null) return null;
+    if (status === "won") return potentialReturn;
+    if (status === "void") return Number(stake);
+    if (status === "cashout") return Number(cashoutAmount) > 0 ? Number(cashoutAmount) : potentialReturn;
+    return 0; // lost
+  })();
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -71,7 +162,7 @@ export function QuickBet({ state, onSubmit, onClose, onSwitchToFull }: QuickBetP
               type="button"
               className="quick-bet-switch"
               onClick={onSwitchToFull}
-              title="Abrir modo completo com OCR e wizard"
+              title="Abrir modo completo com wizard e revisão de OCR"
             >
               Modo completo <ChevronRight size={12} />
             </button>
@@ -80,8 +171,32 @@ export function QuickBet({ state, onSubmit, onClose, onSwitchToFull }: QuickBetP
         </div>
 
         <p className="quick-bet-hint">
-          Navegue pelos campos com <kbd>Tab</kbd> ou <kbd>Enter</kbd>. Use o modo completo para OCR e sugestões de fixture.
+          Navegue pelos campos com <kbd>Tab</kbd> ou <kbd>Enter</kbd>. Escaneie um print para preencher automaticamente.
         </p>
+
+        {userId && (
+          <div className="quick-bet-ocr">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="quick-bet-file"
+              onChange={handleFile}
+            />
+            <button
+              type="button"
+              className="quick-bet-ocr-btn"
+              onClick={() => fileRef.current?.click()}
+              disabled={ocrState === "loading"}
+            >
+              {ocrState === "loading" ? <Loader2 size={14} className="spin" /> : <ScanLine size={14} />}
+              {ocrState === "loading" ? "Lendo print..." : "Escanear print (OCR)"}
+            </button>
+            {ocrMessage && (
+              <span className={`quick-bet-ocr-msg quick-bet-ocr-${ocrState}`}>{ocrMessage}</span>
+            )}
+          </div>
+        )}
 
         <form ref={formRef} className="quick-bet-form" onSubmit={handleSubmit}>
           {/* Campos ocultos com defaults */}
@@ -93,17 +208,14 @@ export function QuickBet({ state, onSubmit, onClose, onSwitchToFull }: QuickBetP
           <input type="hidden" name="tags" value="" />
           <input type="hidden" name="closingOdds" value="" />
           <input type="hidden" name="strategyId" value="" />
-          <input type="hidden" name="uploadedSlipImagePath" value="" />
-          <input type="hidden" name="uploadedSlipImageUrl" value="" />
-          <input type="hidden" name="ocrRequestId" value="" />
-          <input type="hidden" name="ocrStatus" value="" />
-          <input type="hidden" name="ocrProvider" value="" />
-          <input type="hidden" name="ocrMetadata" value="" />
           <input type="hidden" name="suggestionId" value="" />
           <input type="hidden" name="fixtureId" value="" />
           <input type="hidden" name="estimatedProbability" value="" />
           <input type="hidden" name="estimatedEdge" value="" />
           <input type="hidden" name="suggestionConfidenceScore" value="" />
+          <input type="hidden" name="ocrMetadata" value={ocrMeta} />
+          <input type="hidden" name="uploadedSlipImagePath" value={slipPath} />
+          <input type="hidden" name="uploadedSlipImageUrl" value={slipUrl} />
 
           {/* Linha 1: Evento + Data */}
           <div className="quick-bet-row">
@@ -122,10 +234,12 @@ export function QuickBet({ state, onSubmit, onClose, onSwitchToFull }: QuickBetP
             <label className="quick-bet-field quick-bet-date">
               <span>Data do evento <em className="quick-bet-required">*</em></span>
               <input
+                ref={eventAtRef}
                 name="eventAt"
                 required
                 type="datetime-local"
                 lang="pt-BR"
+                defaultValue={nowLocalInput()}
                 onKeyDown={handleKeyDown("event")}
               />
             </label>
@@ -165,9 +279,9 @@ export function QuickBet({ state, onSubmit, onClose, onSwitchToFull }: QuickBetP
             </label>
           </div>
 
-          {/* Linha 3: Casa */}
+          {/* Linha 3: Casa + Status */}
           <div className="quick-bet-row">
-            <label className="quick-bet-field quick-bet-full">
+            <label className="quick-bet-field">
               <span>Casa de apostas <em className="quick-bet-required">*</em></span>
               <select
                 ref={bookmakerRef}
@@ -182,15 +296,58 @@ export function QuickBet({ state, onSubmit, onClose, onSwitchToFull }: QuickBetP
                 ))}
               </select>
             </label>
+            <label className="quick-bet-field">
+              <span>Status</span>
+              <select
+                name="status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value as SettleStatus)}
+              >
+                {STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </label>
           </div>
 
-          {/* Feedback de retorno potencial */}
-          {potentialReturn !== null && (
+          {/* Campo condicional: valor do cashout */}
+          {status === "cashout" && (
+            <div className="quick-bet-row">
+              <label className="quick-bet-field quick-bet-full">
+                <span>Valor recebido no cashout (R$)</span>
+                <input
+                  name="cashoutAmount"
+                  min="0"
+                  step="0.01"
+                  type="number"
+                  placeholder={potentialReturn ? money.format(potentialReturn).replace("R$", "").trim() : "0,00"}
+                  value={cashoutAmount}
+                  onChange={(e) => setCashoutAmount(e.target.value)}
+                />
+              </label>
+            </div>
+          )}
+
+          {/* Feedback de retorno */}
+          {status === "pending" && potentialReturn !== null && (
             <div className="quick-bet-return">
               <span>Possível retorno</span>
               <strong className="pos">{money.format(potentialReturn)}</strong>
               <span className="quick-bet-gain">
                 (ganho: <b className="pos">{money.format(potentialReturn - Number(stake))}</b>)
+              </span>
+            </div>
+          )}
+          {status !== "pending" && settledReturn !== null && (
+            <div className="quick-bet-return">
+              <span>Resultado registrado</span>
+              <strong className={settledReturn - Number(stake) >= 0 ? "pos" : "neg"}>
+                {money.format(settledReturn)}
+              </strong>
+              <span className="quick-bet-gain">
+                (lucro: <b className={settledReturn - Number(stake) >= 0 ? "pos" : "neg"}>
+                  {money.format(settledReturn - Number(stake))}
+                </b>)
               </span>
             </div>
           )}
