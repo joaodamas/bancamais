@@ -1,6 +1,6 @@
 import type { OcrFieldName, OcrSubmissionMetadata, ParseBetSlipResponse } from "./ocr";
 
-export type BetStatus = "pending" | "won" | "lost" | "cashout" | "void";
+export type BetStatus = "pending" | "won" | "lost" | "cashout" | "void" | "half_won" | "half_lost";
 
 export type TransactionType =
   | "deposit"

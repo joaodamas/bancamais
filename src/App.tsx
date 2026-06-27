@@ -750,7 +750,8 @@ export function App() {
     syncToCloud(updateState({ ...state, bets: updatedBets, transactions }));
     const labels: Record<Bet["status"], string> = {
       won: "Ganha! 🎯", lost: "Perdida", cashout: "Cashout registrado",
-      void: "Aposta cancelada", pending: "Pendente"
+      void: "Aposta cancelada", pending: "Pendente",
+      half_won: "Meia ganha registrada", half_lost: "Meia perdida registrada",
     };
     toast.success(labels[status] ?? "Status atualizado");
   }

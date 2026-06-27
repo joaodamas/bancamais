@@ -6,6 +6,8 @@ const STATUS_LABEL: Record<Bet["status"], string> = {
   lost: "Perdida",
   cashout: "Cashout",
   void: "Cancelada",
+  half_won: "Meia ganha",
+  half_lost: "Meia perdida",
 };
 
 /**

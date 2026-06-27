@@ -22,6 +22,8 @@ const statusLabel: Record<Bet["status"], string> = {
   lost: "Perdida",
   cashout: "Cashout",
   void: "Cancelada",
+  half_won: "Meia ganha",
+  half_lost: "Meia perdida",
 };
 
 /** Selo de status do CLV por aposta: captura, espera ou ausência da linha de fechamento. */
@@ -275,7 +277,7 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
       {/* Toolbar única: filtros de status + busca + export */}
       <div className="bets-head">
         <div className="filter-tabs">
-          {(["all", "pending", "won", "lost", "cashout", "void"] as const).map((s) => (
+          {(["all", "pending", "won", "half_won", "half_lost", "lost", "cashout", "void"] as const).map((s) => (
             <button
               key={s}
               className={statusFilter === s ? "filter-tab active" : "filter-tab"}
@@ -590,6 +592,8 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                               {actionMenuBetId === bet.id && (
                                 <div className="bet-actions-dropdown">
                                   <button onClick={() => { onEditBet(bet.id); setActionMenuBetId(null); }}>Editar</button>
+                                  <button onClick={() => { settleBet(bet.id, "half_won"); setActionMenuBetId(null); }}>Meia ganha</button>
+                                  <button onClick={() => { settleBet(bet.id, "half_lost"); setActionMenuBetId(null); }}>Meia perdida</button>
                                   <button onClick={() => { setCashoutBetId(bet.id); setCashoutInput(""); setActionMenuBetId(null); }}>Cashout</button>
                                   <button onClick={() => { settleBet(bet.id, "void"); setActionMenuBetId(null); }}>Anular (void)</button>
                                   <div className="bet-actions-separator" />

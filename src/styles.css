@@ -9291,6 +9291,8 @@ button.danger:hover {
 .badge-lost    { background: rgba(220, 38, 38, 0.09);  color: #B91C1C; }
 .badge-cashout { background: rgba(8, 145, 178, 0.10);  color: #0E7490; }
 .badge-void    { background: rgba(100, 116, 139, 0.10); color: var(--muted); }
+.badge-half_won  { background: rgba(22, 163, 74, 0.07);  color: #15803D; }
+.badge-half_lost { background: rgba(220, 38, 38, 0.06);  color: #B91C1C; }
 
 /* ── Ações aparecem só no hover/foco da linha (Linear) ── */
 .bets-table-v2 .bet-actions-cell > * {
@@ -10270,6 +10272,8 @@ button.danger:hover {
 .bets-table-v2 tbody tr.bet-row-won td { background: color-mix(in srgb, var(--positive) 4%, transparent); }
 .bets-table-v2 tbody tr.bet-row-lost td { background: color-mix(in srgb, var(--negative) 4%, transparent); }
 .bets-table-v2 tbody tr.bet-row-cashout td { background: color-mix(in srgb, var(--warning) 5%, transparent); }
+.bets-table-v2 tbody tr.bet-row-half_won td { background: color-mix(in srgb, var(--positive) 2%, transparent); }
+.bets-table-v2 tbody tr.bet-row-half_lost td { background: color-mix(in srgb, var(--negative) 2%, transparent); }
 .bets-table-v2 tbody tr.bet-row-void td { background: color-mix(in srgb, var(--muted) 6%, transparent); }
 
 /* Veredito do radar (over/under exposure) */

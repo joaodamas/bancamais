@@ -1,5 +1,5 @@
 import type { AppState } from "./types";
-import { potentialReturn, groupProfitBySport, groupProfitByBookmaker, groupProfitByStrategy, clvPercent, betProfit } from "./metrics";
+import { groupProfitBySport, groupProfitByBookmaker, groupProfitByStrategy, clvPercent, betProfit } from "./metrics";
 import { buildLedgerTimeline, deriveBookmakerBalances } from "./ledger";
 
 export interface TimeSeriesPoint {
@@ -133,14 +133,8 @@ export function buildMonthlyData(state: AppState): MonthlyPoint[] {
     const d = new Date(bet.eventAt);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const existing = map.get(key) ?? { profit: 0, staked: 0, bets: 0 };
-    const payout =
-      bet.status === "won" || bet.status === "cashout"
-        ? (bet.payout ?? potentialReturn(bet))
-        : bet.status === "void"
-        ? bet.stake
-        : 0;
     map.set(key, {
-      profit: existing.profit + payout - bet.stake,
+      profit: existing.profit + betProfit(bet),
       staked: existing.staked + bet.stake,
       bets: existing.bets + 1,
     });

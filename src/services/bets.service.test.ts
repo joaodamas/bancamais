@@ -1,7 +1,35 @@
 import { describe, it, expect } from "vitest";
-import { buildBetFromForm, buildSettlement, buildBulkSettlement, mergeImportedBets } from "./bets.service";
+import { buildBetFromForm, buildSettlement, buildBulkSettlement, mergeImportedBets, settledPayout } from "./bets.service";
+import { betProfit } from "../lib/metrics";
 import { emptyState } from "../lib/storage";
 import type { AppState, Bet } from "../lib/types";
+
+describe("settledPayout (meia-aposta)", () => {
+  it("meia ganha: metade no preço cheio + metade devolvida", () => {
+    // stake 100, odd 2.0 → 100*2/2 + 100/2 = 150; lucro = +50
+    expect(settledPayout("half_won", 100, 2)).toBe(150);
+    const bet = { status: "half_won", stake: 100, odds: 2, payout: 150 } as Bet;
+    expect(betProfit(bet)).toBe(50);
+  });
+
+  it("meia perdida: devolve metade do stake", () => {
+    // stake 100 → payout 50; lucro = -50
+    expect(settledPayout("half_lost", 100, 2)).toBe(50);
+    const bet = { status: "half_lost", stake: 100, odds: 2, payout: 50 } as Bet;
+    expect(betProfit(bet)).toBe(-50);
+  });
+
+  it("liquida uma pendente como meia ganha pela settlement", () => {
+    const bet: Bet = {
+      id: "x", placedAt: BASE_DATE, eventAt: BASE_DATE, sport: "Futebol", league: "UCL",
+      eventName: "A x B", market: "AH", selection: "Over 2.25", bookmakerId: "b1",
+      tags: [], stake: 100, odds: 2, status: "pending", mode: "prelive",
+    };
+    const result = buildSettlement([bet], "x", "half_won");
+    expect(result?.payout).toBe(150);
+    expect(result?.updatedBets[0].status).toBe("half_won");
+  });
+});
 
 function makeState(overrides: Partial<AppState> = {}): AppState {
   return {

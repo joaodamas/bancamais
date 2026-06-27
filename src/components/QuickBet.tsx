@@ -16,11 +16,13 @@ interface QuickBetProps {
   onUpgrade?: () => void;
 }
 
-type SettleStatus = Extract<BetStatus, "pending" | "won" | "lost" | "cashout" | "void">;
+type SettleStatus = Extract<BetStatus, "pending" | "won" | "lost" | "cashout" | "void" | "half_won" | "half_lost">;
 
 const STATUS_OPTIONS: { value: SettleStatus; label: string }[] = [
   { value: "pending", label: "Pendente" },
   { value: "won", label: "Ganha" },
+  { value: "half_won", label: "Meia ganha" },
+  { value: "half_lost", label: "Meia perdida" },
   { value: "lost", label: "Perdida" },
   { value: "cashout", label: "Cashout" },
   { value: "void", label: "Reembolso" },
@@ -169,7 +171,9 @@ export function QuickBet({ state, userId, canUseOcr = true, onSubmit, onAddBookm
   const settledReturn = (() => {
     if (status === "pending" || potentialReturn === null) return null;
     if (status === "won") return potentialReturn;
+    if (status === "half_won") return potentialReturn / 2 + Number(stake) / 2;
     if (status === "void") return Number(stake);
+    if (status === "half_lost") return Number(stake) / 2;
     if (status === "cashout") return Number(cashoutAmount) > 0 ? Number(cashoutAmount) : potentialReturn;
     return 0; // lost
   })();

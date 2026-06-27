@@ -108,7 +108,7 @@ function buildPerformance(state: AppState): SuggestionPerformanceSnapshot {
   const trackedSuggestions = adoptedSuggestions.length;
   const stakeTotal = settledSuggestions.reduce((sum, bet) => sum + bet.stake, 0);
   const profit = settledSuggestions.reduce((sum, bet) => sum + getSettledSuggestionProfit(bet), 0);
-  const wins = settledSuggestions.filter((bet) => bet.status === "won" || bet.status === "cashout").length;
+  const wins = settledSuggestions.filter((bet) => bet.status === "won" || bet.status === "cashout" || bet.status === "half_won").length;
   const edges = adoptedSuggestions
     .map((bet) => bet.estimatedEdge)
     .filter((value): value is number => typeof value === "number");

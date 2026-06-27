@@ -6,8 +6,45 @@
 import type { AppState, Bet, Transaction } from "../lib/types";
 import { createBetId, createTransactionId } from "../lib/storage";
 import { getDerivedBookmakerBalance } from "../lib/ledger";
-import { potentialReturn } from "../lib/metrics";
 import { parseOcrMetadata, isSuccessfulOcr, getOcrConfidenceScore } from "../lib/ocr";
+
+/**
+ * Retorno bruto (payout) de uma aposta liquidada, por status — fonte única.
+ * - won: stake × odd
+ * - half_won: metade no preço cheio + metade devolvida = stake×odd/2 + stake/2
+ * - void: devolve o stake
+ * - half_lost: devolve metade do stake
+ * - cashout: valor informado (fallback = retorno potencial)
+ * - lost: 0
+ */
+export function settledPayout(
+  status: Bet["status"],
+  stake: number,
+  odds: number,
+  cashoutAmount?: number,
+): number {
+  switch (status) {
+    case "won": return stake * odds;
+    case "half_won": return (stake * odds) / 2 + stake / 2;
+    case "void": return stake;
+    case "half_lost": return stake / 2;
+    case "cashout": return cashoutAmount != null && cashoutAmount > 0 ? cashoutAmount : stake * odds;
+    default: return 0;
+  }
+}
+
+/** Lançamento de payout é "ganho" (bet_payout) ou "devolução" (bet_refund)? */
+function isWinningsPayout(status: Bet["status"]): boolean {
+  return status === "won" || status === "half_won" || status === "cashout";
+}
+
+const SETTLEMENT_DESCRIPTION: Partial<Record<Bet["status"], string>> = {
+  won: "Retorno",
+  half_won: "Retorno (meia)",
+  cashout: "Cashout",
+  void: "Void",
+  half_lost: "Estorno (meia)",
+};
 
 export type BetBuildResult =
   | { ok: true; bet: Bet; transaction: Transaction; settlementTransaction?: Transaction | null }
@@ -104,14 +141,7 @@ export function buildBetFromForm(
 
   let settlementTransaction: Transaction | null = null;
   if (status !== "pending") {
-    const payout =
-      status === "won"
-        ? potentialReturn(bet)
-        : status === "cashout"
-          ? (Number.isFinite(cashoutAmount) && cashoutAmount > 0 ? cashoutAmount : potentialReturn(bet))
-          : status === "void"
-            ? stake
-            : 0;
+    const payout = settledPayout(status, stake, odds, Number.isFinite(cashoutAmount) ? cashoutAmount : undefined);
 
     bet.status = status;
     bet.payout = payout;
@@ -121,12 +151,9 @@ export function buildBetFromForm(
       settlementTransaction = {
         id: createTransactionId(),
         date: bet.placedAt,
-        type: status === "won" || status === "cashout" ? "bet_payout" : "bet_refund",
+        type: isWinningsPayout(status) ? "bet_payout" : "bet_refund",
         bookmakerId,
-        description:
-          status === "won" ? `Retorno - ${bet.eventName}` :
-          status === "cashout" ? `Cashout - ${bet.eventName}` :
-          `Void - ${bet.eventName}`,
+        description: `${SETTLEMENT_DESCRIPTION[status] ?? "Retorno"} - ${bet.eventName}`,
         amount: payout,
         referenceType: "bet",
         referenceId: bet.id,
@@ -153,24 +180,14 @@ export function buildSettlement(
   const bet = bets.find((b) => b.id === betId);
   if (!bet || bet.status !== "pending") return null;
 
-  const payout =
-    status === "won"
-      ? potentialReturn(bet)
-      : status === "cashout"
-        ? (cashoutAmount != null && cashoutAmount > 0 ? cashoutAmount : potentialReturn(bet))
-        : status === "void"
-          ? bet.stake
-          : 0;
+  const payout = settledPayout(status, bet.stake, bet.odds, cashoutAmount);
 
   const newTransaction: Transaction | null = payout > 0 ? {
     id: createTransactionId(),
     date: new Date().toISOString(),
-    type: status === "won" || status === "cashout" ? "bet_payout" : "bet_refund",
+    type: isWinningsPayout(status) ? "bet_payout" : "bet_refund",
     bookmakerId: bet.bookmakerId,
-    description:
-      status === "won" ? `Retorno - ${bet.eventName}` :
-      status === "cashout" ? `Cashout - ${bet.eventName}` :
-      `Void - ${bet.eventName}`,
+    description: `${SETTLEMENT_DESCRIPTION[status] ?? "Retorno"} - ${bet.eventName}`,
     amount: payout,
     referenceType: "bet",
     referenceId: bet.id,
@@ -258,11 +275,9 @@ export function buildBetEdit(data: FormData, state: AppState, betId: string): Be
 
   // Recalcula o retorno conforme o status. Cashout é manual: preserva o valor.
   const payout =
-    existing.status === "won" ? stake * odds :
-    existing.status === "void" ? stake :
-    existing.status === "lost" ? 0 :
+    existing.status === "pending" ? undefined :
     existing.status === "cashout" ? existing.payout :
-    undefined;
+    settledPayout(existing.status, stake, odds);
 
   const updatedBet: Bet = {
     ...existing,

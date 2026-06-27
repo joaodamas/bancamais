@@ -58,7 +58,7 @@ export function analyzeEdge(state: AppState, dimension: EdgeDimension, minBets =
     if (bets.length < minBets) continue;
     const staked = bets.reduce((s, b) => s + b.stake, 0);
     const profit = bets.reduce((s, b) => s + betProfit(b), 0);
-    const wins = bets.filter((b) => b.status === "won" || b.status === "cashout").length;
+    const wins = bets.filter((b) => b.status === "won" || b.status === "cashout" || b.status === "half_won").length;
     const clvs = bets.map(clvPercent).filter((v): v is number => v !== null);
     segments.push({
       key,

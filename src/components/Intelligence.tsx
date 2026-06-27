@@ -25,10 +25,8 @@ function buildHeatmapData(state: AppState) {
     });
 
     const profit = dayBets.reduce((sum, bet) => {
-      const payout = bet.status === "won"
-        ? bet.odds * bet.stake
-        : bet.status === "void" ? bet.stake : 0;
-      return sum + payout - bet.stake;
+      if (bet.status === "void") return sum; // devolve o stake: lucro 0
+      return sum + (bet.payout ?? 0) - bet.stake;
     }, 0);
 
     days.push({ date: d, profit, bets: dayBets.length });

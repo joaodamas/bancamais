@@ -269,7 +269,7 @@ function buildPerformanceFromState(state: AppState) {
     const payout = b.payout ?? (b.status === "won" ? b.stake * b.odds : b.status === "void" ? b.stake : 0);
     return sum + payout - b.stake;
   }, 0);
-  const wins = settledBets.filter((b) => b.status === "won" || b.status === "cashout").length;
+  const wins = settledBets.filter((b) => b.status === "won" || b.status === "cashout" || b.status === "half_won").length;
   const edges = adoptedBets
     .map((b) => b.estimatedEdge)
     .filter((v): v is number => typeof v === "number");

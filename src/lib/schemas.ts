@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
 
-export const BetStatusSchema = z.enum(["pending", "won", "lost", "cashout", "void"]);
+export const BetStatusSchema = z.enum(["pending", "won", "lost", "cashout", "void", "half_won", "half_lost"]);
 export const BetModeSchema = z.enum(["prelive", "live"]);
 export const BetSourceSchema = z.enum(["manual", "ocr", "ai_suggestion"]).optional();
 export const TransactionTypeSchema = z.enum([
@@ -72,7 +72,7 @@ export const FullBetFormSchema = z.object({
 
 export const SettlementSchema = z.object({
   betId: z.string().min(1),
-  status: z.enum(["won", "lost", "cashout", "void"]),
+  status: z.enum(["won", "lost", "cashout", "void", "half_won", "half_lost"]),
   cashoutAmount: z.number().positive().optional(),
 }).refine(
   (data) => data.status !== "cashout" || (data.cashoutAmount !== undefined && data.cashoutAmount > 0),

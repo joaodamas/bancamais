@@ -16,8 +16,8 @@ interface ReportsProps {
 
 export function Reports({ state, metrics, onSaveSnapshot }: ReportsProps) {
   const settled = state.bets.filter((bet) => bet.status !== "pending");
-  const won = settled.filter((bet) => bet.status === "won" || bet.status === "cashout");
-  const lost = settled.filter((bet) => bet.status === "lost");
+  const won = settled.filter((bet) => bet.status === "won" || bet.status === "cashout" || bet.status === "half_won");
+  const lost = settled.filter((bet) => bet.status === "lost" || bet.status === "half_lost");
   const totalStaked = state.bets.reduce((sum, bet) => sum + bet.stake, 0);
   const csv = betsToCsv(state);
   const [exportingPdf, setExportingPdf] = useState(false);
