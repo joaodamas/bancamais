@@ -26,7 +26,7 @@ const PAINS = [
   {
     Icon: Target,
     title: "Aposta sem edge é sorte",
-    body: "Se você não mede CLV nem valor esperado, não sabe se ganha por skill ou por acaso — e acaso não paga no longo prazo.",
+    body: "Se você não mede CLV nem valor esperado, não sabe se ganha por skill ou por acaso. E acaso não paga no longo prazo.",
   },
 ];
 
@@ -63,7 +63,7 @@ const FEATURES = [
 const FAQS = [
   {
     q: "Banca+ é um site de apostas?",
-    a: "Não. Banca+ não aceita apostas nem paga prêmios. É uma ferramenta de gestão e disciplina — um terminal analítico para você controlar sua própria banca.",
+    a: "Não. Banca+ não aceita apostas nem paga prêmios. É uma ferramenta de gestão e disciplina, um terminal analítico para você controlar sua própria banca.",
   },
   {
     q: "O plano grátis é realmente grátis?",
@@ -79,7 +79,7 @@ const FAQS = [
   },
   {
     q: "Posso cancelar quando quiser?",
-    a: "Sim. O Edge é uma assinatura sem fidelidade — cancela quando quiser e seus dados continuam no plano grátis.",
+    a: "Sim. O Edge é uma assinatura sem fidelidade. Cancela quando quiser e seus dados continuam no plano grátis.",
   },
 ];
 
@@ -90,14 +90,14 @@ const FREE_FEATURES: PlanFeature[] = [
   { label: "Risco e Performance básicos", included: true },
   { label: "Até 2 casas · 50 apostas/mês · 90 dias de histórico", included: true },
   { label: "Inteligência por IA", included: false },
-  { label: "OCR — escanear bilhete", included: false },
+  { label: "OCR para escanear bilhete", included: false },
   { label: "Odds, CLV & valor esperado", included: false },
 ];
 
 const EDGE_FEATURES: PlanFeature[] = [
   { label: "Tudo do Controle, sem limites", included: true },
   { label: "Inteligência por IA: portfólio, tilt e sugestões", included: true },
-  { label: "OCR — escaneie o bilhete em vez de digitar", included: true },
+  { label: "OCR para escanear o bilhete em vez de digitar", included: true },
   { label: "Odds, CLV & Edge e valor esperado", included: true },
   { label: "Risco avançado com hard stops", included: true },
   { label: "Relatórios avançados + export CSV/PDF", included: true },
@@ -125,7 +125,7 @@ export function Landing({ onGetStarted, onSignIn, onDemo }: LandingProps) {
           <span className="lp-hero-accent">Comece a ganhar vantagem.</span>
         </h1>
         <p className="lp-hero-sub">
-          Banca+ não é um cassino. É onde você controla banca, risco e edge num só lugar —
+          Banca+ não é um cassino. É onde você controla banca, risco e edge num só lugar,
           com as métricas que separam apostadores profissionais de amadores.
         </p>
         <div className="lp-hero-cta">
@@ -293,7 +293,7 @@ export function Landing({ onGetStarted, onSignIn, onDemo }: LandingProps) {
           <article className="lp-trust-card">
             <span className="lp-trust-icon"><ShieldAlert size={20} /></span>
             <h3>Ferramenta de disciplina</h3>
-            <p>Banca+ não incentiva apostar mais — incentiva apostar melhor. Hard stops e limites existem pra proteger sua banca.</p>
+            <p>Banca+ não incentiva apostar mais, e sim apostar melhor. Hard stops e limites existem pra proteger sua banca.</p>
           </article>
         </div>
       </section>

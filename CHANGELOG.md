@@ -9,6 +9,7 @@ Tipos de mudança: **Adicionado**, **Alterado**, **Corrigido**, **Removido**.
 
 ### Alterado
 - Logo: o símbolo "+" da marca ficou maior e com traços mais grossos.
+- Copy da landing e do login: removidos os travessões das frases para um texto mais natural.
 
 ### Adicionado
 - **Landing page (vitrine deslogada)** — visitante deslogado cai na landing; os CTAs levam para cadastro, login ou modo demonstração.

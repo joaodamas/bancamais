@@ -168,7 +168,7 @@ export function AuthPage({ onSignIn, onSignUp, onReset, onGoogleSignIn, onDemo, 
           <p className="auth-features-eyebrow">Terminal analítico para apostadores</p>
           <h2 className="auth-features-title">Controle real.<br />Dados que importam.</h2>
           <p className="auth-features-sub">
-            Chega de planilha. Banca+ centraliza apostas, capital, risco e edge em um único lugar — com as métricas que separam apostadores sérios de amadores.
+            Chega de planilha. Banca+ centraliza apostas, capital, risco e edge em um único lugar, com as métricas que separam apostadores sérios de amadores.
           </p>
 
           <div className="auth-stats-row">
