@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { money } from "../lib/metrics";
 import { calculateLedgerTotalBalance, computeBookmakerLedger, deriveBookmakerBalances, TRANSACTION_TYPE_LABELS } from "../lib/ledger";
+import { KNOWN_BOOKMAKERS } from "../lib/knownBookmakers";
 import type { AppState, BookmakerStatus, Transaction } from "../lib/types";
 
 interface BooksProps {
@@ -135,6 +136,11 @@ export function Books({
                     Nome da casa
                     <input name="name" defaultValue={book.name} required />
                   </label>
+                  <label className="book-edit-label">
+                    Saldo (R$)
+                    <input name="balance" type="number" min="0" step="0.01" defaultValue={displayBalance} />
+                  </label>
+                  <small className="book-edit-hint">Alterar o saldo cria um lançamento de ajuste no ledger.</small>
                   <div className="actions">
                     <button className="primary" type="submit">Salvar</button>
                     <button type="button" onClick={() => setEditingId(null)}>Cancelar</button>
@@ -371,7 +377,10 @@ export function Books({
           </p>
           <label>
             Nome
-            <input name="name" required placeholder="Betano, Bet365, KTO..." />
+            <input name="name" required placeholder="Betano, Bet365, KTO..." list="books-known-list" autoComplete="off" />
+            <datalist id="books-known-list">
+              {KNOWN_BOOKMAKERS.map((n) => <option key={n} value={n} />)}
+            </datalist>
           </label>
           <label>
             Saldo atual

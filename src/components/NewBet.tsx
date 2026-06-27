@@ -24,6 +24,7 @@ import { deriveBetSuggestions, leaguesForSport } from "../lib/betSuggestions";
 import { calculateLedgerTotalBalance } from "../lib/ledger";
 import { money } from "../lib/metrics";
 import { canBuildTemplate } from "../services/template.service";
+import { KNOWN_BOOKMAKERS } from "../lib/knownBookmakers";
 import { TemplateChip } from "./TemplateChip";
 
 const DEFAULT_SPORTS = ["Futebol", "Basquete", "Tênis", "Esports", "Vôlei", "Hóquei", "Beisebol", "NFL", "MMA"];
@@ -31,6 +32,7 @@ const DEFAULT_SPORTS = ["Futebol", "Basquete", "Tênis", "Esports", "Vôlei", "H
 interface NewBetProps {
   state: AppState;
   addBet: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
+  onAddBookmaker?: (name: string) => string | null;
   onClose: () => void;
   prefill?: NewBetPrefill | null;
   draft?: NewBetDraft | null;
@@ -105,8 +107,10 @@ function isReviewFlagForField(flag: OcrReviewFlag, field: OcrFieldName) {
   return flag.field === field;
 }
 
-export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange, templates = [], onSaveTemplate, onDeleteTemplate, canUseOcr = true, onUpgrade }: NewBetProps) {
+export function NewBet({ state, addBet, onAddBookmaker, onClose, prefill, draft, onDraftChange, templates = [], onSaveTemplate, onDeleteTemplate, canUseOcr = true, onUpgrade }: NewBetProps) {
   const [formValues, setFormValues] = useState<NewBetFormValues>(initialFormValues);
+  const [addingBook, setAddingBook] = useState(false);
+  const [newBookName, setNewBookName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [fixtureSuggestions, setFixtureSuggestions] = useState<FixtureSearchResult[]>([]);
@@ -149,6 +153,25 @@ export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange, 
 
   function applyTemplate(template: BetTemplate) {
     setFormValues((prev) => ({ ...prev, ...template.partial }));
+  }
+
+  function handleBookmakerChange(value: string) {
+    if (value === "__add__") {
+      setAddingBook(true);
+      return;
+    }
+    setFieldValue("bookmakerId", value, { markReviewed: true });
+  }
+
+  function confirmAddBook() {
+    const name = newBookName.trim();
+    if (!name || !onAddBookmaker) return;
+    const id = onAddBookmaker(name);
+    if (id) {
+      setFieldValue("bookmakerId", id, { markReviewed: true });
+      setAddingBook(false);
+      setNewBookName("");
+    }
   }
 
   function handleSaveTemplate() {
@@ -825,11 +848,33 @@ export function NewBet({ state, addBet, onClose, prefill, draft, onDraftChange, 
               <div className="nb-inline-grid nb-inline-grid-2">
                 <label>
                   {renderFieldLabel("Casa", "bookmakerId")}
-                  <select className={getFieldStateClass("bookmakerId")} name="bookmakerId" required value={formValues.bookmakerId} onChange={handleTextInput("bookmakerId")}>
-                    <option value="" disabled={state.bookmakers.length > 0}>Selecione uma casa</option>
-                    {state.bookmakers.length === 0 && <option value="">Cadastre uma casa primeiro</option>}
-                    {state.bookmakers.map((book) => <option key={book.id} value={book.id}>{book.name}</option>)}
-                  </select>
+                  {addingBook ? (
+                    <div className="nb-add-book">
+                      <input
+                        list="nb-known-books"
+                        autoFocus
+                        placeholder="Nome da casa (ex: Betano)"
+                        value={newBookName}
+                        onChange={(e) => setNewBookName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") { e.preventDefault(); confirmAddBook(); }
+                          if (e.key === "Escape") { setAddingBook(false); setNewBookName(""); }
+                        }}
+                      />
+                      <datalist id="nb-known-books">
+                        {KNOWN_BOOKMAKERS.map((n) => <option key={n} value={n} />)}
+                      </datalist>
+                      <button type="button" className="nb-add-book-ok primary" onClick={confirmAddBook} disabled={!newBookName.trim()}>Criar</button>
+                      <button type="button" className="nb-add-book-cancel" onClick={() => { setAddingBook(false); setNewBookName(""); }} aria-label="Cancelar">×</button>
+                    </div>
+                  ) : (
+                    <select className={getFieldStateClass("bookmakerId")} name="bookmakerId" required value={formValues.bookmakerId} onChange={(e) => handleBookmakerChange(e.target.value)}>
+                      <option value="" disabled={state.bookmakers.length > 0}>Selecione uma casa</option>
+                      {state.bookmakers.length === 0 && <option value="">Cadastre uma casa primeiro</option>}
+                      {state.bookmakers.map((book) => <option key={book.id} value={book.id}>{book.name}</option>)}
+                      {onAddBookmaker && <option value="__add__">➕ Adicionar casa…</option>}
+                    </select>
+                  )}
                   {renderOcrFieldMeta("bookmakerId")}
                 </label>
                 <label>

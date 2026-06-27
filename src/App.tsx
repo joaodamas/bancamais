@@ -989,6 +989,42 @@ export function App() {
     toast.success("Casa adicionada.");
   }
 
+  /** Cria (ou reaproveita) uma casa pelo nome e devolve o id — usado no add inline do modal de aposta. */
+  function addBookmakerByName(name: string): string | null {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      toast.error("Informe o nome da casa.");
+      return null;
+    }
+
+    const existing = state.bookmakers.find((book) => book.name.toLowerCase() === trimmed.toLowerCase());
+    if (existing) {
+      toast("Essa casa já existe — selecionada.", { icon: "ℹ️" });
+      return existing.id;
+    }
+
+    const maxBooks = planAccess.limits.maxBookmakers;
+    if (Number.isFinite(maxBooks) && state.bookmakers.length >= maxBooks) {
+      toast.error(`Plano grátis permite até ${maxBooks} casas. Desbloqueie ilimitado com o Edge.`, { duration: 6000 });
+      return null;
+    }
+
+    const bookmaker: BookmakerAccount = {
+      id: createBookmakerId(),
+      name: trimmed,
+      balance: 0,
+      status: "manual",
+      lastSyncLabel: "manual",
+    };
+
+    syncToCloud(updateState({
+      ...state,
+      bookmakers: [...state.bookmakers, bookmaker],
+    }));
+    toast.success(`${trimmed} adicionada.`);
+    return bookmaker.id;
+  }
+
   function updateBookmaker(event: FormEvent<HTMLFormElement>, bookmakerId: string) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -1014,13 +1050,40 @@ export function App() {
       return;
     }
 
-    updateState({
+    // Saldo é derivado do ledger. Editar o saldo = criar um lançamento de ajuste
+    // pela diferença entre o desejado e o saldo atual, preservando a auditoria.
+    const rawBalance = data.get("balance");
+    const desiredBalance = rawBalance == null || String(rawBalance).trim() === "" ? null : Number(rawBalance);
+    let adjustment: Transaction | null = null;
+
+    if (desiredBalance != null) {
+      if (!Number.isFinite(desiredBalance) || desiredBalance < 0) {
+        toast.error("Informe um saldo válido.");
+        return;
+      }
+      const currentBalance = getDerivedBookmakerBalance(state, bookmakerId);
+      const delta = Math.round((desiredBalance - currentBalance) * 100) / 100;
+      if (Math.abs(delta) >= 0.01) {
+        adjustment = {
+          id: createTransactionId(),
+          date: new Date().toISOString(),
+          type: "adjustment",
+          bookmakerId,
+          description: "Ajuste de saldo (edição da casa)",
+          amount: delta,
+          referenceType: "manual",
+        };
+      }
+    }
+
+    syncToCloud(updateState({
       ...state,
       bookmakers: state.bookmakers.map((book) => (
         book.id === bookmakerId ? { ...book, name } : book
       )),
-    });
-    toast.success(`Casa atualizada para ${name}.`);
+      transactions: adjustment ? [adjustment, ...state.transactions] : state.transactions,
+    }));
+    toast.success(adjustment ? `Casa atualizada — saldo ajustado.` : `Casa atualizada para ${name}.`);
   }
 
   function removeBookmaker(bookmakerId: string) {
@@ -1277,6 +1340,7 @@ export function App() {
           userId={user?.uid ?? null}
           canUseOcr={!planAccess.locked("ocr")}
           onSubmit={addBet}
+          onAddBookmaker={addBookmakerByName}
           onClose={() => { setNewBetPrefill(null); setView("bets"); }}
           onSwitchToFull={() => setBetMode("full")}
           onUpgrade={handleUpgrade}
@@ -1287,6 +1351,7 @@ export function App() {
         <NewBet
           state={state}
           addBet={addBet}
+          onAddBookmaker={addBookmakerByName}
           canUseOcr={!planAccess.locked("ocr")}
           onUpgrade={handleUpgrade}
           onClose={() => {

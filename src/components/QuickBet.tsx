@@ -3,12 +3,14 @@ import { Zap, ChevronRight, ScanLine, Loader2, Lock } from "lucide-react";
 import type { AppState, BetStatus } from "../lib/types";
 import { money } from "../lib/metrics";
 import { uploadAndParseBetSlip, buildOcrSubmissionMetadata, type ParseBetSlipResponse } from "../lib/ocr";
+import { KNOWN_BOOKMAKERS } from "../lib/knownBookmakers";
 
 interface QuickBetProps {
   state: AppState;
   userId?: string | null;
   canUseOcr?: boolean;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
+  onAddBookmaker?: (name: string) => string | null;
   onClose: () => void;
   onSwitchToFull: () => void;
   onUpgrade?: () => void;
@@ -43,7 +45,7 @@ function isoToLocalInput(iso: string): string {
  * Fluxo linear por Tab/Enter: Evento → Stake → Odd → Casa → [Salvar]
  * Suporta OCR leve (escanear print) e liquidação imediata (status + cashout).
  */
-export function QuickBet({ state, userId, canUseOcr = true, onSubmit, onClose, onSwitchToFull, onUpgrade }: QuickBetProps) {
+export function QuickBet({ state, userId, canUseOcr = true, onSubmit, onAddBookmaker, onClose, onSwitchToFull, onUpgrade }: QuickBetProps) {
   const [submitting, setSubmitting] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -60,6 +62,28 @@ export function QuickBet({ state, userId, canUseOcr = true, onSubmit, onClose, o
   const [odds, setOdds] = useState("");
   const [status, setStatus] = useState<SettleStatus>("pending");
   const [cashoutAmount, setCashoutAmount] = useState("");
+  const [bookmakerId, setBookmakerId] = useState(() => (state.bookmakers.length === 1 ? state.bookmakers[0].id : ""));
+  const [addingBook, setAddingBook] = useState(false);
+  const [newBookName, setNewBookName] = useState("");
+
+  function handleBookmakerChange(value: string) {
+    if (value === "__add__") {
+      setAddingBook(true);
+      return;
+    }
+    setBookmakerId(value);
+  }
+
+  function confirmAddBook() {
+    const name = newBookName.trim();
+    if (!name || !onAddBookmaker) return;
+    const id = onAddBookmaker(name);
+    if (id) {
+      setBookmakerId(id);
+      setAddingBook(false);
+      setNewBookName("");
+    }
+  }
 
   // OCR
   const [ocrState, setOcrState] = useState<"idle" | "loading" | "done" | "error">("idle");
@@ -91,11 +115,11 @@ export function QuickBet({ state, userId, canUseOcr = true, onSubmit, onClose, o
     }
     if (typeof f.stake.value === "number" && f.stake.value > 0) setStake(String(f.stake.value));
     if (typeof f.odds.value === "number" && f.odds.value > 1) setOdds(String(f.odds.value));
-    if (f.bookmakerName.value && bookmakerRef.current) {
+    if (f.bookmakerName.value) {
       const match = state.bookmakers.find(
         (b) => b.name.toLowerCase() === String(f.bookmakerName.value).toLowerCase(),
       );
-      if (match) bookmakerRef.current.value = match.id;
+      if (match) setBookmakerId(match.id);
     }
 
     const currentValues = {
@@ -306,18 +330,41 @@ export function QuickBet({ state, userId, canUseOcr = true, onSubmit, onClose, o
           <div className="quick-bet-row">
             <label className="quick-bet-field">
               <span>Casa de apostas <em className="quick-bet-required">*</em></span>
-              <select
-                ref={bookmakerRef}
-                name="bookmakerId"
-                required
-                defaultValue={state.bookmakers.length === 1 ? state.bookmakers[0].id : ""}
-                onKeyDown={handleKeyDown("bookmaker")}
-              >
-                <option value="" disabled>Selecione a casa</option>
-                {state.bookmakers.map((b) => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
+              {addingBook ? (
+                <div className="quick-bet-add-book">
+                  <input
+                    list="quick-known-books"
+                    autoFocus
+                    placeholder="Nome da casa (ex: Betano)"
+                    value={newBookName}
+                    onChange={(e) => setNewBookName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.preventDefault(); confirmAddBook(); }
+                      if (e.key === "Escape") { setAddingBook(false); setNewBookName(""); }
+                    }}
+                  />
+                  <datalist id="quick-known-books">
+                    {KNOWN_BOOKMAKERS.map((n) => <option key={n} value={n} />)}
+                  </datalist>
+                  <button type="button" className="quick-bet-add-ok primary" onClick={confirmAddBook} disabled={!newBookName.trim()}>Criar</button>
+                  <button type="button" className="quick-bet-add-cancel" onClick={() => { setAddingBook(false); setNewBookName(""); }} aria-label="Cancelar">×</button>
+                </div>
+              ) : (
+                <select
+                  ref={bookmakerRef}
+                  name="bookmakerId"
+                  required
+                  value={bookmakerId}
+                  onChange={(e) => handleBookmakerChange(e.target.value)}
+                  onKeyDown={handleKeyDown("bookmaker")}
+                >
+                  <option value="" disabled>Selecione a casa</option>
+                  {state.bookmakers.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                  {onAddBookmaker && <option value="__add__">➕ Adicionar casa…</option>}
+                </select>
+              )}
             </label>
             <label className="quick-bet-field">
               <span>Status</span>
