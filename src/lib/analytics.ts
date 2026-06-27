@@ -18,6 +18,7 @@ export type FunnelEvent =
   | "signup_success"
   | "login_success"
   | "onboarding_complete"
+  | "waitlist_joined"
   // Retenção / captura
   | "first_bet_recorded"
   | "bet_recorded"

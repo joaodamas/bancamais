@@ -7,9 +7,18 @@ Tipos de mudança: **Adicionado**, **Alterado**, **Corrigido**, **Removido**.
 
 ## [Não lançado]
 
+### Adicionado
+- **Export de relatório em PDF** — botão "Exportar PDF" em Relatórios gera um relatório executivo de uma página (métricas + apostas recentes). jsPDF carregado sob demanda.
+- **Lista de espera do plano Edge** — o CTA do Edge na landing virou "Entrar na lista de espera" com modal de captura de email; registros gravados na coleção `waitlist` do Firestore (regra create-only validada).
+
 ### Alterado
 - Logo: o símbolo "+" da marca ficou maior e com traços mais grossos.
 - Copy da landing e do login: removidos os travessões das frases para um texto mais natural.
+- Landing: plano Edge marcado como "Em breve" (sem cobrança até existir billing); honestidade de pré-lançamento.
+
+### Pendente
+- Sistema de planos/gating no backend (entitlements + Cloud Functions + pagamento). Hoje não existe; todo recurso está liberado.
+- Rotas reais `/` (landing) e `/app` (produto).
 
 ### Adicionado
 - **Landing page (vitrine deslogada)** — visitante deslogado cai na landing; os CTAs levam para cadastro, login ou modo demonstração.

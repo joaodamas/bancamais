@@ -1,5 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import { betsToCsv, downloadTextFile } from "../lib/csv";
+import { generateReportPdf } from "../lib/reportPdf";
 import { money, percent, betProfit } from "../lib/metrics";
 import { monitoredBankroll } from "../lib/ledger";
 import { ExecutiveReport } from "./ExecutiveReport";
@@ -18,6 +20,19 @@ export function Reports({ state, metrics, onSaveSnapshot }: ReportsProps) {
   const lost = settled.filter((bet) => bet.status === "lost");
   const totalStaked = state.bets.reduce((sum, bet) => sum + bet.stake, 0);
   const csv = betsToCsv(state);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  async function handleExportPdf() {
+    setExportingPdf(true);
+    try {
+      await generateReportPdf(state, metrics);
+      toast.success("Relatório PDF gerado.");
+    } catch {
+      toast.error("Não foi possível gerar o PDF.");
+    } finally {
+      setExportingPdf(false);
+    }
+  }
   const currentMonthLabel = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(new Date());
   const settlementRate = state.bets.length > 0 ? settled.length / state.bets.length : 0;
   const transactionBalance = state.transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
@@ -81,7 +96,10 @@ export function Reports({ state, metrics, onSaveSnapshot }: ReportsProps) {
           <p>Consolide resultados, base fiscal e movimentação financeira com uma leitura mais clara para decisão e prestação de contas.</p>
         </div>
         <div className="dashboard-command-actions">
-          <button className="primary" onClick={() => downloadTextFile("bancamais-relatorio-operacional.csv", csv)}>Exportar base</button>
+          <button className="primary" onClick={handleExportPdf} disabled={exportingPdf}>
+            {exportingPdf ? "Gerando PDF…" : "Exportar PDF"}
+          </button>
+          <button onClick={() => downloadTextFile("bancamais-relatorio-operacional.csv", csv)}>Exportar CSV</button>
           <button onClick={() => downloadTextFile("bancamais-fiscal-base.csv", csv)}>Base fiscal</button>
         </div>
       </div>

@@ -1,6 +1,8 @@
+import { useState, type FormEvent } from "react";
 import {
   Check, Lock, Zap, ArrowRight, ShieldCheck, Brain, ScanLine,
   TrendingUp, LineChart, Target, CalendarDays, ListChecks, ShieldAlert,
+  X, Clock,
 } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 
@@ -8,6 +10,7 @@ interface LandingProps {
   onGetStarted: () => void;
   onSignIn: () => void;
   onDemo: () => void;
+  onJoinWaitlist: (email: string) => Promise<void>;
 }
 
 type PlanFeature = { label: string; included: boolean };
@@ -104,7 +107,29 @@ const EDGE_FEATURES: PlanFeature[] = [
   { label: "Casas, apostas e histórico ilimitados", included: true },
 ];
 
-export function Landing({ onGetStarted, onSignIn, onDemo }: LandingProps) {
+export function Landing({ onGetStarted, onSignIn, onDemo, onJoinWaitlist }: LandingProps) {
+  const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [waitEmail, setWaitEmail] = useState("");
+  const [waitStatus, setWaitStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
+
+  async function submitWaitlist(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (waitStatus === "sending") return;
+    setWaitStatus("sending");
+    try {
+      await onJoinWaitlist(waitEmail);
+      setWaitStatus("done");
+    } catch {
+      setWaitStatus("error");
+    }
+  }
+
+  function openWaitlist() {
+    setWaitStatus("idle");
+    setWaitEmail("");
+    setWaitlistOpen(true);
+  }
+
   return (
     <div className="lp">
       <header className="lp-topbar">
@@ -257,7 +282,7 @@ export function Landing({ onGetStarted, onSignIn, onDemo }: LandingProps) {
           </article>
 
           <article className="lp-plan lp-plan-featured">
-            <span className="lp-plan-badge"><Zap size={12} /> Mais popular</span>
+            <span className="lp-plan-badge"><Zap size={12} /> Em breve</span>
             <header className="lp-plan-head">
               <h3 className="lp-plan-name">Edge</h3>
               <p className="lp-plan-tagline">Pare de só registrar. Ganhe vantagem.</p>
@@ -274,10 +299,10 @@ export function Landing({ onGetStarted, onSignIn, onDemo }: LandingProps) {
                 </li>
               ))}
             </ul>
-            <button type="button" className="lp-btn lp-btn-primary lp-btn-block" onClick={onGetStarted}>
-              Começar grátis e fazer upgrade
+            <button type="button" className="lp-btn lp-btn-primary lp-btn-block" onClick={openWaitlist}>
+              <Clock size={15} /> Entrar na lista de espera
             </button>
-            <p className="lp-plan-note">Comece no grátis. Faça upgrade quando bater no limite.</p>
+            <p className="lp-plan-note">Em construção. Entre na lista e avisamos quando o Edge lançar.</p>
           </article>
         </div>
       </section>
@@ -332,6 +357,48 @@ export function Landing({ onGetStarted, onSignIn, onDemo }: LandingProps) {
         <BrandLogo compact />
         <span className="lp-foot-copy">Ferramenta de disciplina e gestão. Aposte com responsabilidade.</span>
       </footer>
+
+      {waitlistOpen && (
+        <div className="lp-wait-overlay" onClick={() => setWaitlistOpen(false)}>
+          <div className="lp-wait-modal" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="lp-wait-close" onClick={() => setWaitlistOpen(false)} aria-label="Fechar">
+              <X size={16} />
+            </button>
+            {waitStatus === "done" ? (
+              <div className="lp-wait-done">
+                <span className="lp-wait-icon ok"><Check size={22} /></span>
+                <h3>Você está na lista!</h3>
+                <p>Avisamos no seu email assim que o Edge lançar. Enquanto isso, use o plano Controle de graça.</p>
+                <button type="button" className="lp-btn lp-btn-primary lp-btn-block" onClick={() => { setWaitlistOpen(false); onGetStarted(); }}>
+                  Criar conta grátis agora
+                </button>
+              </div>
+            ) : (
+              <form className="lp-wait-form" onSubmit={submitWaitlist}>
+                <span className="lp-wait-icon"><Clock size={20} /></span>
+                <h3>Edge está chegando</h3>
+                <p>IA, OCR, Odds e CLV ilimitados. Deixe seu email e avisamos quando lançar.</p>
+                <input
+                  type="email"
+                  required
+                  placeholder="seu@email.com"
+                  className="lp-wait-input"
+                  value={waitEmail}
+                  onChange={(e) => setWaitEmail(e.target.value)}
+                  disabled={waitStatus === "sending"}
+                />
+                {waitStatus === "error" && (
+                  <span className="lp-wait-err">Não foi possível registrar. Tente de novo.</span>
+                )}
+                <button type="submit" className="lp-btn lp-btn-primary lp-btn-block" disabled={waitStatus === "sending"}>
+                  {waitStatus === "sending" ? "Enviando…" : "Entrar na lista de espera"}
+                </button>
+                <span className="lp-wait-foot">Sem spam. Só o aviso de lançamento.</span>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

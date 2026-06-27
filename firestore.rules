@@ -53,6 +53,17 @@ service cloud.firestore {
       allow update, delete: if false; // Imutável após criação
     }
 
+    // ── Lista de espera (waitlist) — create-only público, validado ────────────
+
+    match /waitlist/{entryId} {
+      allow create: if request.resource.data.keys().hasOnly(['email', 'plan', 'createdAt', 'userAgent'])
+                    && request.resource.data.email is string
+                    && request.resource.data.email.size() >= 5
+                    && request.resource.data.email.size() <= 200
+                    && request.resource.data.plan is string;
+      allow read, update, delete: if false; // Leitura só pelo Console/Admin
+    }
+
     // ── Páginas públicas ──────────────────────────────────────────────────────
 
     match /publicPages/{pageId} {

@@ -10,13 +10,23 @@ import {
   updateProfile,
   type User,
 } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { auth, db, firebaseApp } from "./firebase";
 import { normalizeState } from "./storage";
 import type { AppState } from "./types";
 
 const appStateDocumentId = "default";
+
+/** Registra interesse na lista de espera de um plano (ex.: "edge"). */
+export async function joinWaitlist(email: string, plan: string) {
+  await addDoc(collection(db, "waitlist"), {
+    email: email.trim().toLowerCase(),
+    plan,
+    createdAt: serverTimestamp(),
+    userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
+  });
+}
 
 export function watchAuth(callback: (user: User | null) => void) {
   return onAuthStateChanged(auth, callback);

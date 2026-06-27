@@ -17,6 +17,7 @@ import { GuidedTour } from "./components/GuidedTour";
 const TOUR_DONE_KEY = "bancamais_tour_done";
 import {
   createEmailUser,
+  joinWaitlist,
   loadCloudState,
   resetEmailPassword,
   saveCloudState,
@@ -775,6 +776,11 @@ export function App() {
     track("demo_start");
   }
 
+  async function handleJoinWaitlist(email: string) {
+    await joinWaitlist(email, "edge");
+    track("waitlist_joined", { plan: "edge" });
+  }
+
   function exitDemo() {
     setDemoActive(false);
     setDemoMode(false);
@@ -1175,6 +1181,7 @@ export function App() {
             onGetStarted={() => setAuthView("signup")}
             onSignIn={() => setAuthView("signin")}
             onDemo={enterDemo}
+            onJoinWaitlist={handleJoinWaitlist}
           />
         </Suspense>
       );

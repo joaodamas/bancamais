@@ -11391,3 +11391,74 @@ button.danger:hover {
 @media (max-width: 480px) {
   .lp-feat-grid { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   Landing — modal de waitlist (Edge)
+   ============================================================ */
+.lp-wait-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: overlayIn 0.15s ease-out;
+}
+.lp-wait-modal {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  padding: 30px 28px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  background: var(--panel-2);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+.lp-wait-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+}
+.lp-wait-close:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+
+.lp-wait-form,
+.lp-wait-done { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.lp-wait-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(249, 115, 22, 0.12);
+  color: var(--accent-bright);
+  margin-bottom: 4px;
+}
+.lp-wait-icon.ok { background: rgba(34, 197, 94, 0.12); color: var(--positive); }
+.lp-wait-modal h3 { font-family: var(--font-display); font-size: 19px; font-weight: 700; margin: 0; }
+.lp-wait-modal p { font-size: 14px; line-height: 1.5; color: var(--muted); margin: 0 0 10px; }
+.lp-wait-input {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  font-family: var(--font-ui);
+}
+.lp-wait-input:focus { outline: none; border-color: var(--accent); }
+.lp-wait-err { font-size: 12px; color: var(--negative); }
+.lp-wait-foot { font-size: 12px; color: var(--muted); margin-top: 2px; }
