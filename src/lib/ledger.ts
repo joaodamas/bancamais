@@ -20,7 +20,32 @@ export interface LedgerTimelineEvent {
   amount: number;
 }
 
-function hasMirrorTransfer(transaction: Transaction, transactions: Transaction[]): boolean {
+/**
+ * Conjunto de chaves dos lançamentos de transferência POSITIVOS (entrada),
+ * para detectar o "espelho" em O(1) em vez de varrer todas as transações a cada
+ * chamada (que era O(n²) no agregado). Chave = origem|destino|valorAbsoluto.
+ */
+function buildMirrorKeySet(transactions: Transaction[]): Set<string> {
+  const keys = new Set<string>();
+  for (const t of transactions) {
+    if (t.type === "transfer" && t.amount > 0 && t.targetBookmakerId) {
+      keys.add(`${t.bookmakerId}|${t.targetBookmakerId}|${Math.abs(t.amount)}`);
+    }
+  }
+  return keys;
+}
+
+/** Chave para procurar o espelho de uma transação (direção invertida). */
+function mirrorLookupKey(transaction: Transaction): string {
+  return `${transaction.targetBookmakerId}|${transaction.bookmakerId}|${Math.abs(transaction.amount)}`;
+}
+
+function hasMirrorTransfer(
+  transaction: Transaction,
+  transactions: Transaction[],
+  mirrorKeys?: Set<string>,
+): boolean {
+  if (mirrorKeys) return mirrorKeys.has(mirrorLookupKey(transaction));
   return transactions.some((candidate) => (
     candidate.id !== transaction.id &&
     candidate.type === "transfer" &&
@@ -35,6 +60,7 @@ export function transactionImpactForBookmaker(
   transaction: Transaction,
   bookmakerId: string,
   transactions: Transaction[],
+  mirrorKeys?: Set<string>,
 ): number {
   if (transaction.bookmakerId === bookmakerId) {
     return transaction.amount;
@@ -43,7 +69,7 @@ export function transactionImpactForBookmaker(
   if (
     transaction.type === "transfer" &&
     transaction.targetBookmakerId === bookmakerId &&
-    !hasMirrorTransfer(transaction, transactions)
+    !hasMirrorTransfer(transaction, transactions, mirrorKeys)
   ) {
     return Math.abs(transaction.amount);
   }
@@ -52,13 +78,14 @@ export function transactionImpactForBookmaker(
 }
 
 export function deriveBookmakerBalances(state: AppState): LedgerBookBalance[] {
+  const mirrorKeys = buildMirrorKeySet(state.transactions);
   return state.bookmakers.map((book) => {
     const relatedTransactions = state.transactions.filter((transaction) => (
       transaction.bookmakerId === book.id || transaction.targetBookmakerId === book.id
     ));
     const derivedBalance = relatedTransactions.length > 0
       ? relatedTransactions.reduce((sum, transaction) => (
-        sum + transactionImpactForBookmaker(transaction, book.id, state.transactions)
+        sum + transactionImpactForBookmaker(transaction, book.id, state.transactions, mirrorKeys)
       ), 0)
       : book.balance;
 
@@ -123,12 +150,13 @@ export function reconcileBookmakerBalances(state: AppState): AppState {
 }
 
 export function buildLedgerTimeline(state: AppState): LedgerTimelineEvent[] {
+  const mirrorKeys = buildMirrorKeySet(state.transactions);
   const events = state.transactions.flatMap((transaction) => {
     if (
       transaction.type === "transfer" &&
       transaction.amount < 0 &&
       transaction.targetBookmakerId &&
-      !hasMirrorTransfer(transaction, state.transactions)
+      !hasMirrorTransfer(transaction, state.transactions, mirrorKeys)
     ) {
       return [
         {
@@ -174,9 +202,10 @@ export function computeBookmakerLedger(bookmakerId: string, transactions: Transa
     .filter((t) => t.bookmakerId === bookmakerId || t.targetBookmakerId === bookmakerId)
     .sort((a, b) => a.date.localeCompare(b.date));
 
+  const mirrorKeys = buildMirrorKeySet(transactions);
   let running = 0;
   return relevant.map((t) => {
-    const impact = transactionImpactForBookmaker(t, bookmakerId, transactions);
+    const impact = transactionImpactForBookmaker(t, bookmakerId, transactions, mirrorKeys);
     running = Number((running + impact).toFixed(2));
     return {
       transaction: t,
@@ -211,11 +240,12 @@ export function computeGlobalLedger(state: AppState): LedgerEntry[] {
     .reduce((sum, book) => sum + book.balance, 0);
 
   const ordered = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
+  const mirrorKeys = buildMirrorKeySet(transactions);
 
   let running = staticBase;
   return ordered.map((t) => {
     const impact = bookmakers.reduce(
-      (sum, book) => sum + transactionImpactForBookmaker(t, book.id, transactions),
+      (sum, book) => sum + transactionImpactForBookmaker(t, book.id, transactions, mirrorKeys),
       0,
     );
     running = Number((running + impact).toFixed(2));
