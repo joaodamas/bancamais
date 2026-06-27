@@ -53,6 +53,13 @@ service cloud.firestore {
       allow update, delete: if false; // Imutável após criação
     }
 
+    // ── Entitlements (plano do usuário) — leitura do dono, escrita só backend ──
+
+    match /entitlements/{userId} {
+      allow read: if owns(userId);
+      allow write: if false; // Só o Admin SDK (webhook do Mercado Pago) escreve
+    }
+
     // ── Lista de espera (waitlist) — create-only público, validado ────────────
 
     match /waitlist/{entryId} {

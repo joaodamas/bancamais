@@ -551,3 +551,6 @@ function parseListSportOddsRequest(data: unknown): ListSportOddsRequest {
 
   return { sportKey };
 }
+
+// ── Billing (Mercado Pago) ────────────────────────────────────────────────
+export { createSubscriptionCheckout, mercadoPagoWebhook } from "./billing/mercadoPago.js";

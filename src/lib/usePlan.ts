@@ -17,9 +17,10 @@ const DEV_OVERRIDE_KEY = "bancamais_dev_plan";
  * pelo backend (webhook do Mercado Pago), protegido por firestore.rules — só esta
  * função muda. NUNCA derivar o plano do AppState (editável pelo cliente).
  */
-export function usePlan(user: User | null, demoMode: boolean) {
+export function usePlan(user: User | null, demoMode: boolean, entitlementPlan?: PlanTier | null) {
   return useMemo(() => {
-    let plan: PlanTier = "free";
+    // Base: entitlement do backend (fonte de verdade quando o billing existir).
+    let plan: PlanTier = entitlementPlan ?? "free";
     if (demoMode) plan = "edge";
     if (isMasterAccount(user?.uid)) plan = "edge";
 
@@ -32,5 +33,5 @@ export function usePlan(user: User | null, demoMode: boolean) {
       locked: (feature: GatedFeature) => isFeatureLocked(plan, feature),
       limits: getLimits(plan),
     };
-  }, [user, demoMode]);
+  }, [user, demoMode, entitlementPlan]);
 }

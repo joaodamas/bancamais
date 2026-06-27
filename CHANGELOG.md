@@ -10,7 +10,10 @@ Tipos de mudança: **Adicionado**, **Alterado**, **Corrigido**, **Removido**.
 ### Adicionado
 - **Export de relatório em PDF** — botão "Exportar PDF" em Relatórios gera um relatório executivo de uma página (métricas + apostas recentes). jsPDF carregado sob demanda.
 - **Lista de espera do plano Edge** — o CTA do Edge na landing virou "Entrar na lista de espera" com modal de captura de email; registros gravados na coleção `waitlist` do Firestore (regra create-only validada).
-- **Fundação de planos (gating) — fase 1** — modelo `plan.ts` (tiers free/edge, features, limites), hook `usePlan` (demo = edge, conta real = free, override de dev `bancamais_dev_plan`) e paywall `PlanLock`. As telas **Inteligência, Odds e CLV & Edge** agora mostram o paywall para o plano Free; o CTA registra na lista de espera. Sem cobrança ainda; fonte do plano migra para o backend (webhook Mercado Pago) na fase 2.
+- **Fundação de planos (gating) — fase 1** — modelo `plan.ts` (tiers free/edge, features, limites), hook `usePlan` (demo = edge, conta real = free, override de dev `bancamais_dev_plan`) e paywall `PlanLock`. As telas **Inteligência, Odds e CLV & Edge** agora mostram o paywall para o plano Free; o CTA registra na lista de espera.
+- **Gating — fase 1.5** — OCR (escanear bilhete) vira estado bloqueado no Free (QuickBet e NewBet); enforcement dos limites: bloqueia a 51ª aposta do mês e a 3ª casa no Free.
+- **Allowlist de contas master** (`MASTER_UIDS`) — Edge vitalício para UIDs de confiança, ponte até o billing.
+- **Gating — fase 2 (backend)** — fonte de verdade do plano migra para o backend: doc `entitlements/{uid}` (regra: dono lê, só Admin escreve), hook `useEntitlement` em tempo real, e Cloud Functions de billing do **Mercado Pago** (`createSubscriptionCheckout` + `mercadoPagoWebhook`). Falta ativar: definir o secret `MERCADOPAGO_ACCESS_TOKEN`, deployar as functions e registrar a URL do webhook.
 
 ### Alterado
 - Logo: o símbolo "+" da marca ficou maior e com traços mais grossos.

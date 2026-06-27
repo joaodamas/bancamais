@@ -30,6 +30,7 @@ import { useFirestoreSync } from "./lib/useFirestoreSync";
 import { track } from "./lib/analytics";
 import { collectBetsNeedingClosing, fetchClosingOdds, isClosingOddsConfigured } from "./lib/closingOdds";
 import { usePlan } from "./lib/usePlan";
+import { useEntitlement } from "./lib/useEntitlement";
 import {
   calculateMetrics,
   money,
@@ -162,7 +163,8 @@ export function App() {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const notifRef = useRef<HTMLDivElement | null>(null);
   const metrics = useMemo(() => calculateMetrics(state), [state]);
-  const planAccess = usePlan(user, demoMode);
+  const entitlementPlan = useEntitlement(user);
+  const planAccess = usePlan(user, demoMode, entitlementPlan);
 
   async function handleUpgrade() {
     const email = user?.email;
