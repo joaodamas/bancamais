@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { betProfit, potentialReturn, clvPercent, calculateMetrics, profitFactor, segmentByOddsBand, segmentByStakeBand, segmentByDayOfWeek, segmentByMarket, segmentByLeague, bettingStreaks } from "./metrics";
+import { bankrollBase } from "./ledger";
+import type { Transaction } from "./types";
 import { emptyState } from "./storage";
 import type { Bet, AppState } from "./types";
 
@@ -54,6 +56,30 @@ describe("betProfit", () => {
   it("calcula cashout com valor parcial", () => {
     const bet = makeBet({ status: "cashout", stake: 100, payout: 80 });
     expect(betProfit(bet)).toBe(-20);
+  });
+});
+
+function deposit(amount: number): Transaction {
+  return {
+    id: `dep-${amount}`,
+    date: new Date().toISOString(),
+    type: "deposit",
+    bookmakerId: "book-1",
+    description: "Depósito",
+    amount,
+    referenceType: "manual",
+  };
+}
+
+describe("bankrollBase", () => {
+  it("usa o total depositado quando há depósitos", () => {
+    const state = makeState([], { transactions: [deposit(500)] });
+    expect(bankrollBase(state)).toBe(500);
+  });
+
+  it("cai para startingBalance quando não há depósitos", () => {
+    const state = makeState([], { bookmakers: [], startingBalance: 2000 });
+    expect(bankrollBase(state)).toBe(2000);
   });
 });
 

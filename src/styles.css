@@ -8848,6 +8848,20 @@ button.danger:hover {
   font-weight: 500;
 }
 
+.stat-badge-low {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 9px;
+  letter-spacing: 0.03em;
+  color: var(--warning);
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  text-transform: none;
+  white-space: nowrap;
+  cursor: help;
+}
+
 .stat-value {
   font-size: 26px;
   font-weight: 700;

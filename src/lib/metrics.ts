@@ -1,6 +1,9 @@
 import type { AppState, Bet, DashboardMetrics } from "./types";
-import { calculateLedgerTotalBalance, monitoredBankroll } from "./ledger";
+import { calculateLedgerTotalBalance, monitoredBankroll, bankrollBase } from "./ledger";
 import { resolveUnitValue } from "./unit";
+
+/** Abaixo deste nº de apostas liquidadas, ROI/yield são ruído de variância. */
+export const MIN_RELIABLE_SAMPLE = 100;
 
 export const money = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -30,7 +33,7 @@ export function clvPercent(bet: Bet): number | null {
 
 export function calculateMetrics(state: AppState): DashboardMetrics {
   const totalBalance = calculateLedgerTotalBalance(state);
-  const bankroll = monitoredBankroll(state);
+  const capitalBase = bankrollBase(state);
   const pending = state.bets.filter((bet) => bet.status === "pending");
   const settled = state.bets.filter((bet) => bet.status !== "pending" && bet.status !== "void");
   const stakedSettled = settled.reduce((sum, bet) => sum + bet.stake, 0);
@@ -45,8 +48,9 @@ export function calculateMetrics(state: AppState): DashboardMetrics {
     totalBalance,
     openExposure: pending.reduce((sum, bet) => sum + bet.stake, 0),
     profit,
-    // ROI = retorno sobre o capital (lucro / banca). Yield = edge (lucro / turnover liquidado).
-    roi: bankroll > 0 ? profit / bankroll : 0,
+    // ROI = retorno sobre o capital (lucro / capital depositado, base estável).
+    // Yield = edge (lucro / turnover liquidado).
+    roi: capitalBase > 0 ? profit / capitalBase : 0,
     yield: stakedSettled > 0 ? profit / stakedSettled : 0,
     hitRate: settled.length > 0 ? wins / settled.length : 0,
     averageOdds: stakeTotal > 0 ? oddsStakeWeighted / stakeTotal : 0,

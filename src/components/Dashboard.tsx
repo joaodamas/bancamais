@@ -14,7 +14,7 @@ import {
   BarChart,
   Bar,
 } from "recharts";
-import { calculateMetrics, money, percent, bettingStreaks } from "../lib/metrics";
+import { calculateMetrics, money, percent, bettingStreaks, MIN_RELIABLE_SAMPLE } from "../lib/metrics";
 import { buildBankrollTimeSeries, buildDailyProfitSeries } from "../lib/chartData";
 import { resolveUnitValue } from "../lib/unit";
 import type { AppState } from "../lib/types";
@@ -80,19 +80,28 @@ export function Dashboard({
       return { axisLabel: point.axisLabel, tooltipLabel: point.tooltipLabel, drawdown: dd };
     });
   }, [chartData]);
-  const maxDrawdown = useMemo(
-    () => drawdownData.reduce((min, point) => Math.min(min, point.drawdown), 0),
-    [drawdownData],
-  );
+  // Pior vale da banca: % (underwater) e profundidade em R$, da mesma curva do gráfico.
+  const drawdownStats = useMemo(() => {
+    let peak = 0;
+    let worstPct = 0;
+    let worstAbs = 0;
+    for (const point of chartData) {
+      peak = Math.max(peak, point.balance);
+      const ddPct = peak > 0 ? point.balance / peak - 1 : 0;
+      if (ddPct < worstPct) {
+        worstPct = ddPct;
+        worstAbs = peak - point.balance;
+      }
+    }
+    return { worstPct, worstAbs };
+  }, [chartData]);
+  const maxDrawdown = drawdownStats.worstPct;
 
   const monitoredCapital = metrics.totalBalance + metrics.openExposure;
   const unitValue = resolveUnitValue(state.riskSettings, monitoredCapital);
-  const deposited = state.transactions
-    .filter((transaction) => transaction.type === "deposit")
-    .reduce((sum, transaction) => sum + transaction.amount, 0);
-  const progression = deposited > 0 ? metrics.profit / deposited : null;
   const pending = state.bets.filter((bet) => bet.status === "pending");
   const streaks = bettingStreaks(state);
+  const lowSample = metrics.settledCount > 0 && metrics.settledCount < MIN_RELIABLE_SAMPLE;
   const voidCount = state.bets.filter((bet) => bet.status === "void").length;
   const resultMix = [
     { name: "Green", value: streaks.greens, color: COLORS.green },
@@ -173,9 +182,12 @@ export function Dashboard({
       {/* Banda 2 — Performance */}
       <div className="stat-band">
         <article className="stat-card">
-          <span className="stat-label">ROI</span>
+          <span className="stat-label">
+            ROI
+            {lowSample && <span className="stat-badge-low" title={`Amostra baixa: ${metrics.settledCount} liquidadas. ROI só vira sinal confiável a partir de ~${MIN_RELIABLE_SAMPLE}.`}>amostra baixa</span>}
+          </span>
           <strong className={`stat-value text-mono ${metrics.roi >= 0 ? "pos" : "neg"}`}>{percent.format(metrics.roi)}</strong>
-          <span className="stat-foot">{metrics.settledCount} liquidadas</span>
+          <span className="stat-foot">lucro / capital depositado</span>
         </article>
         <article className="stat-card">
           <span className="stat-label">Taxa de acerto</span>
@@ -193,11 +205,13 @@ export function Dashboard({
           <span className="stat-foot">apostas fechadas</span>
         </article>
         <article className="stat-card">
-          <span className="stat-label">Progressão</span>
-          <strong className={`stat-value text-mono ${progression == null ? "" : progression >= 0 ? "pos" : "neg"}`}>
-            {progression != null ? percent.format(progression) : "—"}
+          <span className="stat-label">Máx. drawdown</span>
+          <strong className={`stat-value text-mono ${drawdownStats.worstAbs > 0 ? "neg" : ""}`}>
+            {drawdownStats.worstAbs > 0 ? `−${money.format(drawdownStats.worstAbs)}` : "—"}
           </strong>
-          <span className="stat-foot">lucro / capital inicial</span>
+          <span className="stat-foot">
+            {drawdownStats.worstAbs > 0 ? `${percent.format(drawdownStats.worstPct)} do pico` : "sem queda registrada"}
+          </span>
         </article>
       </div>
 

@@ -88,6 +88,21 @@ export function monitoredBankroll(state: AppState): number {
   return ledgerBalance > 0 ? ledgerBalance : state.startingBalance;
 }
 
+/**
+ * Capital de referência ESTÁVEL para ROI (retorno sobre capital): total
+ * depositado — soma das transações `deposit` (que já incluem o saldo inicial
+ * das casas). Não flutua com lucro/perda nem com saques, ao contrário da banca
+ * atual. Fallbacks: startingBalance declarado e, por fim, a banca monitorada.
+ */
+export function bankrollBase(state: AppState): number {
+  const deposits = state.transactions
+    .filter((t) => t.type === "deposit")
+    .reduce((sum, t) => sum + t.amount, 0);
+  if (deposits > 0) return deposits;
+  if (state.startingBalance > 0) return state.startingBalance;
+  return monitoredBankroll(state);
+}
+
 export function getDerivedBookmakerBalance(state: AppState, bookmakerId: string): number {
   const match = deriveBookmakerBalances(state).find((entry) => entry.bookmakerId === bookmakerId);
   if (!match) return 0;
