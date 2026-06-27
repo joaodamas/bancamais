@@ -3633,6 +3633,15 @@ kbd {
   margin-left: 8px;
 }
 
+.field-hint {
+  display: block;
+  color: var(--muted, #7d8590);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.4;
+  margin: 2px 0 6px;
+}
+
 .fixture-suggestions {
   position: absolute;
   top: calc(100% + 4px);

@@ -134,6 +134,10 @@ export function EditBetModal({ bet, state, onSubmit, onClose }: EditBetModalProp
 
             <label>
               Odd de fechamento
+              <span className="field-hint">
+                Odd final do mercado logo antes do jogo. Habilita o CLV (mede se você bateu a
+                linha de fechamento). O app tenta preencher sozinho em eventos compatíveis.
+              </span>
               <input
                 name="closingOdds"
                 type="number"

@@ -909,6 +909,10 @@ export function NewBet({ state, addBet, onAddBookmaker, onClose, prefill, draft,
                 </label>
                 <label>
                   {renderFieldLabel("Odd fechamento")}
+                  <span className="field-hint">
+                    Odd final do mercado antes do jogo — habilita o CLV. O app tenta preencher
+                    sozinho em eventos compatíveis.
+                  </span>
                   <input
                     name="closingOdds"
                     min="1.01"
