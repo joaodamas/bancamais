@@ -5036,9 +5036,9 @@ h1, h2, h3, h4 {
   position: relative;
   display: inline-block;
   flex: 0 0 auto;
-  width: 0.5em;
-  height: 0.5em;
-  margin-left: 0.16em;
+  width: 0.64em;
+  height: 0.64em;
+  margin-left: 0.14em;
 }
 
 .brand-plus-char::before,
@@ -5053,7 +5053,7 @@ h1, h2, h3, h4 {
   top: 50%;
   left: 0;
   right: 0;
-  height: 0.17em;
+  height: 0.2em;
   transform: translateY(-50%);
 }
 
@@ -5061,7 +5061,7 @@ h1, h2, h3, h4 {
   left: 50%;
   top: 0;
   bottom: 0;
-  width: 0.17em;
+  width: 0.2em;
   transform: translateX(-50%);
 }
 

@@ -7,6 +7,9 @@ Tipos de mudança: **Adicionado**, **Alterado**, **Corrigido**, **Removido**.
 
 ## [Não lançado]
 
+### Alterado
+- Logo: o símbolo "+" da marca ficou maior e com traços mais grossos.
+
 ### Adicionado
 - **Landing page (vitrine deslogada)** — visitante deslogado cai na landing; os CTAs levam para cadastro, login ou modo demonstração.
   - Seções: hero com CTA duplo, dor, como funciona (3 passos), IA em destaque, grade de features, planos, privacidade/jogo responsável, FAQ e CTA final.
