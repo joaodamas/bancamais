@@ -150,6 +150,15 @@ export function QuickBet({ state, userId, onSubmit, onClose, onSwitchToFull }: Q
 
   return (
     <div className="modal-overlay" onClick={onClose}>
+      {ocrState === "loading" && (
+        <div className="nb-ocr-overlay" role="status" aria-live="polite">
+          <div className="nb-ocr-overlay-card">
+            <span className="nb-ocr-spinner" aria-hidden="true" />
+            <strong>Lendo o bilhete…</strong>
+            <span>{ocrMessage || "Analisando o print…"}</span>
+          </div>
+        </div>
+      )}
       <div className="modal-panel quick-bet-panel" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="quick-bet-header">
