@@ -6355,60 +6355,80 @@ tr:hover td {
 @media (max-width: 768px) {
   .bets-table-wrapper { overflow: visible; margin: 0; padding: 0; }
   .bets-table,
-  .bets-table tbody,
-  .bets-table tr,
-  .bets-table td { display: block; width: auto; }
+  .bets-table tbody { display: block; width: auto; }
   .bets-table thead { display: none; }
 
+  /* Card em grid: título → dinheiro → casa/status → mercado → ações */
   .bets-table tr {
     position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "event   event"
+      "stake   retorno"
+      "casa    status"
+      "market  market"
+      "actions actions";
+    column-gap: 14px;
+    row-gap: 13px;
+    align-items: start;
     border: 1px solid var(--line-strong);
     border-radius: var(--radius);
     background: var(--panel);
-    padding: 12px 14px;
-    margin-bottom: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
   }
 
+  /* Cada célula: rótulo em cima, valor embaixo */
   .bets-table td {
-    border: 0 !important;
-    padding: 5px 0;
-    background: transparent !important;
-  }
-
-  .bets-table td.bet-cell {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    width: auto;
+    min-width: 0;
+    border: 0 !important;
+    padding: 0;
+    background: transparent !important;
+    text-align: left;
   }
   .bets-table td.bet-cell::before {
     content: attr(data-label);
     color: var(--muted);
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    flex-shrink: 0;
+    letter-spacing: 0.06em;
   }
 
-  /* Evento = título do card */
+  /* Posicionamento por área */
+  .bets-table td.bet-cell-event { grid-area: event; }
+  .bets-table td[data-label="Stake"] { grid-area: stake; }
+  .bets-table td[data-label="Retorno"] { grid-area: retorno; }
+  .bets-table td[data-label="Casa"] { grid-area: casa; }
+  .bets-table td.bet-status-cell { grid-area: status; }
+  .bets-table td.bet-cell-market { grid-area: market; }
+  .bets-table td.bet-actions-cell { grid-area: actions; }
+
+  /* Título do card */
   .bets-table td.bet-cell-event {
-    padding: 0 36px 8px 0;
-    margin-bottom: 6px;
+    gap: 4px;
+    padding: 0 30px 11px 0;
     border-bottom: 1px solid var(--line) !important;
   }
   .bets-table td.bet-cell-event::before { content: none; }
 
-  /* Mercado empilhado */
-  .bets-table td.bet-cell-market { padding-bottom: 5px; }
-  .bets-table td.bet-cell-market::before {
-    content: attr(data-label);
-    display: block;
-    color: var(--muted);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 2px;
+  /* Valores monetários em destaque, alinhados à esquerda */
+  .bets-table td.num { align-items: flex-start; }
+  .bets-table td.num strong { font-size: 16px; }
+  .bets-table td.num .bet-odd { margin-left: 0; }
+
+  /* Ações em largura cheia */
+  .bets-table td.bet-actions-cell {
+    padding-top: 11px;
+    border-top: 1px solid var(--line) !important;
   }
+  .bets-table td.bet-actions-cell::before { content: none; }
+  .bet-settle-actions { justify-content: flex-start; }
 
   /* Checkbox de seleção no canto do card */
   .bets-table td.bet-select-col {
@@ -6416,16 +6436,39 @@ tr:hover td {
     top: 12px;
     right: 12px;
     padding: 0;
+    z-index: 2;
   }
+}
 
-  /* Ações em largura cheia */
-  .bets-table td.bet-actions-cell {
-    padding-top: 8px;
-    margin-top: 6px;
-    border-top: 1px solid var(--line) !important;
-  }
-  .bets-table td.bet-actions-cell::before { content: none; }
-  .bet-settle-actions { justify-content: flex-start; }
+/* Checkbox de seleção custom — evita a "caixa preta" nativa do iOS no dark */
+.bets-table input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--panel-2);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.bets-table input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.bets-table input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 .bets-table tbody tr,

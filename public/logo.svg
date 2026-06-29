@@ -1,28 +1,26 @@
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg" x1="120" y1="60" x2="900" y2="980" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFB259"/>
-      <stop offset="0.52" stop-color="#F97316"/>
-      <stop offset="1" stop-color="#D7540A"/>
+    <linearGradient id="bg" x1="180" y1="100" x2="844" y2="940" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF9D3D"/>
+      <stop offset="1" stop-color="#EF6C12"/>
     </linearGradient>
-    <radialGradient id="sheen" cx="0.30" cy="0.14" r="0.95">
-      <stop stop-color="#FFFFFF" stop-opacity="0.32"/>
-      <stop offset="0.45" stop-color="#FFFFFF" stop-opacity="0.06"/>
+    <linearGradient id="topglow" x1="512" y1="0" x2="512" y2="560" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.22"/>
       <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="plus" x1="512" y1="292" x2="512" y2="732" gradientUnits="userSpaceOnUse">
+    </linearGradient>
+    <linearGradient id="plus" x1="512" y1="300" x2="512" y2="724" gradientUnits="userSpaceOnUse">
       <stop stop-color="#FFFFFF"/>
-      <stop offset="1" stop-color="#FFF0E1"/>
+      <stop offset="1" stop-color="#FFF4EA"/>
     </linearGradient>
   </defs>
 
-  <!-- full-bleed: iOS/Android aplicam a máscara arredondada -->
+  <!-- full-bleed: iOS/Android aplicam a máscara -->
   <rect width="1024" height="1024" fill="url(#bg)"/>
-  <rect width="1024" height="1024" fill="url(#sheen)"/>
+  <rect width="1024" height="1024" fill="url(#topglow)"/>
 
-  <!-- + com profundidade -->
-  <path d="M512 296 V728 M296 512 H728" stroke="#000000" stroke-opacity="0.13"
-        stroke-width="96" stroke-linecap="round" transform="translate(0,14)"/>
-  <path d="M512 296 V728 M296 512 H728" stroke="url(#plus)"
-        stroke-width="96" stroke-linecap="round"/>
+  <!-- + confiante, com sombra de contato sutil -->
+  <path d="M512 304 V720 M304 512 H720" stroke="#A53D06" stroke-opacity="0.22"
+        stroke-width="104" stroke-linecap="round" transform="translate(0,10)"/>
+  <path d="M512 304 V720 M304 512 H720" stroke="url(#plus)"
+        stroke-width="104" stroke-linecap="round"/>
 </svg>
