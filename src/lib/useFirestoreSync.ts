@@ -72,19 +72,21 @@ export function useFirestoreSync(
           : 0;
         const safeRemoteTimestamp = Number.isFinite(remoteTimestamp) ? remoteTimestamp : 0;
 
-        if (isFirstSnapshot.current) {
-          isFirstSnapshot.current = false;
-          lastAppliedRemoteTimestampRef.current = safeRemoteTimestamp;
-          setStatus("synced");
-          setLastSyncAt(new Date());
-          return;
-        }
+        // O primeiro snapshot também passa pela comparação: se a nuvem estiver mais
+        // nova que o estado local (ex.: outro dispositivo atualizou enquanto este
+        // estava fechado), aplica na hora. Antes era descartado — e o aparelho ficava
+        // preso nos dados locais antigos, sem refletir o que foi feito em outro lugar.
+        isFirstSnapshot.current = false;
 
         if (
           safeRemoteTimestamp === 0 ||
           safeRemoteTimestamp <= localTimestampRef.current ||
           safeRemoteTimestamp <= lastAppliedRemoteTimestampRef.current
         ) {
+          lastAppliedRemoteTimestampRef.current = Math.max(
+            lastAppliedRemoteTimestampRef.current,
+            safeRemoteTimestamp,
+          );
           setStatus("synced");
           setLastSyncAt(new Date());
           return;
