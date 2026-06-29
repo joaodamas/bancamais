@@ -1,10 +1,28 @@
-<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="96" height="96" rx="26" fill="url(#g)"/>
-  <path d="M48 27 V69 M27 48 H69" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="96" y2="96" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FB923C"/>
-      <stop offset="1" stop-color="#F97316"/>
+    <linearGradient id="bg" x1="120" y1="60" x2="900" y2="980" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFB259"/>
+      <stop offset="0.52" stop-color="#F97316"/>
+      <stop offset="1" stop-color="#D7540A"/>
+    </linearGradient>
+    <radialGradient id="sheen" cx="0.30" cy="0.14" r="0.95">
+      <stop stop-color="#FFFFFF" stop-opacity="0.32"/>
+      <stop offset="0.45" stop-color="#FFFFFF" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="plus" x1="512" y1="292" x2="512" y2="732" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#FFF0E1"/>
     </linearGradient>
   </defs>
+
+  <!-- full-bleed: iOS/Android aplicam a máscara arredondada -->
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#sheen)"/>
+
+  <!-- + com profundidade -->
+  <path d="M512 296 V728 M296 512 H728" stroke="#000000" stroke-opacity="0.13"
+        stroke-width="96" stroke-linecap="round" transform="translate(0,14)"/>
+  <path d="M512 296 V728 M296 512 H728" stroke="url(#plus)"
+        stroke-width="96" stroke-linecap="round"/>
 </svg>
