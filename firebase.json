@@ -8,11 +8,7 @@
     "rewrites": [{ "source": "**", "destination": "/index.html" }],
     "headers": [
       {
-        "source": "/index.html",
-        "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
-      },
-      {
-        "source": "/manifest.webmanifest",
+        "source": "**",
         "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
       },
       {
