@@ -6399,7 +6399,7 @@ tr:hover td {
 
   /* Evento = título do card */
   .bets-table td.bet-cell-event {
-    padding: 0 32px 9px 0 !important;
+    padding: 0 2px 9px 0 !important;
     margin-bottom: 7px;
     border-bottom: 1px solid var(--line) !important;
   }
@@ -6428,11 +6428,11 @@ tr:hover td {
   .bets-table td.bet-actions-cell::before { content: none; }
   .bet-settle-actions { justify-content: flex-start; }
 
-  /* Checkbox de seleção no canto do card */
+  /* Checkbox de seleção: abaixo da linha do título, fora do texto */
   .bets-table td.bet-select-col {
     position: absolute;
-    top: 12px;
-    right: 12px;
+    top: 54px;
+    right: 14px;
     padding: 0 !important;
     z-index: 2;
   }
