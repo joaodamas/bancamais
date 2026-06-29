@@ -6358,73 +6358,71 @@ tr:hover td {
   .bets-table tbody { display: block; width: auto; }
   .bets-table thead { display: none; }
 
-  /* Card em grid: título → dinheiro → casa/status → mercado → ações */
+  .bets-table tr,
+  .bets-table td { display: block; width: auto; }
+
   .bets-table tr {
     position: relative;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "event   event"
-      "stake   retorno"
-      "casa    status"
-      "market  market"
-      "actions actions";
-    column-gap: 14px;
-    row-gap: 13px;
-    align-items: start;
     border: 1px solid var(--line-strong);
     border-radius: var(--radius);
     background: var(--panel);
-    padding: 14px;
-    margin-bottom: 12px;
+    padding: 12px 14px;
+    margin-bottom: 11px;
   }
 
-  /* Cada célula: rótulo em cima, valor embaixo */
+  /* Compacto: vence o padding de 11px do .bets-table-v2 (que deixava esparso) */
   .bets-table td {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 3px;
-    width: auto;
-    min-width: 0;
     border: 0 !important;
-    padding: 0;
+    padding: 3px 0 !important;
     background: transparent !important;
-    text-align: left;
+  }
+
+  /* Cada campo: rótulo à esquerda, valor à direita (linha compacta) */
+  .bets-table td.bet-cell {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 0;
   }
   .bets-table td.bet-cell::before {
     content: attr(data-label);
     color: var(--muted);
     font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
   }
+  /* valor (e sub) alinhados à direita */
+  .bets-table td.bet-cell > * { text-align: right; }
+  .bets-table td.num { text-align: right; }
 
-  /* Posicionamento por área */
-  .bets-table td.bet-cell-event { grid-area: event; }
-  .bets-table td[data-label="Stake"] { grid-area: stake; }
-  .bets-table td[data-label="Retorno"] { grid-area: retorno; }
-  .bets-table td[data-label="Casa"] { grid-area: casa; }
-  .bets-table td.bet-status-cell { grid-area: status; }
-  .bets-table td.bet-cell-market { grid-area: market; }
-  .bets-table td.bet-actions-cell { grid-area: actions; }
-
-  /* Título do card */
+  /* Evento = título do card */
   .bets-table td.bet-cell-event {
-    gap: 4px;
-    padding: 0 30px 11px 0;
+    padding: 0 32px 9px 0 !important;
+    margin-bottom: 7px;
     border-bottom: 1px solid var(--line) !important;
   }
   .bets-table td.bet-cell-event::before { content: none; }
+  .bets-table td.bet-cell-event > * { text-align: left; }
 
-  /* Valores monetários em destaque, alinhados à esquerda */
-  .bets-table td.num { align-items: flex-start; }
-  .bets-table td.num strong { font-size: 16px; }
-  .bets-table td.num .bet-odd { margin-left: 0; }
+  /* Mercado empilhado (rótulo em cima) */
+  .bets-table td.bet-cell-market { display: block; }
+  .bets-table td.bet-cell-market::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--muted);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 2px;
+  }
+  .bets-table td.bet-cell-market > * { text-align: left; }
 
   /* Ações em largura cheia */
   .bets-table td.bet-actions-cell {
-    padding-top: 11px;
+    padding-top: 9px !important;
+    margin-top: 6px;
     border-top: 1px solid var(--line) !important;
   }
   .bets-table td.bet-actions-cell::before { content: none; }
@@ -6435,7 +6433,7 @@ tr:hover td {
     position: absolute;
     top: 12px;
     right: 12px;
-    padding: 0;
+    padding: 0 !important;
     z-index: 2;
   }
 }

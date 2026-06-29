@@ -5,12 +5,12 @@
       <stop offset="1" stop-color="#EF6C12"/>
     </linearGradient>
     <linearGradient id="topglow" x1="512" y1="0" x2="512" y2="560" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop stop-color="#FFFFFF" stop-opacity="0.20"/>
       <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
     </linearGradient>
-    <linearGradient id="plus" x1="512" y1="300" x2="512" y2="724" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ink" x1="512" y1="170" x2="512" y2="800" gradientUnits="userSpaceOnUse">
       <stop stop-color="#FFFFFF"/>
-      <stop offset="1" stop-color="#FFF4EA"/>
+      <stop offset="1" stop-color="#FFF1E2"/>
     </linearGradient>
   </defs>
 
@@ -18,9 +18,9 @@
   <rect width="1024" height="1024" fill="url(#bg)"/>
   <rect width="1024" height="1024" fill="url(#topglow)"/>
 
-  <!-- + confiante, com sombra de contato sutil -->
-  <path d="M512 304 V720 M304 512 H720" stroke="#A53D06" stroke-opacity="0.22"
-        stroke-width="104" stroke-linecap="round" transform="translate(0,10)"/>
-  <path d="M512 304 V720 M304 512 H720" stroke="url(#plus)"
-        stroke-width="104" stroke-linecap="round"/>
+  <!-- wordmark B+ (Futura) com sombra de contato -->
+  <g font-family="Futura, 'Futura PT', 'Avenir Next', sans-serif" font-weight="bold" text-anchor="middle">
+    <text x="508" y="524" font-size="600" letter-spacing="-18" dominant-baseline="central" fill="#9A3A05" fill-opacity="0.22">B<tspan font-size="350" dy="-150">+</tspan></text>
+    <text x="508" y="512" font-size="600" letter-spacing="-18" dominant-baseline="central" fill="url(#ink)">B<tspan font-size="350" dy="-150">+</tspan></text>
+  </g>
 </svg>
