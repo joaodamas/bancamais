@@ -5224,6 +5224,7 @@ nav button:hover:not(.active) {
 .topbar {
   gap: 16px;
   padding: 18px 28px;
+  padding-top: calc(18px + env(safe-area-inset-top));
   border-bottom: 1px solid var(--line);
   background: var(--panel);
   backdrop-filter: blur(22px);
@@ -7081,7 +7082,7 @@ button.danger:hover {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  z-index: 8;
+  z-index: var(--z-modal);
   min-width: 140px;
   padding: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -10767,6 +10768,15 @@ button.danger:hover {
   /* Sidebar desktop sai; bottom nav assume em telas pequenas. */
   .sidebar {
     display: none;
+  }
+
+  /* Menu de ações abre pra CIMA no mobile: o "..." fica no rodapé do card,
+     então abrir pra baixo cairia atrás da bottom-nav. */
+  .bet-actions-dropdown {
+    top: auto;
+    bottom: calc(100% + 8px);
+    left: 0;
+    right: auto;
   }
 
   .mobile-nav {

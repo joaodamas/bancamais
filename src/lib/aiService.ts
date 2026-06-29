@@ -5,6 +5,7 @@ import {
   riskAlerts,
   money,
   percent,
+  isLossResult,
 } from "./metrics";
 import type { AppState } from "./types";
 
@@ -380,7 +381,7 @@ function currentLossStreak(bets: AppState["bets"]): number {
     .sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
   let streak = 0;
   for (const bet of settled) {
-    if (bet.status === "lost") streak++;
+    if (isLossResult(bet)) streak++;
     else break;
   }
   return streak;

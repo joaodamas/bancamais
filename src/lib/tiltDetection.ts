@@ -1,5 +1,5 @@
 import type { AppState, Bet } from "./types";
-import { betProfit } from "./metrics";
+import { betProfit, isLossResult } from "./metrics";
 
 export interface TiltSignal {
   type: "rapid_sequence" | "stake_escalation" | "live_chasing" | "loss_chasing" | "revenge_betting";
@@ -51,12 +51,12 @@ export function detectTilt(state: AppState): TiltAnalysis {
   const historicalBets = allBets.slice(10); // apostas mais antigas como baseline
 
   const recentLoss = last24h
-    .filter((b) => b.status === "lost")
+    .filter((b) => isLossResult(b))
     .reduce((s, b) => s + Math.abs(betProfit(b)), 0);
 
   // Sinal 1: Apostas em sequência rápida após perdas
   const last2h = getRecentBets(allBets, 2);
-  const recentLossesShort = last2h.filter((b) => b.status === "lost").length;
+  const recentLossesShort = last2h.filter((b) => isLossResult(b)).length;
   if (last2h.length >= 4 && recentLossesShort >= 2) {
     signals.push({
       type: "rapid_sequence",
@@ -89,11 +89,11 @@ export function detectTilt(state: AppState): TiltAnalysis {
   }
 
   // Sinal 3: Chasing live após perdas pre-live
-  const preLiveLosses24h = last24h.filter((b) => b.mode === "prelive" && b.status === "lost").length;
+  const preLiveLosses24h = last24h.filter((b) => b.mode === "prelive" && isLossResult(b)).length;
   const liveAfterLoss = last24h.filter((b, i) => {
     if (b.mode !== "live") return false;
     const prevBets = last24h.slice(i + 1, i + 4);
-    return prevBets.some((pb) => pb.status === "lost");
+    return prevBets.some((pb) => isLossResult(pb));
   }).length;
 
   if (preLiveLosses24h >= 2 && liveAfterLoss >= 1) {
@@ -108,7 +108,7 @@ export function detectTilt(state: AppState): TiltAnalysis {
   const consecutiveLossChain = (() => {
     let chain = 0;
     for (const bet of allBets.slice(0, 8)) {
-      if (bet.status === "lost") chain++;
+      if (isLossResult(bet)) chain++;
       else if (bet.status === "pending") continue;
       else break;
     }
@@ -133,7 +133,7 @@ export function detectTilt(state: AppState): TiltAnalysis {
   const revengeWindow = last6h.filter((b) => b.status !== "pending");
   if (revengeWindow.length >= 3) {
     const uniqueEvents = new Set(revengeWindow.map((b) => b.eventName)).size;
-    if (uniqueEvents === revengeWindow.length && revengeWindow[0]?.status === "lost") {
+    if (uniqueEvents === revengeWindow.length && revengeWindow[0] !== undefined && isLossResult(revengeWindow[0])) {
       signals.push({
         type: "revenge_betting",
         description: `${revengeWindow.length} apostas em eventos distintos em 6h, iniciando com perda.`,

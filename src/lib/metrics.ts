@@ -26,6 +26,17 @@ export function potentialReturn(bet: Bet): number {
   return bet.stake * bet.odds;
 }
 
+/**
+ * Resultado de derrota: perdida, meia-perdida, ou cashout que terminou no negativo.
+ * Status-based de propósito — won/half_won/void/pending nunca são derrota, mesmo
+ * que o payout esteja ausente/inconsistente.
+ */
+export function isLossResult(bet: Bet): boolean {
+  if (bet.status === "lost" || bet.status === "half_lost") return true;
+  if (bet.status === "cashout") return betProfit(bet) < 0;
+  return false;
+}
+
 export function clvPercent(bet: Bet): number | null {
   if (!bet.closingOdds) return null;
   return (bet.odds - bet.closingOdds) / bet.closingOdds;

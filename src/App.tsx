@@ -1071,12 +1071,14 @@ export function App() {
       const currentBalance = getDerivedBookmakerBalance(state, bookmakerId);
       const delta = Math.round((desiredBalance - currentBalance) * 100) / 100;
       if (Math.abs(delta) >= 0.01) {
+        // Subir o saldo = aporte (deposit); baixar = saque (withdrawal). Usar deposit
+        // garante que o capital entre na base do ROI (bankrollBase conta deposits).
         adjustment = {
           id: createTransactionId(),
           date: new Date().toISOString(),
-          type: "adjustment",
+          type: delta > 0 ? "deposit" : "withdrawal",
           bookmakerId,
-          description: "Ajuste de saldo (edição da casa)",
+          description: delta > 0 ? "Aporte (edição da casa)" : "Retirada (edição da casa)",
           amount: delta,
           referenceType: "manual",
         };
