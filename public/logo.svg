@@ -1,26 +1,25 @@
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg" x1="180" y1="100" x2="844" y2="940" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FF9D3D"/>
-      <stop offset="1" stop-color="#EF6C12"/>
+    <linearGradient id="bg" x1="512" y1="0" x2="512" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A1A1B"/>
+      <stop offset="1" stop-color="#070707"/>
     </linearGradient>
-    <linearGradient id="topglow" x1="512" y1="0" x2="512" y2="560" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFFFFF" stop-opacity="0.20"/>
-      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
-    </linearGradient>
-    <linearGradient id="ink" x1="512" y1="170" x2="512" y2="800" gradientUnits="userSpaceOnUse">
+    <radialGradient id="glow" cx="0.62" cy="0.30" r="0.55">
+      <stop stop-color="#F97316" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#F97316" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ink" x1="512" y1="190" x2="512" y2="780" gradientUnits="userSpaceOnUse">
       <stop stop-color="#FFFFFF"/>
-      <stop offset="1" stop-color="#FFF1E2"/>
+      <stop offset="1" stop-color="#E9E9EA"/>
     </linearGradient>
   </defs>
 
   <!-- full-bleed: iOS/Android aplicam a máscara -->
   <rect width="1024" height="1024" fill="url(#bg)"/>
-  <rect width="1024" height="1024" fill="url(#topglow)"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
 
-  <!-- wordmark B+ (Futura) com sombra de contato -->
+  <!-- wordmark: B branco + "+" laranja maior -->
   <g font-family="Futura, 'Futura PT', 'Avenir Next', sans-serif" font-weight="bold" text-anchor="middle">
-    <text x="508" y="524" font-size="600" letter-spacing="-18" dominant-baseline="central" fill="#9A3A05" fill-opacity="0.22">B<tspan font-size="350" dy="-150">+</tspan></text>
-    <text x="508" y="512" font-size="600" letter-spacing="-18" dominant-baseline="central" fill="url(#ink)">B<tspan font-size="350" dy="-150">+</tspan></text>
+    <text x="470" y="512" font-size="600" letter-spacing="-18" dominant-baseline="central" fill="url(#ink)">B<tspan font-size="450" dy="-120" fill="#F97316">+</tspan></text>
   </g>
 </svg>

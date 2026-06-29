@@ -43,8 +43,11 @@ export function GuidedTour({ onDone }: { onDone: () => void }) {
 
   useLayoutEffect(() => {
     const el = document.querySelector(current.target) as HTMLElement | null;
-    if (!el) {
-      // Alvo ausente nesta tela — avança ou encerra sem travar o tour.
+    // No mobile a sidebar é display:none — o elemento existe mas tem tamanho 0.
+    // Trata alvo ausente OU invisível (sem layout) como inexistente: pula sem
+    // posicionar o tooltip no canto (0,0).
+    const visible = !!el && el.offsetWidth > 0 && el.offsetHeight > 0;
+    if (!visible) {
       if (step < STEPS.length - 1) setStep((s) => s + 1);
       else onDone();
       return;

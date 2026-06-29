@@ -6444,13 +6444,17 @@ tr:hover td {
   -webkit-appearance: none;
   width: 20px;
   height: 20px;
+  min-height: 20px;
+  min-width: 20px;
   margin: 0;
+  padding: 0;
   border: 1.5px solid var(--line-strong);
   border-radius: 6px;
   background: var(--panel-2);
   cursor: pointer;
   position: relative;
   flex-shrink: 0;
+  box-sizing: border-box;
   transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 .bets-table input[type="checkbox"]:checked {
