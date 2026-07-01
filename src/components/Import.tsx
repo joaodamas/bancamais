@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CheckCircle2, XCircle, AlertTriangle, Copy, FileText } from "lucide-react";
 import { parseBetsCsv } from "../lib/csv";
-import { money } from "../lib/metrics";
+import { betProfit, money } from "../lib/metrics";
 import type { AppState, Bet } from "../lib/types";
 
 interface ImportProps {
@@ -16,10 +16,47 @@ interface ParsePreview {
   duplicates: number;
 }
 
+const STATUS_LABEL: Record<Bet["status"], string> = {
+  pending: "Pendente",
+  won: "Ganha",
+  lost: "Perdida",
+  cashout: "Cashout",
+  void: "Cancelada",
+  half_won: "Meia ganha",
+  half_lost: "Meia perdida",
+};
+
+/** Categoria de cor da linha por resultado — verde/vermelho/neutro/pendente. */
+function rowTone(bet: Bet): "green" | "red" | "neutral" | "pending" {
+  if (bet.status === "pending") return "pending";
+  if (bet.status === "void") return "neutral";
+  if (bet.status === "won" || bet.status === "half_won") return "green";
+  if (bet.status === "lost" || bet.status === "half_lost") return "red";
+  return betProfit(bet) >= 0 ? "green" : "red"; // cashout
+}
+
+function signed(value: number): string {
+  return `${value >= 0 ? "+" : ""}${money.format(value)}`;
+}
+
+function fmtDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+}
+
+/** Teto de linhas renderizadas na prévia para manter o DOM leve em imports grandes. */
+const PREVIEW_ROW_CAP = 500;
+
 export function Import({ state, importBets, onOpenBets }: ImportProps) {
   const [csv, setCsv] = useState("");
   const [preview, setPreview] = useState<ParsePreview | null>(null);
   const [imported, setImported] = useState(false);
+
+  const bookmakerName = useMemo(
+    () => new Map(state.bookmakers.map((book) => [book.id, book.name])),
+    [state.bookmakers],
+  );
 
   async function readFile(file: File) {
     const text = await file.text();
@@ -132,41 +169,63 @@ export function Import({ state, importBets, onOpenBets }: ImportProps) {
               </div>
             )}
 
-            {/* Preview das apostas válidas */}
+            {/* Preview das apostas válidas — tabela detalhada, linha por resultado */}
             {preview.valid.length > 0 && (
               <div className="import-valid-preview">
                 <span className="import-errors-label">
-                  Prévia das {Math.min(preview.valid.length, 5)} primeira(s) aposta(s) válida(s)
+                  Prévia das apostas válidas ({preview.valid.length})
                 </span>
-                <div className="import-preview-table-wrap">
+                <div className="import-preview-table-wrap import-preview-scroll">
                   <table className="import-preview-table">
                     <thead>
                       <tr>
+                        <th>Data</th>
                         <th>Evento</th>
-                        <th>Mercado</th>
-                        <th>Stake</th>
-                        <th>Odd</th>
+                        <th>Casa</th>
+                        <th className="num">Stake</th>
+                        <th className="num">Odd</th>
                         <th>Status</th>
+                        <th className="num">Resultado</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {preview.valid.slice(0, 5).map((bet, i) => (
-                        <tr key={i}>
-                          <td>{bet.eventName}</td>
-                          <td>{bet.market}</td>
-                          <td className="text-mono">{money.format(bet.stake)}</td>
-                          <td className="text-mono">{bet.odds.toFixed(2)}</td>
-                          <td>
-                            <span className={`pill ${bet.status}`} style={{ fontSize: 10 }}>
-                              {bet.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                      {preview.valid.slice(0, PREVIEW_ROW_CAP).map((bet, i) => {
+                        const tone = rowTone(bet);
+                        const settled = bet.status !== "pending";
+                        const profit = betProfit(bet);
+                        return (
+                          <tr key={bet.id ?? i} className={`tone-${tone}`}>
+                            <td className="text-mono import-cell-date">{fmtDate(bet.eventAt)}</td>
+                            <td>
+                              <span className="import-cell-event">{bet.eventName || "—"}</span>
+                              <span className="import-cell-sub">
+                                {[bet.selection, bet.market].filter(Boolean).join(" · ") || bet.sport}
+                              </span>
+                            </td>
+                            <td>{bookmakerName.get(bet.bookmakerId) ?? "—"}</td>
+                            <td className="text-mono num">{money.format(bet.stake)}</td>
+                            <td className="text-mono num">{bet.odds.toFixed(2)}</td>
+                            <td>
+                              <span className={`pill ${bet.status}`} style={{ fontSize: 10 }}>
+                                {STATUS_LABEL[bet.status] ?? bet.status}
+                              </span>
+                            </td>
+                            <td className="num text-mono">
+                              {settled
+                                ? <span className={tone === "green" ? "pos" : tone === "red" ? "neg" : "muted"}>
+                                    {tone === "neutral" ? money.format(0) : signed(profit)}
+                                  </span>
+                                : <span className="muted">pendente</span>}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
-                  {preview.valid.length > 5 && (
-                    <p className="import-preview-more">+ {preview.valid.length - 5} apostas adicionais</p>
+                  {preview.valid.length > PREVIEW_ROW_CAP && (
+                    <p className="import-preview-more">
+                      + {preview.valid.length - PREVIEW_ROW_CAP} apostas adicionais (serão importadas normalmente)
+                    </p>
                   )}
                 </div>
               </div>

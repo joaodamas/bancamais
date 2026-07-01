@@ -3003,6 +3003,67 @@ nav button:hover svg {
   border-bottom: 0;
 }
 
+.import-preview-table th.num,
+.import-preview-table td.num {
+  text-align: right;
+}
+
+/* Rolagem quando o import tem muitas linhas — cabeçalho fixo */
+.import-preview-scroll {
+  max-height: 440px;
+  overflow-y: auto;
+}
+
+.import-preview-scroll .import-preview-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Coluna Evento: título + subtítulo (seleção · mercado) */
+.import-cell-date {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.import-cell-event {
+  display: block;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.import-cell-sub {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+/* Tinta da linha por resultado + faixa colorida à esquerda */
+.import-preview-table tbody tr.tone-green { background: rgba(52, 211, 153, 0.06); }
+.import-preview-table tbody tr.tone-red { background: rgba(251, 113, 133, 0.06); }
+.import-preview-table tbody tr.tone-neutral { background: rgba(148, 163, 184, 0.05); }
+.import-preview-table tbody tr.tone-pending { background: rgba(245, 158, 11, 0.05); }
+
+.import-preview-table tbody tr td:first-child { border-left: 3px solid transparent; }
+.import-preview-table tbody tr.tone-green td:first-child { border-left-color: #34d399; }
+.import-preview-table tbody tr.tone-red td:first-child { border-left-color: #fb7185; }
+.import-preview-table tbody tr.tone-neutral td:first-child { border-left-color: rgba(148, 163, 184, 0.5); }
+.import-preview-table tbody tr.tone-pending td:first-child { border-left-color: #f59e0b; }
+
+/* Pills de meia-aposta (faltavam) */
+.pill.half_won {
+  background: rgba(52, 211, 153, 0.12);
+  color: #86efac;
+  border-color: rgba(52, 211, 153, 0.22);
+}
+
+.pill.half_lost {
+  background: rgba(251, 113, 133, 0.12);
+  color: #fca5a5;
+  border-color: rgba(251, 113, 133, 0.22);
+}
+
 .import-preview-more {
   font-size: 11px;
   color: var(--muted);

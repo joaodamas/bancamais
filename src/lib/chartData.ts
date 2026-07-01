@@ -90,13 +90,28 @@ export interface DailyProfitPoint {
   cumulative: number;
 }
 
+/**
+ * Chave de dia no fuso LOCAL do usuário (YYYY-MM-DD). Base única de data para
+ * as agregações temporais — evita o descasamento em que o diário usava a data
+ * UTC (slice do ISO) e o mensal usava o mês local: uma aposta de 23h caía em
+ * dias/meses diferentes entre as telas.
+ */
+export function localDayKey(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 /** Lucro por data (apostas liquidadas) + acumulado — histórico desde a 1ª aposta.
  *  Distinto da curva da banca: isola o desempenho das apostas (sem depósitos/saques). */
 export function buildDailyProfitSeries(state: AppState): DailyProfitPoint[] {
   const byDay = new Map<string, number>();
   for (const bet of state.bets) {
     if (bet.status === "pending") continue;
-    const day = (bet.eventAt || bet.placedAt || "").slice(0, 10);
+    const day = localDayKey(bet.eventAt || bet.placedAt || "");
     if (!day) continue;
     byDay.set(day, (byDay.get(day) ?? 0) + betProfit(bet));
   }
@@ -130,8 +145,9 @@ export function buildMonthlyData(state: AppState): MonthlyPoint[] {
 
   for (const bet of state.bets) {
     if (bet.status === "pending") continue;
-    const d = new Date(bet.eventAt);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const dayKey = localDayKey(bet.eventAt || bet.placedAt || "");
+    if (!dayKey) continue;
+    const key = dayKey.slice(0, 7); // YYYY-MM, mesmo fuso local do diário
     const existing = map.get(key) ?? { profit: 0, staked: 0, bets: 0 };
     map.set(key, {
       profit: existing.profit + betProfit(bet),
