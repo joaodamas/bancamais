@@ -57,6 +57,16 @@ describe("betProfit", () => {
     const bet = makeBet({ status: "cashout", stake: 100, payout: 80 });
     expect(betProfit(bet)).toBe(-20);
   });
+
+  it("freebet ganha: lucro é só o ganho (não abate o stake)", () => {
+    const bet = makeBet({ status: "won", stake: 100, odds: 3, payout: 200, isFreebet: true });
+    expect(betProfit(bet)).toBe(200); // stake×(odd−1), sem devolver stake
+  });
+
+  it("freebet perdida: lucro 0 (não perde dinheiro próprio)", () => {
+    const bet = makeBet({ status: "lost", stake: 100, odds: 3, payout: 0, isFreebet: true });
+    expect(betProfit(bet)).toBe(0);
+  });
 });
 
 function deposit(amount: number): Transaction {
@@ -150,6 +160,16 @@ describe("calculateMetrics", () => {
     expect(m.yield).toBe(0.5);      // 100 / 200 (turnover liquidado)
     expect(m.roi).toBeCloseTo(0.1); // 100 / 1000 (banca = saldo da casa)
     expect(m.hitRate).toBe(0.5);
+  });
+
+  it("freebet entra no lucro mas fica fora do turnover do yield", () => {
+    const bets: Bet[] = [
+      makeBet({ id: "1", status: "won", stake: 100, odds: 2.0, payout: 200 }),                  // arriscada: +100
+      makeBet({ id: "2", status: "won", stake: 100, odds: 3.0, payout: 200, isFreebet: true }), // freebet: +200 ganho
+    ];
+    const m = calculateMetrics(makeState(bets));
+    expect(m.profit).toBe(300);   // 100 + 200 (dinheiro real ganho)
+    expect(m.yield).toBe(1.0);    // 100 / 100 (só a arriscada) — não 300/200
   });
 
   it("yield ignora o stake de apostas pendentes no denominador", () => {

@@ -491,6 +491,9 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
                     <td className="bet-cell bet-cell-event">
                       <div className="bet-event-line">
                         <strong className="bet-event-name" title={bet.eventName}>{bet.eventName}</strong>
+                        {bet.isFreebet && (
+                          <span className="pill freebet" style={{ fontSize: 9 }} title="Aposta grátis (bônus) — fora do turnover do yield">Freebet</span>
+                        )}
                         {isPending && delta.label && (
                           <span className={`bet-time-chip bet-time-${delta.state}`}>{delta.label}</span>
                         )}

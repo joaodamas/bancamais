@@ -19,7 +19,15 @@ export const percent = new Intl.NumberFormat("pt-BR", {
 export function betProfit(bet: Bet): number {
   if (bet.status === "pending") return 0;
   if (bet.status === "void") return 0;
+  // Freebet: o stake não é dinheiro próprio, então o lucro é só o ganho (payout),
+  // sem abater o stake. Perdida devolve payout 0 → lucro 0.
+  if (bet.isFreebet) return bet.payout ?? 0;
   return (bet.payout ?? 0) - bet.stake;
+}
+
+/** Aposta que arriscou dinheiro próprio (entra no turnover do yield/ROI). */
+export function isRiskedBet(bet: Bet): boolean {
+  return !bet.isFreebet;
 }
 
 export function potentialReturn(bet: Bet): number {
@@ -47,9 +55,13 @@ export function calculateMetrics(state: AppState): DashboardMetrics {
   const capitalBase = bankrollBase(state);
   const pending = state.bets.filter((bet) => bet.status === "pending");
   const settled = state.bets.filter((bet) => bet.status !== "pending" && bet.status !== "void");
-  const stakedSettled = settled.reduce((sum, bet) => sum + bet.stake, 0);
   const profit = settled.reduce((sum, bet) => sum + betProfit(bet), 0);
   const wins = settled.filter((bet) => betProfit(bet) > 0).length;
+  // Yield mede edge sobre dinheiro arriscado — freebet fica fora do turnover E
+  // do numerador (senão o número infla, bug clássico de bônus no ROI).
+  const settledRisked = settled.filter(isRiskedBet);
+  const riskedStake = settledRisked.reduce((sum, bet) => sum + bet.stake, 0);
+  const riskedProfit = settledRisked.reduce((sum, bet) => sum + betProfit(bet), 0);
   const clvs = state.bets.map(clvPercent).filter((value): value is number => value !== null);
   // Odd média ponderada pelo stake — a média simples distorce quando os stakes variam.
   const stakeTotal = state.bets.reduce((sum, bet) => sum + bet.stake, 0);
@@ -62,7 +74,7 @@ export function calculateMetrics(state: AppState): DashboardMetrics {
     // ROI = retorno sobre o capital (lucro / capital depositado, base estável).
     // Yield = edge (lucro / turnover liquidado).
     roi: capitalBase > 0 ? profit / capitalBase : 0,
-    yield: stakedSettled > 0 ? profit / stakedSettled : 0,
+    yield: riskedStake > 0 ? riskedProfit / riskedStake : 0,
     hitRate: settled.length > 0 ? wins / settled.length : 0,
     averageOdds: stakeTotal > 0 ? oddsStakeWeighted / stakeTotal : 0,
     clvAverage: clvs.length > 0 ? clvs.reduce((sum, value) => sum + value, 0) / clvs.length : 0,
@@ -101,7 +113,9 @@ export function groupProfitByStrategy(state: AppState) {
     const bets = state.bets.filter((bet) => bet.strategyId === strategy.id);
     const settled = bets.filter((bet) => bet.status !== "pending" && bet.status !== "void");
     const stake = bets.reduce((sum, bet) => sum + bet.stake, 0);
-    const settledStake = settled.reduce((sum, bet) => sum + bet.stake, 0);
+    const risked = settled.filter(isRiskedBet);
+    const riskedStake = risked.reduce((sum, bet) => sum + bet.stake, 0);
+    const riskedProfit = risked.reduce((sum, bet) => sum + betProfit(bet), 0);
     const profit = bets.reduce((sum, bet) => sum + betProfit(bet), 0);
     const wins = settled.filter((bet) => betProfit(bet) > 0).length;
     const clvs = bets.map(clvPercent).filter((value): value is number => value !== null);
@@ -111,7 +125,7 @@ export function groupProfitByStrategy(state: AppState) {
       bets: bets.length,
       stake,
       profit,
-      roi: settledStake > 0 ? profit / settledStake : 0,
+      roi: riskedStake > 0 ? riskedProfit / riskedStake : 0,
       hitRate: settled.length > 0 ? wins / settled.length : 0,
       clvAverage: clvs.length > 0 ? clvs.reduce((sum, value) => sum + value, 0) / clvs.length : 0,
     };
@@ -191,7 +205,9 @@ export function profitFactor(state: AppState): number | null {
 
 function buildSegment(label: string, bets: Bet[]): SegmentStats {
   const settled = settledBets(bets);
-  const settledStake = settled.reduce((sum, bet) => sum + bet.stake, 0);
+  const risked = settled.filter(isRiskedBet);
+  const riskedStake = risked.reduce((sum, bet) => sum + bet.stake, 0);
+  const riskedProfit = risked.reduce((sum, bet) => sum + betProfit(bet), 0);
   const profit = settled.reduce((sum, bet) => sum + betProfit(bet), 0);
   const wins = settled.filter(isWin).length;
 
@@ -200,7 +216,7 @@ function buildSegment(label: string, bets: Bet[]): SegmentStats {
     bets: bets.length,
     staked: bets.reduce((sum, bet) => sum + bet.stake, 0),
     profit,
-    roi: settledStake > 0 ? profit / settledStake : 0,
+    roi: riskedStake > 0 ? riskedProfit / riskedStake : 0,
     hitRate: settled.length > 0 ? wins / settled.length : 0,
   };
 }

@@ -946,6 +946,13 @@ export function NewBet({ state, addBet, onAddBookmaker, onClose, prefill, draft,
                 <input name="tags" placeholder="euro, overgols, prelive" value={formValues.tags} onChange={handleTextInput("tags")} />
               </label>
             </div>
+            <label className="nb-freebet-toggle">
+              <input type="checkbox" name="isFreebet" />
+              <span>
+                <strong>Aposta grátis (freebet)</strong>
+                <small>O stake é bônus, não dinheiro próprio — não debita a casa e fica fora do turnover do yield. Ganho = stake × (odd − 1).</small>
+              </span>
+            </label>
           </div>
 
           <div className="form-actions">

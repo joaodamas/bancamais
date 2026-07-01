@@ -197,7 +197,10 @@ export function Import({ state, importBets, onOpenBets }: ImportProps) {
                           <tr key={bet.id ?? i} className={`tone-${tone}`}>
                             <td className="text-mono import-cell-date">{fmtDate(bet.eventAt)}</td>
                             <td>
-                              <span className="import-cell-event">{bet.eventName || "—"}</span>
+                              <span className="import-cell-event">
+                                {bet.eventName || "—"}
+                                {bet.isFreebet && <span className="pill freebet import-freebet-tag">Freebet</span>}
+                              </span>
                               <span className="import-cell-sub">
                                 {[bet.selection, bet.market].filter(Boolean).join(" · ") || bet.sport}
                               </span>

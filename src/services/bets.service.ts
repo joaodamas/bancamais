@@ -16,13 +16,25 @@ import { parseOcrMetadata, isSuccessfulOcr, getOcrConfidenceScore } from "../lib
  * - half_lost: devolve metade do stake
  * - cashout: valor informado (fallback = retorno potencial)
  * - lost: 0
+ *
+ * Freebet (aposta grátis): o stake não é dinheiro próprio, então só os GANHOS
+ * caem na conta — nunca o stake de volta. won → stake×(odd−1); lost/void → 0.
  */
 export function settledPayout(
   status: Bet["status"],
   stake: number,
   odds: number,
   cashoutAmount?: number,
+  isFreebet = false,
 ): number {
+  if (isFreebet) {
+    switch (status) {
+      case "won": return stake * (odds - 1);
+      case "half_won": return (stake * (odds - 1)) / 2;
+      case "cashout": return cashoutAmount != null && cashoutAmount > 0 ? cashoutAmount : stake * (odds - 1);
+      default: return 0; // lost, void, half_lost: nada volta
+    }
+  }
   switch (status) {
     case "won": return stake * odds;
     case "half_won": return (stake * odds) / 2 + stake / 2;
@@ -76,9 +88,14 @@ export function buildBetFromForm(
     return { ok: false, error: "Odd invalida. O valor minimo e 1.01." };
   }
 
-  const availableBalance = getDerivedBookmakerBalance(state, bookmakerId);
-  if (stake > availableBalance) {
-    return { ok: false, error: `Saldo insuficiente na ${selectedBookmaker.name}.` };
+  const isFreebet = data.get("isFreebet") === "on" || String(data.get("isFreebet")) === "true";
+
+  // Freebet não arrisca dinheiro próprio — não exige (nem debita) saldo da casa.
+  if (!isFreebet) {
+    const availableBalance = getDerivedBookmakerBalance(state, bookmakerId);
+    if (stake > availableBalance) {
+      return { ok: false, error: `Saldo insuficiente na ${selectedBookmaker.name}.` };
+    }
   }
 
   const finalSlipPath = slipImagePath ?? (String(data.get("uploadedSlipImagePath") || "") || undefined);
@@ -114,6 +131,7 @@ export function buildBetFromForm(
     stake,
     odds,
     status: "pending",
+    isFreebet: isFreebet || undefined,
     closingOdds: Number(data.get("closingOdds")) || undefined,
     estimatedProbability: Number.isFinite(estimatedProbability) ? estimatedProbability : undefined,
     estimatedEdge: Number.isFinite(estimatedEdge) ? estimatedEdge : undefined,
@@ -133,15 +151,16 @@ export function buildBetFromForm(
     date: bet.placedAt,
     type: "bet_stake",
     bookmakerId,
-    description: `Stake - ${bet.eventName}`,
-    amount: -stake,
+    description: `${isFreebet ? "Freebet" : "Stake"} - ${bet.eventName}`,
+    // Freebet não movimenta dinheiro próprio — lançamento fica em 0, só marca a origem.
+    amount: isFreebet ? 0 : -stake,
     referenceType: "bet",
     referenceId: bet.id,
   };
 
   let settlementTransaction: Transaction | null = null;
   if (status !== "pending") {
-    const payout = settledPayout(status, stake, odds, Number.isFinite(cashoutAmount) ? cashoutAmount : undefined);
+    const payout = settledPayout(status, stake, odds, Number.isFinite(cashoutAmount) ? cashoutAmount : undefined, isFreebet);
 
     bet.status = status;
     bet.payout = payout;
@@ -180,7 +199,7 @@ export function buildSettlement(
   const bet = bets.find((b) => b.id === betId);
   if (!bet || bet.status !== "pending") return null;
 
-  const payout = settledPayout(status, bet.stake, bet.odds, cashoutAmount);
+  const payout = settledPayout(status, bet.stake, bet.odds, cashoutAmount, bet.isFreebet);
 
   const newTransaction: Transaction | null = payout > 0 ? {
     id: createTransactionId(),
@@ -262,9 +281,10 @@ export function buildBetEdit(data: FormData, state: AppState, betId: string): Be
     return { ok: false, error: "Odd inválida. O valor mínimo é 1.01." };
   }
 
-  // Saldo só trava em aposta pendente (dinheiro ainda alocado). Em apostas
-  // liquidadas a edição é correção retroativa — o fluxo de caixa já aconteceu.
-  if (existing.status === "pending") {
+  // Saldo só trava em aposta pendente (dinheiro ainda alocado). Freebet não
+  // arrisca dinheiro próprio, então nunca trava. Em apostas liquidadas a edição
+  // é correção retroativa — o fluxo de caixa já aconteceu.
+  if (existing.status === "pending" && !existing.isFreebet) {
     const available = getDerivedBookmakerBalance(state, bookmakerId);
     const effectiveAvailable =
       bookmakerId === existing.bookmakerId ? available + existing.stake : available;
@@ -277,7 +297,7 @@ export function buildBetEdit(data: FormData, state: AppState, betId: string): Be
   const payout =
     existing.status === "pending" ? undefined :
     existing.status === "cashout" ? existing.payout :
-    settledPayout(existing.status, stake, odds);
+    settledPayout(existing.status, stake, odds, undefined, existing.isFreebet);
 
   const updatedBet: Bet = {
     ...existing,
@@ -300,7 +320,12 @@ export function buildBetEdit(data: FormData, state: AppState, betId: string): Be
   const updatedTransactions = state.transactions.map((t) => {
     if (t.referenceId !== betId) return t;
     if (t.type === "bet_stake") {
-      return { ...t, amount: -stake, bookmakerId, description: `Stake - ${updatedBet.eventName}` };
+      return {
+        ...t,
+        amount: existing.isFreebet ? 0 : -stake,
+        bookmakerId,
+        description: `${existing.isFreebet ? "Freebet" : "Stake"} - ${updatedBet.eventName}`,
+      };
     }
     if (t.type === "bet_payout" || t.type === "bet_refund") {
       return {
@@ -338,8 +363,9 @@ export function mergeImportedBets(state: AppState, incoming: Bet[]): AppState {
       date: bet.placedAt,
       type: "bet_stake",
       bookmakerId: bet.bookmakerId,
-      description: `Stake - ${bet.eventName}`,
-      amount: -bet.stake,
+      description: `${bet.isFreebet ? "Freebet" : "Stake"} - ${bet.eventName}`,
+      // Freebet não movimenta dinheiro próprio.
+      amount: bet.isFreebet ? 0 : -bet.stake,
       referenceType: "bet",
       referenceId: bet.id,
     }];
@@ -351,7 +377,7 @@ export function mergeImportedBets(state: AppState, incoming: Bet[]): AppState {
     if (bet.status !== "pending") {
       const payout = bet.payout != null && Number.isFinite(bet.payout)
         ? bet.payout
-        : settledPayout(bet.status, bet.stake, bet.odds);
+        : settledPayout(bet.status, bet.stake, bet.odds, undefined, bet.isFreebet);
       if (payout > 0) {
         const isWinnings = bet.status === "won" || bet.status === "half_won" || bet.status === "cashout";
         items.push({

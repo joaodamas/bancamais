@@ -47,6 +47,9 @@ export interface Bet {
   stake: number;
   odds: number;
   status: BetStatus;
+  /** Aposta grátis (bônus): o stake não é dinheiro próprio arriscado. Ganho = stake×(odd−1),
+   *  sem devolver o stake; não debita a casa nem entra no turnover do yield. */
+  isFreebet?: boolean;
   payout?: number;
   closingOdds?: number;
   settlementSource?: "manual" | "api";

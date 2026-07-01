@@ -19,6 +19,12 @@ describe("settledPayout (meia-aposta)", () => {
     expect(betProfit(bet)).toBe(-50);
   });
 
+  it("freebet: paga só o ganho na vitória, nada na derrota", () => {
+    expect(settledPayout("won", 100, 3, undefined, true)).toBe(200); // stake×(odd−1)
+    expect(settledPayout("lost", 100, 3, undefined, true)).toBe(0);
+    expect(settledPayout("void", 100, 3, undefined, true)).toBe(0);
+  });
+
   it("liquida uma pendente como meia ganha pela settlement", () => {
     const bet: Bet = {
       id: "x", placedAt: BASE_DATE, eventAt: BASE_DATE, sport: "Futebol", league: "UCL",
@@ -361,6 +367,17 @@ describe("mergeImportedBets", () => {
     const result = mergeImportedBets(state, [makeBet({ id: "b-hl", status: "half_lost", stake: 100, odds: 2 })]);
     const refund = result.transactions.find((t) => t.type === "bet_refund" && t.referenceId === "b-hl");
     expect(refund?.amount).toBe(50); // devolve metade do stake
+  });
+
+  it("freebet importada não debita a casa e credita só o ganho", () => {
+    const state = makeState();
+    const result = mergeImportedBets(state, [
+      makeBet({ id: "b-fb", status: "won", stake: 100, odds: 3, isFreebet: true }),
+    ]);
+    const stakeTx = result.transactions.find((t) => t.type === "bet_stake" && t.referenceId === "b-fb");
+    const payTx = result.transactions.find((t) => t.type === "bet_payout" && t.referenceId === "b-fb");
+    expect(stakeTx?.amount).toBe(0);   // não movimenta dinheiro próprio
+    expect(payTx?.amount).toBe(200);   // 100×(3−1), só o ganho
   });
 
   it("retorna a mesma referência de estado quando todas são duplicatas", () => {

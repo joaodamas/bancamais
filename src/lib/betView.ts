@@ -24,6 +24,7 @@ export interface BetRowView {
   closingOdds: number | null;
   mode: Bet["mode"];
   source?: Bet["source"];
+  isFreebet: boolean;
   tags: string[];
   slipImageUrl?: string;
   /** Delta de tempo até o evento (pendentes). */
@@ -71,6 +72,7 @@ export function toBetRowView(
     closingOdds: bet.closingOdds ?? null,
     mode: bet.mode,
     source: bet.source,
+    isFreebet: bet.isFreebet ?? false,
     tags: bet.tags,
     slipImageUrl: bet.slipImageUrl,
     delta: eventDelta(bet.eventAt, now),

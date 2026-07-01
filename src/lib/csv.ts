@@ -29,6 +29,7 @@ export function betsToCsv(state: AppState) {
     "stake",
     "odds",
     "status",
+    "isFreebet",
     "payout",
     "closingOdds",
     "mode",
@@ -49,6 +50,7 @@ export function betsToCsv(state: AppState) {
     bet.stake,
     bet.odds,
     bet.status,
+    bet.isFreebet ? "true" : "",
     bet.payout ?? "",
     bet.closingOdds ?? "",
     bet.mode,
@@ -144,6 +146,7 @@ export function parseBetsCsv(content: string, state: AppState) {
     }
 
     const status = (record.status || "pending") as Bet["status"];
+    const isFreebet = record.isFreebet === "true" || record.isFreebet === "1" || record.isFreebet?.toLowerCase() === "sim";
     const explicitPayout = record.payout ? Number(record.payout) : undefined;
     // Payout autoritativo: usa o do CSV quando presente e válido; senão
     // recalcula pela fonte única. Sem isso, meia-ganha/meia-perdida importadas
@@ -152,7 +155,7 @@ export function parseBetsCsv(content: string, state: AppState) {
       ? undefined
       : explicitPayout != null && Number.isFinite(explicitPayout)
         ? explicitPayout
-        : settledPayout(status, stakeNum, oddsNum);
+        : settledPayout(status, stakeNum, oddsNum, undefined, isFreebet);
 
     bets.push({
       id: record.id || createBetId(),
@@ -168,6 +171,7 @@ export function parseBetsCsv(content: string, state: AppState) {
       stake: stakeNum,
       odds: oddsNum,
       status,
+      isFreebet: isFreebet || undefined,
       payout,
       closingOdds: record.closingOdds ? Number(record.closingOdds) : undefined,
       mode: record.mode === "live" ? "live" : "prelive",
