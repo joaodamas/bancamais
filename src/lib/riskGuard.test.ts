@@ -68,6 +68,19 @@ describe("checkHardStop", () => {
     expect(stop).toBeNull();
   });
 
+  it("não bloqueia quando o líquido do dia é positivo apesar de perdas brutas", () => {
+    // Perde 200 bruto mas ganha 300 líquido em outra aposta → líquido +100.
+    const state = makeState({
+      bets: [makeLostBet(200), makeWonBet(100, 400)],
+      riskSettings: { ...emptyState().riskSettings, hardStopEnabled: true, dailyLossLimitPercent: 10 },
+      transactions: [
+        { id: "tx1", date: new Date().toISOString(), type: "deposit", bookmakerId: "b1", description: "dep", amount: 1000 },
+      ],
+    });
+    // Perda bruta (200) passaria do limite (100), mas o líquido está positivo.
+    expect(checkHardStop(state)).toBeNull();
+  });
+
   it("bloqueia quando perdas diárias atingem o limite", () => {
     const state = makeState({
       bets: [makeLostBet(200)], // 200 de 1000 = 20% — limite é 10%

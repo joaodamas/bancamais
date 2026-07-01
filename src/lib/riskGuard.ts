@@ -33,11 +33,15 @@ function getSettledBetsInWindow(bets: Bet[], hours: number): Bet[] {
   );
 }
 
+/**
+ * Prejuízo LÍQUIDO da janela: soma dos resultados (ganhos abatem perdas) e
+ * devolve o quanto está no vermelho (0 se a janela está no lucro).
+ * Usar perda líquida — e não a soma das perdas brutas — evita bloquear o
+ * apostador num dia/semana/mês em que ele está, no saldo, positivo.
+ */
 function lossInWindow(bets: Bet[]): number {
-  return bets.reduce((sum, b) => {
-    const p = betProfit(b);
-    return p < 0 ? sum + Math.abs(p) : sum;
-  }, 0);
+  const net = bets.reduce((sum, b) => sum + betProfit(b), 0);
+  return net < 0 ? -net : 0;
 }
 
 /** Pausa responsável ativa: devolve o ISO até quando está pausado, ou null. */
@@ -65,7 +69,7 @@ export function checkHardStop(state: AppState): HardStopStatus | null {
   if (dailyLoss >= dailyLimit) {
     return {
       blocked: true,
-      reason: `Limite diário atingido: ${money.format(dailyLoss)} perdido hoje (limite ${money.format(dailyLimit)}).`,
+      reason: `Limite diário atingido: ${money.format(dailyLoss)} de prejuízo líquido hoje (limite ${money.format(dailyLimit)}).`,
       type: "daily",
       limitPercent: rs.dailyLossLimitPercent,
       currentPercent: (dailyLoss / balance) * 100,
@@ -81,7 +85,7 @@ export function checkHardStop(state: AppState): HardStopStatus | null {
   if (weeklyLoss >= weeklyLimit) {
     return {
       blocked: true,
-      reason: `Limite semanal atingido: ${money.format(weeklyLoss)} perdido na semana (limite ${money.format(weeklyLimit)}).`,
+      reason: `Limite semanal atingido: ${money.format(weeklyLoss)} de prejuízo líquido na semana (limite ${money.format(weeklyLimit)}).`,
       type: "weekly",
       limitPercent: rs.weeklyLossLimitPercent,
       currentPercent: (weeklyLoss / balance) * 100,
@@ -97,7 +101,7 @@ export function checkHardStop(state: AppState): HardStopStatus | null {
   if (monthlyLoss >= monthlyLimit) {
     return {
       blocked: true,
-      reason: `Drawdown mensal atingido: ${money.format(monthlyLoss)} perdido no mês (limite ${money.format(monthlyLimit)}).`,
+      reason: `Limite mensal atingido: ${money.format(monthlyLoss)} de prejuízo líquido no mês (limite ${money.format(monthlyLimit)}).`,
       type: "monthly",
       limitPercent: rs.monthlyDrawdownPercent,
       currentPercent: (monthlyLoss / balance) * 100,
@@ -169,7 +173,7 @@ export function riskAlertsExtended(state: AppState): RiskAlert[] {
       alerts.push({
         level: "warning",
         title: "Limite diário próximo",
-        detail: `${money.format(dailyLoss)} perdido hoje (${(dailyPct * 100).toFixed(0)}% do limite de ${money.format(dailyLimit)}).`,
+        detail: `${money.format(dailyLoss)} de prejuízo líquido hoje (${(dailyPct * 100).toFixed(0)}% do limite de ${money.format(dailyLimit)}).`,
         metric: `${(dailyPct * 100).toFixed(0)}%`,
       });
     }
@@ -183,7 +187,7 @@ export function riskAlertsExtended(state: AppState): RiskAlert[] {
       alerts.push({
         level: "info",
         title: "Limite semanal próximo",
-        detail: `${money.format(weeklyLoss)} perdido na semana (${(weeklyPct * 100).toFixed(0)}% do limite de ${money.format(weeklyLimit)}).`,
+        detail: `${money.format(weeklyLoss)} de prejuízo líquido na semana (${(weeklyPct * 100).toFixed(0)}% do limite de ${money.format(weeklyLimit)}).`,
         metric: `${(weeklyPct * 100).toFixed(0)}%`,
       });
     }
