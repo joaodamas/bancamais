@@ -3,7 +3,7 @@ import type { FormEvent } from "react";
 import { money } from "../lib/metrics";
 import { calculateLedgerTotalBalance, computeBookmakerLedger, deriveBookmakerBalances, TRANSACTION_TYPE_LABELS } from "../lib/ledger";
 import { KNOWN_BOOKMAKERS } from "../lib/knownBookmakers";
-import type { AppState, BookmakerStatus, Transaction } from "../lib/types";
+import type { AppState, BookmakerStatus, Transaction, TransactionType } from "../lib/types";
 
 interface BooksProps {
   state: AppState;
@@ -26,6 +26,7 @@ export function Books({
   const [selectedBookmakerId, setSelectedBookmakerId] = useState<string | null>(null);
   const [voidingId, setVoidingId] = useState<string | null>(null);
   const [voidReason, setVoidReason] = useState("");
+  const [movementType, setMovementType] = useState<TransactionType>("deposit");
 
   const totalBalance = useMemo(() => calculateLedgerTotalBalance(state), [state]);
   const derivedBalances = useMemo(() => deriveBookmakerBalances(state), [state]);
@@ -395,11 +396,16 @@ export function Books({
           <h2>Registrar movimentação</h2>
           <p className="panel-intro full">
             Use esta fila para depósitos, saques, transferências e ajustes manuais entre casas.
+            Para mover saldo entre casas, escolha <strong>Transferência</strong> e informe origem e destino.
             Lançamentos são permanentes — para corrigir, crie uma anulação no ledger da casa.
           </p>
           <label>
             Tipo
-            <select name="type">
+            <select
+              name="type"
+              value={movementType}
+              onChange={(event) => setMovementType(event.target.value as TransactionType)}
+            >
               <option value="deposit">Depósito</option>
               <option value="withdrawal">Saque</option>
               <option value="transfer">Transferência</option>
@@ -407,7 +413,7 @@ export function Books({
             </select>
           </label>
           <label>
-            Casa origem
+            {movementType === "transfer" ? "Casa origem" : "Casa"}
             <select name="bookmakerId">
               {state.bookmakers.map((book) => (
                 <option key={book.id} value={book.id}>
@@ -416,16 +422,18 @@ export function Books({
               ))}
             </select>
           </label>
-          <label>
-            Casa destino
-            <select name="targetBookmakerId">
-              {state.bookmakers.map((book) => (
-                <option key={book.id} value={book.id}>
-                  {book.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          {movementType === "transfer" && (
+            <label>
+              Casa destino
+              <select name="targetBookmakerId" defaultValue={state.bookmakers[1]?.id}>
+                {state.bookmakers.map((book) => (
+                  <option key={book.id} value={book.id}>
+                    {book.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label>
             Valor
             <input name="amount" required min="0.01" step="0.01" type="number" placeholder="500" />
