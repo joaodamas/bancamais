@@ -10427,6 +10427,20 @@ button.danger:hover {
 }
 .date-chip:hover { border-color: var(--accent); color: var(--text); }
 .date-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.date-month-select {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+.date-month-select:hover { border-color: var(--accent); color: var(--text); }
+.date-month-select.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.date-month-select.active option { color: var(--text); background: var(--panel-2); }
 
 .bets-table-v2 tbody tr.bet-row-won td { background: color-mix(in srgb, var(--positive) 4%, transparent); }
 .bets-table-v2 tbody tr.bet-row-lost td { background: color-mix(in srgb, var(--negative) 4%, transparent); }

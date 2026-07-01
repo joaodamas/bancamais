@@ -55,18 +55,52 @@ function clvChip(bet: Bet): { label: string; tone: string; title: string } | nul
   };
 }
 
-type DateRange = "all" | "today" | "7d" | "30d" | "month" | "year";
+// "m:AAAA-MM" = um mês-calendário específico (ex.: "m:2026-06" = junho/2026).
+type DateRange = "all" | "today" | "7d" | "30d" | "month" | "year" | `m:${string}`;
 
 function inDateRange(iso: string, range: DateRange): boolean {
   if (range === "all") return true;
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return false;
+  if (range.startsWith("m:")) {
+    const [year, month] = range.slice(2).split("-").map(Number);
+    return date.getFullYear() === year && date.getMonth() === month - 1;
+  }
   const now = new Date();
   if (range === "today") return date.toDateString() === now.toDateString();
   if (range === "month") return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
   if (range === "year") return date.getFullYear() === now.getFullYear();
   const days = range === "7d" ? 7 : 30;
   return date.getTime() >= now.getTime() - days * 86400000;
+}
+
+/** Meses (AAAA-MM) que têm apostas, do mais recente ao mais antigo, com rótulo pt-BR. */
+function availableMonths(bets: Bet[]): Array<{ key: string; label: string }> {
+  const seen = new Map<string, string>();
+  for (const bet of bets) {
+    const d = new Date(bet.placedAt);
+    if (Number.isNaN(d.getTime())) continue;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    if (!seen.has(key)) {
+      const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      seen.set(key, label.charAt(0).toUpperCase() + label.slice(1));
+    }
+  }
+  return [...seen.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([key, label]) => ({ key, label }));
+}
+
+/** Sufixo de arquivo para o período ativo (usado no nome do export). */
+function periodSuffix(range: DateRange): string {
+  if (range === "all") return "completo";
+  if (range === "today") return "hoje";
+  if (range === "7d") return "ultimos-7-dias";
+  if (range === "30d") return "ultimos-30-dias";
+  if (range === "year") return `ano-${new Date().getFullYear()}`;
+  if (range === "month") {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}`;
+  }
+  return range.slice(2); // "m:2026-06" -> "2026-06"
 }
 
 interface BetsProps {
@@ -94,6 +128,7 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
   const [dateFilter, setDateFilter] = useState<DateRange>("all");
   const actionMenuRef = useRef<HTMLDivElement | null>(null);
 
+  const months = useMemo(() => availableMonths(state.bets), [state.bets]);
   const bookmakerById = useMemo(() => new Map(state.bookmakers.map((b) => [b.id, b.name])), [state.bookmakers]);
   const strategyById = useMemo(() => new Map(state.strategies.map((s) => [s.id, s.name])), [state.strategies]);
   const allTags = useMemo(() => {
@@ -307,10 +342,18 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
           >
             <SlidersHorizontal size={14} />
           </button>
-          <button className="bets-tool-btn" onClick={() => downloadBetsExcel(state)}>
+          <button
+            className="bets-tool-btn"
+            onClick={() => downloadBetsExcel({ ...state, bets: sourceData }, `bancamais-apostas-${periodSuffix(dateFilter)}.xls`)}
+            title="Exporta as apostas do filtro/período selecionado"
+          >
             Exportar Excel
           </button>
-          <button className="bets-tool-btn" onClick={() => downloadTextFile("bancamais-apostas.csv", betsToCsv(state))}>
+          <button
+            className="bets-tool-btn"
+            onClick={() => downloadTextFile(`bancamais-apostas-${periodSuffix(dateFilter)}.csv`, betsToCsv({ ...state, bets: sourceData }))}
+            title="Exporta as apostas do filtro/período selecionado"
+          >
             Exportar CSV
           </button>
         </div>
@@ -333,6 +376,19 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
             {label}
           </button>
         ))}
+        {months.length > 0 && (
+          <select
+            className={dateFilter.startsWith("m:") ? "date-month-select active" : "date-month-select"}
+            value={dateFilter.startsWith("m:") ? dateFilter : ""}
+            onChange={(e) => setDateFilter((e.target.value || "all") as DateRange)}
+            title="Filtrar por um mês específico"
+          >
+            <option value="">Mês específico…</option>
+            {months.map((m) => (
+              <option key={m.key} value={`m:${m.key}`}>{m.label}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Resumo financeiro compacto (não repete contagens — essas estão nas abas) */}
