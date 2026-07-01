@@ -84,11 +84,12 @@ export function deriveBookmakerBalances(state: AppState): LedgerBookBalance[] {
     const relatedTransactions = state.transactions.filter((transaction) => (
       transaction.bookmakerId === book.id || transaction.targetBookmakerId === book.id
     ));
-    const derivedBalance = relatedTransactions.length > 0
+    const rawDerived = relatedTransactions.length > 0
       ? Number(relatedTransactions.reduce((sum, transaction) => (
         sum + transactionImpactForBookmaker(transaction, book.id, state.transactions, mirrorKeys)
       ), 0).toFixed(2))
       : book.balance;
+    const derivedBalance = rawDerived === 0 ? 0 : rawDerived;
 
     return {
       bookmakerId: book.id,
@@ -207,7 +208,7 @@ export function computeBookmakerLedger(bookmakerId: string, transactions: Transa
   let running = 0;
   return relevant.map((t) => {
     const impact = transactionImpactForBookmaker(t, bookmakerId, transactions, mirrorKeys);
-    running = Number((running + impact).toFixed(2));
+    running = Number((running + impact).toFixed(2)) || 0;
     return {
       transaction: t,
       runningBalance: running,

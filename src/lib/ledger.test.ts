@@ -81,6 +81,21 @@ describe("deriveBookmakerBalances", () => {
     expect(calculateLedgerTotalBalance(state)).toBe(75);
   });
 
+  it("normaliza zero negativo de resíduo de ponto flutuante para +0", () => {
+    const state = makeState(
+      [makeBookmaker("b1", 0)],
+      [
+        makeTx({ type: "deposit", amount: 0.3, bookmakerId: "b1" }),
+        makeTx({ type: "withdrawal", amount: -0.1, bookmakerId: "b1" }),
+        makeTx({ type: "withdrawal", amount: -0.1, bookmakerId: "b1" }),
+        makeTx({ type: "withdrawal", amount: -0.1, bookmakerId: "b1" }),
+      ],
+    );
+    const [bal] = deriveBookmakerBalances(state);
+    expect(bal.derivedBalance).toBe(0);
+    expect(Object.is(bal.derivedBalance, -0)).toBe(false);
+  });
+
   it("calcula delta entre saldo salvo e derivado", () => {
     const state = makeState(
       [makeBookmaker("book-1", 600)],
