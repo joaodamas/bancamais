@@ -68,6 +68,7 @@ export function transactionImpactForBookmaker(
 
   if (
     transaction.type === "transfer" &&
+    transaction.amount < 0 &&
     transaction.targetBookmakerId === bookmakerId &&
     !hasMirrorTransfer(transaction, transactions, mirrorKeys)
   ) {

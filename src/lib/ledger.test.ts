@@ -64,6 +64,23 @@ describe("deriveBookmakerBalances", () => {
     expect(bal.derivedBalance).toBe(500); // 400 - 100 + 200
   });
 
+  it("transferência entre casas debita a origem e credita o destino (net global zero)", () => {
+    const state = makeState(
+      [makeBookmaker("b1"), makeBookmaker("b2")],
+      [
+        makeTx({ type: "deposit", amount: 75, bookmakerId: "b1" }),
+        makeTx({ id: "tf-out", type: "transfer", amount: -50, bookmakerId: "b1", targetBookmakerId: "b2" }),
+        makeTx({ id: "tf-in", type: "transfer", amount: 50, bookmakerId: "b2", targetBookmakerId: "b1" }),
+      ],
+    );
+    const balances = deriveBookmakerBalances(state);
+    const b1 = balances.find((b) => b.bookmakerId === "b1");
+    const b2 = balances.find((b) => b.bookmakerId === "b2");
+    expect(b1?.derivedBalance).toBe(25);
+    expect(b2?.derivedBalance).toBe(50);
+    expect(calculateLedgerTotalBalance(state)).toBe(75);
+  });
+
   it("calcula delta entre saldo salvo e derivado", () => {
     const state = makeState(
       [makeBookmaker("book-1", 600)],
