@@ -349,6 +349,20 @@ describe("mergeImportedBets", () => {
     expect(refund?.amount).toBe(50);
   });
 
+  it("cria bet_payout de meia-ganha importada (sem payout no CSV)", () => {
+    const state = makeState();
+    const result = mergeImportedBets(state, [makeBet({ id: "b-hw", status: "half_won", stake: 100, odds: 2 })]);
+    const pay = result.transactions.find((t) => t.type === "bet_payout" && t.referenceId === "b-hw");
+    expect(pay?.amount).toBe(150); // (100×2)/2 + 100/2
+  });
+
+  it("cria bet_refund de meia-perdida importada (sem payout no CSV)", () => {
+    const state = makeState();
+    const result = mergeImportedBets(state, [makeBet({ id: "b-hl", status: "half_lost", stake: 100, odds: 2 })]);
+    const refund = result.transactions.find((t) => t.type === "bet_refund" && t.referenceId === "b-hl");
+    expect(refund?.amount).toBe(50); // devolve metade do stake
+  });
+
   it("retorna a mesma referência de estado quando todas são duplicatas", () => {
     const existing = makeBet({ id: "b-1" });
     const state = makeState({ bets: [existing] });

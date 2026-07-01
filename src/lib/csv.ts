@@ -1,5 +1,6 @@
 import type { AppState, Bet } from "./types";
 import { createBetId } from "./storage";
+import { settledPayout } from "../services/bets.service";
 
 function escapeCsv(value: unknown) {
   const text = String(value ?? "");
@@ -142,6 +143,17 @@ export function parseBetsCsv(content: string, state: AppState) {
       return;
     }
 
+    const status = (record.status || "pending") as Bet["status"];
+    const explicitPayout = record.payout ? Number(record.payout) : undefined;
+    // Payout autoritativo: usa o do CSV quando presente e válido; senão
+    // recalcula pela fonte única. Sem isso, meia-ganha/meia-perdida importadas
+    // ficavam com lucro errado nas métricas (payout undefined → −stake).
+    const payout = status === "pending"
+      ? undefined
+      : explicitPayout != null && Number.isFinite(explicitPayout)
+        ? explicitPayout
+        : settledPayout(status, stakeNum, oddsNum);
+
     bets.push({
       id: record.id || createBetId(),
       placedAt: record.placedAt || new Date().toISOString(),
@@ -153,10 +165,10 @@ export function parseBetsCsv(content: string, state: AppState) {
       selection: record.selection,
       bookmakerId,
       tags: record.tags ? record.tags.split("|").map((tag) => tag.trim()).filter(Boolean) : [],
-      stake: Number(record.stake),
-      odds: Number(record.odds),
-      status: (record.status || "pending") as Bet["status"],
-      payout: record.payout ? Number(record.payout) : undefined,
+      stake: stakeNum,
+      odds: oddsNum,
+      status,
+      payout,
       closingOdds: record.closingOdds ? Number(record.closingOdds) : undefined,
       mode: record.mode === "live" ? "live" : "prelive",
       slipImageUrl: record.slipImageUrl || undefined,

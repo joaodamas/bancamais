@@ -344,28 +344,27 @@ export function mergeImportedBets(state: AppState, incoming: Bet[]): AppState {
       referenceId: bet.id,
     }];
 
-    if ((bet.status === "won" || bet.status === "cashout") && bet.payout && bet.payout > 0) {
-      items.push({
-        id: createTransactionId(),
-        date: bet.placedAt,
-        type: "bet_payout",
-        bookmakerId: bet.bookmakerId,
-        description: `Retorno - ${bet.eventName}`,
-        amount: bet.payout,
-        referenceType: "bet",
-        referenceId: bet.id,
-      });
-    } else if (bet.status === "void") {
-      items.push({
-        id: createTransactionId(),
-        date: bet.placedAt,
-        type: "bet_refund",
-        bookmakerId: bet.bookmakerId,
-        description: `Estorno - ${bet.eventName}`,
-        amount: bet.stake,
-        referenceType: "bet",
-        referenceId: bet.id,
-      });
+    // Retorno de TODO status liquidado — usa o payout informado no CSV quando
+    // presente, senão recalcula pela fonte única (settledPayout). Cobre also
+    // meia-ganha/meia-perdida, que antes não geravam lançamento e deixavam o
+    // saldo da casa subestimado.
+    if (bet.status !== "pending") {
+      const payout = bet.payout != null && Number.isFinite(bet.payout)
+        ? bet.payout
+        : settledPayout(bet.status, bet.stake, bet.odds);
+      if (payout > 0) {
+        const isWinnings = bet.status === "won" || bet.status === "half_won" || bet.status === "cashout";
+        items.push({
+          id: createTransactionId(),
+          date: bet.placedAt,
+          type: isWinnings ? "bet_payout" : "bet_refund",
+          bookmakerId: bet.bookmakerId,
+          description: `${isWinnings ? "Retorno" : "Estorno"} - ${bet.eventName}`,
+          amount: payout,
+          referenceType: "bet",
+          referenceId: bet.id,
+        });
+      }
     }
     return items;
   });
