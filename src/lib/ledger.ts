@@ -85,9 +85,9 @@ export function deriveBookmakerBalances(state: AppState): LedgerBookBalance[] {
       transaction.bookmakerId === book.id || transaction.targetBookmakerId === book.id
     ));
     const derivedBalance = relatedTransactions.length > 0
-      ? relatedTransactions.reduce((sum, transaction) => (
+      ? Number(relatedTransactions.reduce((sum, transaction) => (
         sum + transactionImpactForBookmaker(transaction, book.id, state.transactions, mirrorKeys)
-      ), 0)
+      ), 0).toFixed(2))
       : book.balance;
 
     return {
