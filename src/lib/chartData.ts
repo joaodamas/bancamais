@@ -1,6 +1,6 @@
 import type { AppState } from "./types";
 import { groupProfitBySport, groupProfitByBookmaker, groupProfitByStrategy, clvPercent, betProfit } from "./metrics";
-import { buildLedgerTimeline, deriveBookmakerBalances } from "./ledger";
+import { buildLedgerTimeline, deriveBookmakerBalances, monitoredBankroll } from "./ledger";
 
 export interface TimeSeriesPoint {
   label: string;
@@ -132,6 +132,61 @@ export function buildDailyProfitSeries(state: AppState): DailyProfitPoint[] {
         cumulative: Number(cumulative.toFixed(2)),
       };
     });
+}
+
+export interface DrawdownPoint {
+  axisLabel: string;
+  tooltipLabel: string;
+  /** Fração underwater (≤ 0): quanto a banca está abaixo do pico realizado. */
+  drawdown: number;
+}
+
+export interface RealizedDrawdown {
+  series: DrawdownPoint[];
+  worstAbs: number;
+  worstPct: number;
+}
+
+/**
+ * Drawdown sobre o LUCRO REALIZADO (apostas liquidadas), não sobre o caixa.
+ * A curva de caixa cai toda vez que um stake sai da conta (dinheiro EM JOGO,
+ * não perdido) — o que gerava um "-100% do pico" fantasma quando muita banca
+ * estava apostada. Aqui o vale só acontece com resultado liquidado no vermelho,
+ * como no Relatório. % é sobre o capital no topo da curva (banca + lucro no pico).
+ */
+export function buildRealizedDrawdown(state: AppState): RealizedDrawdown {
+  const settled = state.bets
+    .filter((bet) => bet.status !== "pending")
+    .slice()
+    .sort((a, b) => (a.eventAt || a.placedAt).localeCompare(b.eventAt || b.placedAt));
+
+  const base = monitoredBankroll(state);
+  let peak = 0;
+  let running = 0;
+  let worstAbs = 0;
+  let worstPct = 0;
+  const series: DrawdownPoint[] = [];
+
+  for (const bet of settled) {
+    running = Number((running + betProfit(bet)).toFixed(2));
+    if (running > peak) peak = running;
+    const dd = peak - running;
+    const capitalAtPeak = base + peak;
+    const ddPct = capitalAtPeak > 0 ? -(dd / capitalAtPeak) : 0;
+    if (dd > worstAbs) {
+      worstAbs = dd;
+      worstPct = ddPct;
+    }
+    const d = new Date(bet.eventAt || bet.placedAt);
+    const valid = !Number.isNaN(d.getTime());
+    series.push({
+      axisLabel: valid ? d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }) : "",
+      tooltipLabel: valid ? d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }) : "",
+      drawdown: ddPct,
+    });
+  }
+
+  return { series, worstAbs, worstPct };
 }
 
 export function buildSportProfitData(state: AppState): SportProfitPoint[] {

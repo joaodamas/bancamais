@@ -15,7 +15,7 @@ import {
   Bar,
 } from "recharts";
 import { calculateMetrics, money, percent, bettingStreaks, MIN_RELIABLE_SAMPLE } from "../lib/metrics";
-import { buildBankrollTimeSeries, buildDailyProfitSeries } from "../lib/chartData";
+import { buildBankrollTimeSeries, buildDailyProfitSeries, buildRealizedDrawdown } from "../lib/chartData";
 import { resolveUnitValue } from "../lib/unit";
 import type { AppState } from "../lib/types";
 import { EmptyState } from "./EmptyState";
@@ -71,30 +71,11 @@ export function Dashboard({
   const chartStart = chartData[0]?.balance ?? 0;
   const chartEnd = chartData[chartData.length - 1]?.balance ?? 0;
 
-  // Underwater: quanto a banca está abaixo do pico histórico (sempre <= 0).
-  const drawdownData = useMemo(() => {
-    let peak = 0;
-    return chartData.map((point) => {
-      peak = Math.max(peak, point.balance);
-      const dd = peak > 0 ? point.balance / peak - 1 : 0;
-      return { axisLabel: point.axisLabel, tooltipLabel: point.tooltipLabel, drawdown: dd };
-    });
-  }, [chartData]);
-  // Pior vale da banca: % (underwater) e profundidade em R$, da mesma curva do gráfico.
-  const drawdownStats = useMemo(() => {
-    let peak = 0;
-    let worstPct = 0;
-    let worstAbs = 0;
-    for (const point of chartData) {
-      peak = Math.max(peak, point.balance);
-      const ddPct = peak > 0 ? point.balance / peak - 1 : 0;
-      if (ddPct < worstPct) {
-        worstPct = ddPct;
-        worstAbs = peak - point.balance;
-      }
-    }
-    return { worstPct, worstAbs };
-  }, [chartData]);
+  // Drawdown sobre o lucro REALIZADO (não o caixa) — placing/churn de apostas
+  // não gera vale fantasma. Mesma base do Relatório.
+  const realizedDrawdown = useMemo(() => buildRealizedDrawdown(state), [state]);
+  const drawdownData = realizedDrawdown.series;
+  const drawdownStats = { worstPct: realizedDrawdown.worstPct, worstAbs: realizedDrawdown.worstAbs };
   const maxDrawdown = drawdownStats.worstPct;
 
   const monitoredCapital = metrics.totalBalance + metrics.openExposure;
