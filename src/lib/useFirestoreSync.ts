@@ -24,11 +24,15 @@ export function useFirestoreSync(
   const [error, setError] = useState<string | null>(null);
   const isFirstSnapshot = useRef(true);
   const localTimestampRef = useRef(0);
-  const lastAppliedRemoteTimestampRef = useRef(0);
+  const localMarkRef = useRef<string>("");
+  // Ordena os snapshots pelo relógio do SERVIDOR (updatedAt), imune à diferença
+  // de relógio entre celular e PC — a causa do "não reflete nos dois sentidos".
+  const lastAppliedServerTsRef = useRef(0);
 
   useEffect(() => {
     const time = localState.lastModifiedAt ? new Date(localState.lastModifiedAt).getTime() : 0;
     localTimestampRef.current = Number.isFinite(time) ? time : 0;
+    localMarkRef.current = localState.lastModifiedAt ?? "";
   }, [localState]);
 
   useEffect(() => {
@@ -39,7 +43,7 @@ export function useFirestoreSync(
 
     setStatus("syncing");
     isFirstSnapshot.current = true;
-    lastAppliedRemoteTimestampRef.current = 0;
+    lastAppliedServerTsRef.current = 0;
 
     const docRef = doc(db, "users", user.uid, "appStates", "default");
 
@@ -67,33 +71,50 @@ export function useFirestoreSync(
           transactions: data["transactions"],
         });
 
-        const remoteTimestamp = remoteState.lastModifiedAt
-          ? new Date(remoteState.lastModifiedAt).getTime()
+        const remoteMark = remoteState.lastModifiedAt ?? "";
+        const updatedAtField = data["updatedAt"];
+        const serverTs = updatedAtField && typeof updatedAtField.toMillis === "function"
+          ? updatedAtField.toMillis()
           : 0;
-        const safeRemoteTimestamp = Number.isFinite(remoteTimestamp) ? remoteTimestamp : 0;
 
-        // O primeiro snapshot também passa pela comparação: se a nuvem estiver mais
-        // nova que o estado local (ex.: outro dispositivo atualizou enquanto este
-        // estava fechado), aplica na hora. Antes era descartado — e o aparelho ficava
-        // preso nos dados locais antigos, sem refletir o que foi feito em outro lugar.
-        isFirstSnapshot.current = false;
-
-        if (
-          safeRemoteTimestamp === 0 ||
-          safeRemoteTimestamp <= localTimestampRef.current ||
-          safeRemoteTimestamp <= lastAppliedRemoteTimestampRef.current
-        ) {
-          lastAppliedRemoteTimestampRef.current = Math.max(
-            lastAppliedRemoteTimestampRef.current,
-            safeRemoteTimestamp,
-          );
+        // Eco da nossa própria escrita (mesma marca de edição do cliente) →
+        // nunca reaplica, evita loop de re-save.
+        if (remoteMark && remoteMark === localMarkRef.current) {
+          isFirstSnapshot.current = false;
+          lastAppliedServerTsRef.current = Math.max(lastAppliedServerTsRef.current, serverTs);
           setStatus("synced");
           setLastSyncAt(new Date());
           return;
         }
 
+        if (isFirstSnapshot.current) {
+          // Cold start: reconcilia por marca de tempo do cliente (preserva edição
+          // offline deste aparelho). O tempo real abaixo cobre o resto.
+          isFirstSnapshot.current = false;
+          const remoteTs = remoteMark ? new Date(remoteMark).getTime() : 0;
+          const safeRemoteTs = Number.isFinite(remoteTs) ? remoteTs : 0;
+          if (safeRemoteTs === 0 || safeRemoteTs <= localTimestampRef.current) {
+            lastAppliedServerTsRef.current = Math.max(lastAppliedServerTsRef.current, serverTs);
+            setStatus("synced");
+            setLastSyncAt(new Date());
+            return;
+          }
+          onRemoteUpdate(remoteState);
+          lastAppliedServerTsRef.current = serverTs;
+          setStatus("synced");
+          setLastSyncAt(new Date());
+          return;
+        }
+
+        // Mudança em tempo real de OUTRO dispositivo: ordena pelo relógio do
+        // servidor (updatedAt), não pelo do cliente — assim a diferença de
+        // relógio entre celular e PC não bloqueia mais a atualização.
+        if (serverTs !== 0 && serverTs <= lastAppliedServerTsRef.current) {
+          setStatus("synced");
+          return;
+        }
         onRemoteUpdate(remoteState);
-        lastAppliedRemoteTimestampRef.current = safeRemoteTimestamp;
+        lastAppliedServerTsRef.current = serverTs;
         setStatus("synced");
         setLastSyncAt(new Date());
       },

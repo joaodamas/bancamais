@@ -408,16 +408,20 @@ export function App() {
     if (!user || user.isAnonymous || authLoading) return;
     if (hydratedUserRef.current !== user.uid) return;
 
-    const localTimestamp = getStateTimestamp(state);
-    const remoteTimestamp = getStateTimestamp(remoteState);
-
-    if (remoteTimestamp === 0 || remoteTimestamp <= localTimestamp) {
+    // O useFirestoreSync já decidiu que este snapshot deve entrar (ordenando pelo
+    // relógio do SERVIDOR). Aqui só evitamos reaplicar um estado idêntico ao atual
+    // — sem comparar relógio de cliente, que era o que travava o sync entre
+    // celular e PC. latestStateRef garante o estado atual (sem closure velha).
+    if (
+      remoteState.lastModifiedAt &&
+      remoteState.lastModifiedAt === latestStateRef.current?.lastModifiedAt
+    ) {
       return;
     }
 
     applyHydratedState(remoteState, user.uid);
     setSyncStatus(`Snapshot remoto aplicado em ${new Date().toLocaleTimeString("pt-BR")}`);
-  }, [authLoading, state, user]);
+  }, [authLoading, user]);
 
   const realtimeSync = useFirestoreSync(user, state, handleRemoteSyncUpdate);
 

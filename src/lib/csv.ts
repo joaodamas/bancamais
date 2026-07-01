@@ -1,6 +1,7 @@
 import type { AppState, Bet } from "./types";
 import { createBetId } from "./storage";
 import { settledPayout } from "../services/bets.service";
+import { betProfit, money } from "./metrics";
 
 function escapeCsv(value: unknown) {
   const text = String(value ?? "");
@@ -61,8 +62,94 @@ export function betsToCsv(state: AppState) {
   return [header, ...rows].join("\n");
 }
 
+// ── Export Excel colorido (.xls via HTML — Excel abre com cor e colunas) ──────
+
+const XLS_STATUS_LABEL: Record<Bet["status"], string> = {
+  pending: "Pendente",
+  won: "Ganha",
+  lost: "Perdida",
+  cashout: "Cashout",
+  void: "Cancelada",
+  half_won: "Meia ganha",
+  half_lost: "Meia perdida",
+};
+
+/** Cor de fundo/texto da linha por resultado. */
+function xlsTone(bet: Bet): { bg: string; fg: string } {
+  if (bet.status === "pending") return { bg: "#FEF6E7", fg: "#8A6D1B" };
+  if (bet.status === "void") return { bg: "#F0F1F3", fg: "#4B5563" };
+  const green = { bg: "#E7F7EE", fg: "#127A3E" };
+  const red = { bg: "#FCEBEC", fg: "#B4232B" };
+  if (bet.status === "won" || bet.status === "half_won") return green;
+  if (bet.status === "lost" || bet.status === "half_lost") return red;
+  return betProfit(bet) >= 0 ? green : red; // cashout
+}
+
+function xlsDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+/** Gera uma planilha .xls (HTML) com uma linha por aposta, colorida por resultado. */
+export function betsToExcelHtml(state: AppState): string {
+  const bookmakerName = new Map(state.bookmakers.map((b) => [b.id, b.name]));
+  const headers = ["Data", "Evento", "Esporte / Liga", "Mercado", "Seleção", "Casa", "Stake", "Odd", "Status", "Resultado"];
+
+  const th = headers
+    .map((h) => `<th style="background:#111827;color:#fff;padding:6px 9px;border:1px solid #D1D5DB;text-align:left;font-size:11px;">${escapeHtml(h)}</th>`)
+    .join("");
+
+  const rows = state.bets.map((bet) => {
+    const tone = xlsTone(bet);
+    const settled = bet.status !== "pending";
+    const profit = betProfit(bet);
+    const resultado = settled
+      ? (bet.status === "void" ? money.format(0) : `${profit >= 0 ? "+" : ""}${money.format(profit)}`)
+      : "Pendente";
+    const cell = (v: string, extra = "") =>
+      `<td style="padding:5px 9px;border:1px solid #E5E7EB;font-size:11px;${extra}">${v}</td>`;
+    const freebetTag = bet.isFreebet
+      ? ' <span style="color:#7C3AED;font-weight:bold;">[Freebet]</span>'
+      : "";
+    return `<tr style="background:${tone.bg};color:${tone.fg};">${[
+      cell(escapeHtml(xlsDate(bet.eventAt || bet.placedAt))),
+      cell(escapeHtml(bet.eventName) + freebetTag),
+      cell(escapeHtml([bet.sport, bet.league].filter(Boolean).join(" · "))),
+      cell(escapeHtml(bet.market)),
+      cell(escapeHtml(bet.selection)),
+      cell(escapeHtml(bookmakerName.get(bet.bookmakerId) ?? bet.bookmakerId)),
+      cell(money.format(bet.stake), "text-align:right;"),
+      cell(bet.odds.toFixed(2), "text-align:right;"),
+      cell(`<strong>${escapeHtml(XLS_STATUS_LABEL[bet.status] ?? bet.status)}</strong>`),
+      cell(`<strong>${escapeHtml(resultado)}</strong>`, "text-align:right;"),
+    ].join("")}</tr>`;
+  }).join("");
+
+  return `<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head>
+<body><table style="border-collapse:collapse;font-family:Arial,sans-serif;">
+<thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></body></html>`;
+}
+
+/** Baixa a planilha colorida como .xls (Excel abre com cores e colunas). */
+export function downloadBetsExcel(state: AppState, filename = "bancamais-apostas.xls") {
+  const html = betsToExcelHtml(state);
+  downloadTextFile(filename, `﻿${html}`, "application/vnd.ms-excel;charset=utf-8");
+}
+
 export function downloadTextFile(filename: string, content: string, mimeType = "text/csv;charset=utf-8") {
-  const blob = new Blob([content], { type: mimeType });
+  // BOM UTF-8: sem ele o Excel (sobretudo no Mac) lê o arquivo como MacRoman e
+  // embaralha os acentos ("Bélgica" → "B√©lgica"). O ﻿ sinaliza UTF-8.
+  const payload = mimeType.includes("csv") ? `﻿${content}` : content;
+  const blob = new Blob([payload], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -106,6 +193,7 @@ function parseCsvLine(line: string) {
 
 export function parseBetsCsv(content: string, state: AppState) {
   const lines = content
+    .replace(/^﻿/, "") // remove BOM UTF-8 se o arquivo trouxer (ex.: nosso próprio export)
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);

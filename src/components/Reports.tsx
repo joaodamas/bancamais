@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { betsToCsv, downloadTextFile } from "../lib/csv";
+import { betsToCsv, downloadBetsExcel, downloadTextFile } from "../lib/csv";
 import { generateReportPdf } from "../lib/reportPdf";
 import { money, percent, betProfit } from "../lib/metrics";
 import { monitoredBankroll } from "../lib/ledger";
@@ -99,6 +99,7 @@ export function Reports({ state, metrics, onSaveSnapshot }: ReportsProps) {
           <button className="primary" onClick={handleExportPdf} disabled={exportingPdf}>
             {exportingPdf ? "Gerando PDF…" : "Exportar PDF"}
           </button>
+          <button onClick={() => downloadBetsExcel(state)}>Exportar Excel</button>
           <button onClick={() => downloadTextFile("bancamais-relatorio-operacional.csv", csv)}>Exportar CSV</button>
           <button onClick={() => downloadTextFile("bancamais-fiscal-base.csv", csv)}>Base fiscal</button>
         </div>

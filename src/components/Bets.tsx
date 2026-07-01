@@ -9,7 +9,7 @@ import {
   type ColumnFiltersState,
 } from "@tanstack/react-table";
 import { MoreHorizontal, ArrowUpDown, ArrowUp, ArrowDown, SlidersHorizontal, X, Check, Search } from "lucide-react";
-import { betsToCsv, downloadTextFile } from "../lib/csv";
+import { betsToCsv, downloadBetsExcel, downloadTextFile } from "../lib/csv";
 import { betProfit, money, potentialReturn, clvPercent } from "../lib/metrics";
 import { eventDelta, isImminent } from "../lib/betTime";
 import { StatusBadge } from "./StatusBadge";
@@ -306,6 +306,9 @@ export function Bets({ state, settleBet, bulkSettle, deleteBet, onEditBet }: Bet
             title="Filtros avançados"
           >
             <SlidersHorizontal size={14} />
+          </button>
+          <button className="bets-tool-btn" onClick={() => downloadBetsExcel(state)}>
+            Exportar Excel
           </button>
           <button className="bets-tool-btn" onClick={() => downloadTextFile("bancamais-apostas.csv", betsToCsv(state))}>
             Exportar CSV
