@@ -8,6 +8,10 @@ Tipos de mudança: **Adicionado**, **Alterado**, **Corrigido**, **Removido**.
 ## [Não lançado]
 
 ### Adicionado
+- **Go-to-market: materiais de venda** (`docs/marketing/`) — estratégia de monetização (escada de valor grátis -> Protocolo R$47 -> Edge Founder -> assinatura), lead magnet "7 armadilhas", ebook "Protocolo de Gestão de Banca" e 10 roteiros de Reels.
+- **Checkout do Protocolo (Mercado Pago Checkout Pro)** — Cloud Function `createProtocoloCheckout` cria a preference de pagamento único (R$47) e devolve o `initPoint`; wrapper `src/lib/checkout.ts` e handler `handleBuyProtocolo` no App (exige conta; guarda a intenção e retoma o checkout após o cadastro). Falta ativar: definir o secret `MERCADOPAGO_ACCESS_TOKEN` e deployar. Fulfillment (conceder Founder por webhook) fica para etapa futura.
+- **Tracking de aquisição** — `analytics.ts` ganhou camada Meta Pixel + GA4 env-gated (`VITE_META_PIXEL_ID`, `VITE_GA4_ID`; vazio = no-op) com `initAnalytics`, `trackEvent`, `trackPageView` e captura/persistência de UTM (`captureUtmParams`/`getStoredUtm`). Eventos disparados: `InitiateCheckout` (CTA fundador) e `Lead` (lista de espera).
+- **Landing: seção "Planilha vs Banca+"** (comparativo) e estrutura de **prova social** (renderiza só quando houver depoimentos reais; sem dados falsos).
 - **Export de relatório em PDF** — botão "Exportar PDF" em Relatórios gera um relatório executivo de uma página (métricas + apostas recentes). jsPDF carregado sob demanda.
 - **Lista de espera do plano Edge** — o CTA do Edge na landing virou "Entrar na lista de espera" com modal de captura de email; registros gravados na coleção `waitlist` do Firestore (regra create-only validada).
 - **Fundação de planos (gating) — fase 1** — modelo `plan.ts` (tiers free/edge, features, limites), hook `usePlan` (demo = edge, conta real = free, override de dev `bancamais_dev_plan`) e paywall `PlanLock`. As telas **Inteligência, Odds e CLV & Edge** agora mostram o paywall para o plano Free; o CTA registra na lista de espera.
@@ -16,6 +20,7 @@ Tipos de mudança: **Adicionado**, **Alterado**, **Corrigido**, **Removido**.
 - **Gating — fase 2 (backend)** — fonte de verdade do plano migra para o backend: doc `entitlements/{uid}` (regra: dono lê, só Admin escreve), hook `useEntitlement` em tempo real, e Cloud Functions de billing do **Mercado Pago** (`createSubscriptionCheckout` + `mercadoPagoWebhook`). Falta ativar: definir o secret `MERCADOPAGO_ACCESS_TOKEN`, deployar as functions e registrar a URL do webhook.
 
 ### Alterado
+- Landing: CTA do Edge virou "Garantir preço de fundador" (leva ao checkout do Protocolo, que inclui acesso Founder ao Edge), com fallback de "entrar na lista de espera"; badge "Em breve" virou "Oferta de fundador".
 - Landing (quick wins da auditoria): card de Inteligência agora exibe o rótulo "exemplo ilustrativo" nos dados fictícios, evitando que sejam lidos como promessa de performance (risco de compliance de anúncio).
 - Landing (quick wins da auditoria): cards de feature com jargão de sharp ganharam tradução em português para tráfego frio ("CLV é o teste de skill vs. sorte" e "Hard stop é a trava que te impede de perder o mês numa noite").
 - SEO: meta description trocada de "Terminal analítico de gestão de banca..." para copy com dor + benefício ("Saiba se você está no lucro de verdade. Controle de banca com stop loss, ROI real e disciplina. Grátis, sem cartão.").

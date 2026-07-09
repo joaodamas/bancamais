@@ -12,9 +12,22 @@ interface LandingProps {
   onSignIn: () => void;
   onDemo: () => void;
   onJoinWaitlist: (email: string) => Promise<void>;
+  onBuyProtocolo: () => void;
 }
 
 type PlanFeature = { label: string; included: boolean };
+
+type Testimonial = { name: string; handle: string; quote: string };
+
+const TESTIMONIALS: Testimonial[] = [];
+
+const COMPARE_ROWS: { old: string; neo: string }[] = [
+  { old: "Você digita tudo na mão e erra fórmula", neo: "Registro em segundos, ou OCR do bilhete" },
+  { old: "Número parado: não avisa nada", neo: "Dashboard calcula ROI, yield e drawdown sozinho" },
+  { old: "Sem alerta de tilt nem trava de banca", neo: "Hard stops travam a banca antes de você quebrar" },
+  { old: "ROI e yield você calcula (ou não)", neo: "Detecta tilt e padrão de risco em tempo real" },
+  { old: "Some quando troca de celular", neo: "Sincronizado na nuvem, em qualquer aparelho" },
+];
 
 const PAINS = [
   {
@@ -115,7 +128,7 @@ const EDGE_FEATURES: PlanFeature[] = [
   { label: "Casas, apostas e histórico ilimitados", included: true },
 ];
 
-export function Landing({ onGetStarted, onSignIn, onDemo, onJoinWaitlist }: LandingProps) {
+export function Landing({ onGetStarted, onSignIn, onDemo, onJoinWaitlist, onBuyProtocolo }: LandingProps) {
   const [waitlistOpen, setWaitlistOpen] = useState(false);
   const [waitEmail, setWaitEmail] = useState("");
   const [waitStatus, setWaitStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
@@ -262,6 +275,32 @@ export function Landing({ onGetStarted, onSignIn, onDemo, onJoinWaitlist }: Land
         </div>
       </section>
 
+      {/* Planilha vs Banca+ */}
+      <section className="lp-section lp-compare">
+        <div className="lp-section-head">
+          <p className="lp-eyebrow">Largue a planilha</p>
+          <h2 className="lp-section-title">Planilha guarda número. Banca+ te avisa.</h2>
+        </div>
+        <div className="lp-compare-grid">
+          <article className="lp-compare-col lp-compare-old">
+            <h3><X size={16} /> Planilha</h3>
+            <ul>
+              {COMPARE_ROWS.map((r) => (
+                <li key={r.old}><X size={14} /><span>{r.old}</span></li>
+              ))}
+            </ul>
+          </article>
+          <article className="lp-compare-col lp-compare-new">
+            <h3><Check size={16} /> Banca+</h3>
+            <ul>
+              {COMPARE_ROWS.map((r) => (
+                <li key={r.neo}><Check size={14} /><span>{r.neo}</span></li>
+              ))}
+            </ul>
+          </article>
+        </div>
+      </section>
+
       {/* Planos */}
       <section className="lp-section lp-pricing" id="planos">
         <div className="lp-section-head">
@@ -294,7 +333,7 @@ export function Landing({ onGetStarted, onSignIn, onDemo, onJoinWaitlist }: Land
           </article>
 
           <article className="lp-plan lp-plan-featured">
-            <span className="lp-plan-badge"><Zap size={12} /> Em breve</span>
+            <span className="lp-plan-badge"><Zap size={12} /> Oferta de fundador</span>
             <header className="lp-plan-head">
               <h3 className="lp-plan-name">Edge</h3>
               <p className="lp-plan-tagline">Pare de só registrar. Ganhe vantagem.</p>
@@ -311,10 +350,13 @@ export function Landing({ onGetStarted, onSignIn, onDemo, onJoinWaitlist }: Land
                 </li>
               ))}
             </ul>
-            <button type="button" className="lp-btn lp-btn-primary lp-btn-block" onClick={openWaitlist}>
-              <Clock size={15} /> Entrar na lista de espera
+            <button type="button" className="lp-btn lp-btn-primary lp-btn-block" onClick={onBuyProtocolo}>
+              <Zap size={15} /> Garantir preço de fundador
             </button>
-            <p className="lp-plan-note">Em construção. Entre na lista e avisamos quando o Edge lançar.</p>
+            <p className="lp-plan-note">
+              Leve o Protocolo de Gestão de Banca por R$ 47 e garanta acesso Founder ao Edge quando lançar, com preço vitalício travado.{" "}
+              <button type="button" className="lp-plan-link" onClick={openWaitlist}>Ou entrar na lista de espera.</button>
+            </p>
           </article>
         </div>
       </section>
@@ -334,6 +376,23 @@ export function Landing({ onGetStarted, onSignIn, onDemo, onJoinWaitlist }: Land
           </article>
         </div>
       </section>
+
+      {TESTIMONIALS.length > 0 && (
+        <section className="lp-section lp-social">
+          <div className="lp-section-head">
+            <p className="lp-eyebrow">Quem usa</p>
+            <h2 className="lp-section-title">Apostadores que largaram o achismo.</h2>
+          </div>
+          <div className="lp-social-grid">
+            {TESTIMONIALS.map((t) => (
+              <article key={t.handle} className="lp-social-card">
+                <p className="lp-social-quote">{t.quote}</p>
+                <p className="lp-social-author"><strong>{t.name}</strong> <span>{t.handle}</span></p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* FAQ */}
       <section className="lp-section lp-faq">

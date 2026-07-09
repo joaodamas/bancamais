@@ -27,7 +27,8 @@ import {
   watchAuth,
 } from "./lib/cloudRepository";
 import { useFirestoreSync } from "./lib/useFirestoreSync";
-import { track } from "./lib/analytics";
+import { track, initAnalytics, captureUtmParams, trackEvent } from "./lib/analytics";
+import { startProtocoloCheckout } from "./lib/checkout";
 import { collectBetsNeedingClosing, fetchClosingOdds, isClosingOddsConfigured } from "./lib/closingOdds";
 import { usePlan } from "./lib/usePlan";
 import { useEntitlement } from "./lib/useEntitlement";
@@ -187,6 +188,34 @@ export function App() {
   const closingInFlightRef = useRef(false);
   latestStateRef.current = state;
   latestUserRef.current = user;
+
+  useEffect(() => {
+    captureUtmParams();
+    initAnalytics();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    let intent: string | null = null;
+    try {
+      intent = localStorage.getItem("bancamais.checkout_intent");
+    } catch {
+      intent = null;
+    }
+    if (intent !== "protocolo") return;
+    try {
+      localStorage.removeItem("bancamais.checkout_intent");
+    } catch {
+      /* storage indisponível não deve travar o fluxo */
+    }
+    startProtocoloCheckout()
+      .then((initPoint) => {
+        window.location.href = initPoint;
+      })
+      .catch(() => {
+        toast.error("Checkout em ativação. Tente de novo em instantes.");
+      });
+  }, [user]);
 
   useEffect(() => {
     const unsubscribe = watchAuth(async (nextUser) => {
@@ -837,6 +866,27 @@ export function App() {
   async function handleJoinWaitlist(email: string) {
     await joinWaitlist(email, "edge");
     track("waitlist_joined", { plan: "edge" });
+    trackEvent("Lead", { source: "edge_waitlist" });
+  }
+
+  async function handleBuyProtocolo() {
+    trackEvent("InitiateCheckout", { product: "protocolo", value: 47, currency: "BRL" });
+    if (!user) {
+      try {
+        localStorage.setItem("bancamais.checkout_intent", "protocolo");
+      } catch {
+        /* storage indisponível não deve travar o fluxo */
+      }
+      setAuthMessage("Crie sua conta grátis para garantir o preço de fundador.");
+      setAuthView("signup");
+      return;
+    }
+    try {
+      const initPoint = await startProtocoloCheckout();
+      window.location.href = initPoint;
+    } catch {
+      toast.error("Checkout em ativação. Tente de novo em instantes ou entre na lista de espera.");
+    }
   }
 
   // Deep-link /app deslogado abre o login direto
@@ -1379,6 +1429,7 @@ export function App() {
             onSignIn={() => setAuthView("signin")}
             onDemo={enterDemo}
             onJoinWaitlist={handleJoinWaitlist}
+            onBuyProtocolo={handleBuyProtocolo}
           />
         </Suspense>
       );

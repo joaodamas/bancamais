@@ -82,7 +82,14 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 VITE_FIREBASE_MEASUREMENT_ID=
 VITE_AI_ENDPOINT=   # opcional — deixe vazio para análise local
+VITE_META_PIXEL_ID= # opcional — tracking de aquisição (vazio = desativado)
+VITE_GA4_ID=        # opcional — GA4 (formato G-XXXX; vazio = desativado)
 ```
+
+### Monetização e aquisição
+- **Materiais de venda** em `docs/marketing/` (estratégia GTM, lead magnet, ebook Protocolo, roteiros de Reels).
+- **Checkout do Protocolo** (pagamento único R$47) via Mercado Pago Checkout Pro: Cloud Function `createProtocoloCheckout` + wrapper `src/lib/checkout.ts`. Requer o secret `MERCADOPAGO_ACCESS_TOKEN` (ativar depois). Assinatura recorrente do Edge usa o fluxo de preapproval já existente (`createSubscriptionCheckout` + `mercadoPagoWebhook`).
+- **Tracking** em `src/lib/analytics.ts`: Meta Pixel + GA4 env-gated (`initAnalytics`/`trackEvent`/`trackPageView`) + captura de UTM (`captureUtmParams`/`getStoredUtm`). Sem IDs, tudo é no-op. Eventos de aquisição são disparados no App (não nos componentes de UI direto).
 
 ## Comandos
 

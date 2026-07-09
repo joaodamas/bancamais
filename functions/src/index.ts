@@ -564,3 +564,6 @@ function parseListSportOddsRequest(data: unknown): ListSportOddsRequest {
 //   2) descomentar a linha abaixo
 //   3) firebase deploy --only functions:createSubscriptionCheckout,functions:mercadoPagoWebhook
 // export { createSubscriptionCheckout, mercadoPagoWebhook } from "./billing/mercadoPago.js";
+
+// ── Checkout único do Protocolo de Gestão de Banca (Mercado Pago Checkout Pro) ─
+export { createProtocoloCheckout } from "./billing/protocoloCheckout.js";
