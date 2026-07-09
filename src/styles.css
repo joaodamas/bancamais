@@ -11491,6 +11491,66 @@ button.danger:hover {
   margin: -8px 0 0;
 }
 
+.lp-plan-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Planilha vs Banca+ */
+.lp-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.lp-compare-col {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+}
+.lp-compare-new { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.lp-compare-col h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 14px;
+}
+.lp-compare-old h3 { color: var(--muted); }
+.lp-compare-new h3 { color: var(--accent); }
+.lp-compare-col ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.lp-compare-col li { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; line-height: 1.4; color: var(--text); }
+.lp-compare-old li { color: var(--muted); }
+.lp-compare-old li svg { color: var(--error); flex-shrink: 0; margin-top: 2px; }
+.lp-compare-new li svg { color: var(--success); flex-shrink: 0; margin-top: 2px; }
+
+/* Prova social */
+.lp-social-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.lp-social-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+}
+.lp-social-quote { font-size: 14px; line-height: 1.5; color: var(--text); margin: 0 0 14px; }
+.lp-social-author { font-size: 13px; margin: 0; }
+.lp-social-author span { color: var(--muted); }
+
+@media (max-width: 720px) {
+  .lp-compare-grid { grid-template-columns: 1fr; }
+  .lp-social-grid { grid-template-columns: 1fr; }
+}
+
 /* Footer */
 .lp-foot {
   margin-top: auto;
