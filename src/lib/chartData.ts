@@ -1,5 +1,5 @@
 import type { AppState } from "./types";
-import { groupProfitBySport, groupProfitByBookmaker, groupProfitByStrategy, clvPercent, betProfit } from "./metrics";
+import { groupProfitBySport, groupProfitByBookmaker, groupProfitByStrategy, clvPercent, betProfit, isRiskedBet } from "./metrics";
 import { buildLedgerTimeline, deriveBookmakerBalances, monitoredBankroll } from "./ledger";
 
 export interface TimeSeriesPoint {
@@ -196,18 +196,24 @@ export function buildSportProfitData(state: AppState): SportProfitPoint[] {
 }
 
 export function buildMonthlyData(state: AppState): MonthlyPoint[] {
-  const map = new Map<string, { profit: number; staked: number; bets: number }>();
+  const map = new Map<string, { profit: number; staked: number; bets: number; riskedProfit: number; riskedStake: number }>();
 
   for (const bet of state.bets) {
     if (bet.status === "pending") continue;
     const dayKey = localDayKey(bet.eventAt || bet.placedAt || "");
     if (!dayKey) continue;
     const key = dayKey.slice(0, 7); // YYYY-MM, mesmo fuso local do diário
-    const existing = map.get(key) ?? { profit: 0, staked: 0, bets: 0 };
+    const existing = map.get(key) ?? { profit: 0, staked: 0, bets: 0, riskedProfit: 0, riskedStake: 0 };
+    // Yield real: só apostas arriscadas entram no turnover e no numerador —
+    // freebet (payout sem stake próprio) e void (status settled) ficam de fora,
+    // igual à metodologia de calculateMetrics/buildSegment.
+    const risked = isRiskedBet(bet);
     map.set(key, {
       profit: existing.profit + betProfit(bet),
       staked: existing.staked + bet.stake,
       bets: existing.bets + 1,
+      riskedProfit: existing.riskedProfit + (risked ? betProfit(bet) : 0),
+      riskedStake: existing.riskedStake + (risked ? bet.stake : 0),
     });
   }
 
@@ -222,7 +228,9 @@ export function buildMonthlyData(state: AppState): MonthlyPoint[] {
       return {
         month: label,
         key,
-        roi: data.staked > 0 ? data.profit / data.staked : 0,
+        // Campo mantém o nome `roi` (consumido pela UI), mas é yield real:
+        // lucro arriscado / turnover arriscado.
+        roi: data.riskedStake > 0 ? data.riskedProfit / data.riskedStake : 0,
         profit: data.profit,
         staked: data.staked,
         bets: data.bets,

@@ -67,15 +67,13 @@ service cloud.firestore {
                     && request.resource.data.email is string
                     && request.resource.data.email.size() >= 5
                     && request.resource.data.email.size() <= 200
-                    && request.resource.data.plan is string;
+                    && request.resource.data.email.matches('^[^@]+@[^@]+\\.[^@]+$')
+                    && request.resource.data.plan is string
+                    && request.resource.data.plan.size() <= 60
+                    && (!('userAgent' in request.resource.data) ||
+                        (request.resource.data.userAgent is string &&
+                         request.resource.data.userAgent.size() <= 512));
       allow read, update, delete: if false; // Leitura só pelo Console/Admin
-    }
-
-    // ── Páginas públicas ──────────────────────────────────────────────────────
-
-    match /publicPages/{pageId} {
-      allow read: if resource.data.isPublic == true;
-      allow write: if signedIn() && request.auth.uid == request.resource.data.ownerId;
     }
 
     // ── Fallback — nega tudo o que não foi explicitamente permitido ───────────

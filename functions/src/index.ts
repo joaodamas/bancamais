@@ -84,7 +84,7 @@ export const searchSportsFixturesCallable = onCall(
     secrets: [APISPORTS_API_KEY],
   },
   async (request) => {
-    ensureAuthenticated(request.auth?.uid);
+    await ensureEdge(ensureAuthenticated(request.auth?.uid));
     const payload = parseSearchSportsFixturesRequest(request.data);
     const apiKey = APISPORTS_API_KEY.value();
 
@@ -113,7 +113,7 @@ export const getSportsFixtureResultCallable = onCall(
     secrets: [APISPORTS_API_KEY],
   },
   async (request) => {
-    ensureAuthenticated(request.auth?.uid);
+    await ensureEdge(ensureAuthenticated(request.auth?.uid));
     const payload = parseGetSportsFixtureResultRequest(request.data);
     const apiKey = APISPORTS_API_KEY.value();
 

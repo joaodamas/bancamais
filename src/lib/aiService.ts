@@ -269,9 +269,12 @@ async function callAIEndpoint(state: AppState): Promise<AIAnalysis> {
   const endpoint = import.meta.env.VITE_AI_ENDPOINT as string;
   const prompt = buildPortfolioPrompt(state);
 
-  const token = import.meta.env.VITE_AI_BEARER_TOKEN as string | undefined;
+  // Não enviamos bearer token daqui: qualquer VITE_* é embarcado no bundle e
+  // ficaria público para todos os visitantes. Se o endpoint exigir autenticação,
+  // ela deve ficar server-side numa Cloud Function (secret via defineSecret),
+  // como já é feito para OCR/odds. O endpoint aqui deve ser público ou protegido
+  // por App Check/origem, nunca por um segredo de servidor lido do cliente.
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const response = await fetch(endpoint, {
     method: "POST",

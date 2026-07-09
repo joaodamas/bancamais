@@ -1,10 +1,16 @@
 import type { AppState, Bet } from "./types";
-import { createBetId } from "./storage";
 import { settledPayout } from "../services/bets.service";
 import { betProfit, money } from "./metrics";
 
+// Neutraliza injecao de formula (CSV/planilha): celulas que comecam com
+// = + - @ ou tab sao interpretadas como formula pelo Excel/Sheets. O prefixo
+// de aspa simples forca a celula a ser tratada como texto.
+function neutralizeFormula(text: string): string {
+  return /^[=+\-@\t]/.test(text) ? `'${text}` : text;
+}
+
 function escapeCsv(value: unknown) {
-  const text = String(value ?? "");
+  const text = neutralizeFormula(String(value ?? ""));
   if (text.includes(",") || text.includes("\n") || text.includes('"')) {
     return `"${text.replaceAll('"', '""')}"`;
   }
@@ -122,11 +128,11 @@ export function betsToExcelHtml(state: AppState): string {
       : "";
     return `<tr style="background:${tone.bg};color:${tone.fg};">${[
       cell(escapeHtml(xlsDate(bet.eventAt || bet.placedAt))),
-      cell(escapeHtml(bet.eventName) + freebetTag),
-      cell(escapeHtml([bet.sport, bet.league].filter(Boolean).join(" · "))),
-      cell(escapeHtml(bet.market)),
-      cell(escapeHtml(bet.selection)),
-      cell(escapeHtml(bookmakerName.get(bet.bookmakerId) ?? bet.bookmakerId)),
+      cell(escapeHtml(neutralizeFormula(bet.eventName)) + freebetTag),
+      cell(escapeHtml(neutralizeFormula([bet.sport, bet.league].filter(Boolean).join(" · ")))),
+      cell(escapeHtml(neutralizeFormula(bet.market))),
+      cell(escapeHtml(neutralizeFormula(bet.selection))),
+      cell(escapeHtml(neutralizeFormula(bookmakerName.get(bet.bookmakerId) ?? bet.bookmakerId))),
       cell(money.format(bet.stake), "text-align:right;"),
       cell(bet.odds.toFixed(2), "text-align:right;"),
       cell(`<strong>${escapeHtml(XLS_STATUS_LABEL[bet.status] ?? bet.status)}</strong>`),
@@ -191,6 +197,73 @@ function parseCsvLine(line: string) {
   return values;
 }
 
+// Converte uma data crua para ISO. Trata primeiro DD/MM/YYYY (pt-BR) com hora
+// opcional, pois Date.parse interpretaria "07/05/2026" como MM/DD (formato US) e
+// trocaria dia por mes silenciosamente. Formatos com traco (ISO) caem no
+// Date.parse. Retorna null quando nao consegue interpretar, para o chamador
+// emitir erro de linha.
+function toIsoDate(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  const brMatch = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(trimmed);
+  if (brMatch) {
+    const [, day, month, year, hour = "0", minute = "0", second = "0"] = brMatch;
+    const date = new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hour),
+      Number(minute),
+      Number(second),
+    );
+    const valid = !Number.isNaN(date.getTime())
+      && date.getDate() === Number(day)
+      && date.getMonth() === Number(month) - 1;
+    return valid ? date.toISOString() : null;
+  }
+
+  const direct = Date.parse(trimmed);
+  if (!Number.isNaN(direct)) return new Date(direct).toISOString();
+
+  return null;
+}
+
+// Hash deterministico (djb2) de uma chave de conteudo. Reimportar o mesmo CSV
+// produz os mesmos ids, permitindo a deduplicacao detectar duplicatas.
+function contentHash(input: string): string {
+  let hash = 5381;
+  for (let index = 0; index < input.length; index += 1) {
+    hash = (hash * 33) ^ input.charCodeAt(index);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+// Status conhecido (Bet["status"]) + sinonimos pt-BR obvios. Status fora deste
+// conjunto vira erro de linha em vez de cast cego.
+const STATUS_ALIASES: Record<string, Bet["status"]> = {
+  pending: "pending",
+  pendente: "pending",
+  aberta: "pending",
+  won: "won",
+  ganha: "won",
+  ganhou: "won",
+  green: "won",
+  lost: "lost",
+  perdida: "lost",
+  perdeu: "lost",
+  red: "lost",
+  void: "void",
+  cancelada: "void",
+  anulada: "void",
+  devolvida: "void",
+  cashout: "cashout",
+  half_won: "half_won",
+  "meia ganha": "half_won",
+  half_lost: "half_lost",
+  "meia perdida": "half_lost",
+};
+
 export function parseBetsCsv(content: string, state: AppState) {
   const lines = content
     .replace(/^﻿/, "") // remove BOM UTF-8 se o arquivo trouxer (ex.: nosso próprio export)
@@ -233,22 +306,62 @@ export function parseBetsCsv(content: string, state: AppState) {
       return;
     }
 
-    const status = (record.status || "pending") as Bet["status"];
+    const status = STATUS_ALIASES[(record.status || "pending").trim().toLowerCase()];
+    if (!status) {
+      errors.push(`Linha ${rowIndex + 2}: status desconhecido (${record.status}).`);
+      return;
+    }
+
+    let placedAt: string;
+    if (record.placedAt) {
+      const parsed = toIsoDate(record.placedAt);
+      if (!parsed) {
+        errors.push(`Linha ${rowIndex + 2}: data da aposta invalida (${record.placedAt}).`);
+        return;
+      }
+      placedAt = parsed;
+    } else {
+      placedAt = new Date().toISOString();
+    }
+
+    let eventAt: string;
+    if (record.eventAt) {
+      const parsed = toIsoDate(record.eventAt);
+      if (!parsed) {
+        errors.push(`Linha ${rowIndex + 2}: data do evento invalida (${record.eventAt}).`);
+        return;
+      }
+      eventAt = parsed;
+    } else {
+      eventAt = placedAt;
+    }
+
     const isFreebet = record.isFreebet === "true" || record.isFreebet === "1" || record.isFreebet?.toLowerCase() === "sim";
     const explicitPayout = record.payout ? Number(record.payout) : undefined;
-    // Payout autoritativo: usa o do CSV quando presente e válido; senão
-    // recalcula pela fonte única. Sem isso, meia-ganha/meia-perdida importadas
-    // ficavam com lucro errado nas métricas (payout undefined → −stake).
+    // Payout reconciliado pela regra do app (fonte unica). Ignora o payout do
+    // CSV que contradiga a regra — sobretudo freebet, onde vitoria paga
+    // stake×(odd−1) e nao stake×odd. Cashout preserva o valor recebido do CSV,
+    // por ser um montante manual sem formula fixa.
+    const cashoutFromCsv = status === "cashout" && explicitPayout != null
+      && Number.isFinite(explicitPayout) && explicitPayout > 0
+      ? explicitPayout
+      : undefined;
     const payout = status === "pending"
       ? undefined
-      : explicitPayout != null && Number.isFinite(explicitPayout)
-        ? explicitPayout
-        : settledPayout(status, stakeNum, oddsNum, undefined, isFreebet);
+      : settledPayout(status, stakeNum, oddsNum, cashoutFromCsv, isFreebet);
+
+    const closingOddsNum = record.closingOdds ? Number(record.closingOdds) : undefined;
+    const closingOdds = closingOddsNum != null && Number.isFinite(closingOddsNum) && closingOddsNum >= 1.01
+      ? closingOddsNum
+      : undefined;
+
+    const id = record.id
+      || `bet-csv-${contentHash(`${placedAt}|${record.eventName}|${record.selection}|${stakeNum}|${oddsNum}|${bookmakerId}`)}`;
 
     bets.push({
-      id: record.id || createBetId(),
-      placedAt: record.placedAt || new Date().toISOString(),
-      eventAt: record.eventAt || new Date().toISOString(),
+      id,
+      placedAt,
+      eventAt,
       sport: record.sport || "Nao informado",
       league: record.league || "Nao informado",
       eventName: record.eventName,
@@ -261,7 +374,7 @@ export function parseBetsCsv(content: string, state: AppState) {
       status,
       isFreebet: isFreebet || undefined,
       payout,
-      closingOdds: record.closingOdds ? Number(record.closingOdds) : undefined,
+      closingOdds,
       mode: record.mode === "live" ? "live" : "prelive",
       slipImageUrl: record.slipImageUrl || undefined,
     });

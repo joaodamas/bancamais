@@ -11660,6 +11660,17 @@ button.danger:hover {
 .lp-ai-bar { height: 6px; border-radius: 100px; background: var(--panel-2); overflow: hidden; margin-top: 4px; }
 .lp-ai-bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-bright)); }
 .lp-ai-tip { font-size: 12px; color: var(--muted); margin: 4px 0 0; line-height: 1.4; }
+.lp-ai-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.lp-ai-tag {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  padding: 3px 8px;
+  border-radius: 100px;
+}
 
 /* Features grid */
 .lp-feat-card {
@@ -11681,6 +11692,15 @@ button.danger:hover {
 }
 .lp-feat-card h3 { font-size: 15px; font-weight: 600; margin: 0 0 6px; }
 .lp-feat-card p { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 0; }
+.lp-feat-note {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+  opacity: 0.75;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
 
 /* Trust */
 .lp-trust-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }

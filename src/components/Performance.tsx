@@ -127,14 +127,14 @@ export function Performance({
           <EmptyState
             icon={<BarChart3 size={24} />}
             title="Sem desempenho consolidado ainda"
-            description="Liquide suas primeiras apostas (ganha/perdida) para liberar o ROI mensal, o yield e o comparativo de lucro por esporte."
+            description="Liquide suas primeiras apostas (ganha/perdida) para liberar o yield mensal e o comparativo de lucro por esporte."
           />
         </article>
       ) : (
         <>
         <div className="grid two">
           <article className="panel chart-panel">
-            <h2>ROI mensal</h2>
+            <h2>Yield mensal</h2>
             {monthlyData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={monthlyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -149,7 +149,7 @@ export function Performance({
                   />
                   <Tooltip content={<PercentTooltip />} cursor={{ fill: "rgba(249, 115, 22, 0.08)" }} />
                   <ReferenceLine y={0} stroke={COLORS.line} />
-                  <Bar dataKey="roi" name="ROI" radius={[3, 3, 0, 0]}>
+                  <Bar dataKey="roi" name="Yield" radius={[3, 3, 0, 0]}>
                     {monthlyData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.roi >= 0 ? COLORS.accent : COLORS.red} fillOpacity={0.85} />
                     ))}
@@ -157,7 +157,7 @@ export function Performance({
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="chart-empty"><span>Sem volume suficiente para consolidar o ROI mensal</span></div>
+              <div className="chart-empty"><span>Sem volume suficiente para consolidar o yield mensal</span></div>
             )}
           </article>
 

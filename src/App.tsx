@@ -263,9 +263,14 @@ export function App() {
   }, []);
 
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const applyingRemoteRef = useRef(false);
 
   useEffect(() => {
     if (!user || user.isAnonymous || authLoading) return;
+    if (applyingRemoteRef.current) {
+      applyingRemoteRef.current = false;
+      return;
+    }
     saveStateForUser(user.uid, state);
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(() => {
@@ -419,6 +424,7 @@ export function App() {
       return;
     }
 
+    applyingRemoteRef.current = true;
     applyHydratedState(remoteState, user.uid);
     setSyncStatus(`Snapshot remoto aplicado em ${new Date().toLocaleTimeString("pt-BR")}`);
   }, [authLoading, user]);
@@ -513,7 +519,7 @@ export function App() {
         : state.bookmakers,
       transactions: onboardingTransactions.length > 0 ? onboardingTransactions : state.transactions,
     };
-    updateState(next);
+    syncToCloud(updateState(next));
     track("onboarding_complete", { bookmakers: patch.bookmakers.length });
     setShowOnboarding(false);
   }
@@ -609,12 +615,15 @@ export function App() {
   }
 
   async function disconnectCloud() {
+    const previousUid = user?.uid ?? null;
     await signOutDemoUser();
+    if (previousUid) clearStateForUser(previousUid);
     hydratedUserRef.current = null;
     setState(emptyState());
     setShowOnboarding(false);
     setUser(null);
     setSyncStatus("Sem sessao autenticada");
+    toast.success("Sessão encerrada. Dados locais deste dispositivo foram limpos.");
   }
 
   async function pushCloud() {
@@ -719,9 +728,13 @@ export function App() {
         slipImagePath = uploadedSlipImagePath;
         slipImageUrl = uploadedSlipImageUrl;
       } else if (user) {
-        const upload = await uploadBetSlip(user.uid, maybeSlip);
-        slipImagePath = upload.path;
-        slipImageUrl = upload.url;
+        try {
+          const upload = await uploadBetSlip(user.uid, maybeSlip);
+          slipImagePath = upload.path;
+          slipImageUrl = upload.url;
+        } catch {
+          toast.error("Não foi possível anexar o bilhete. Tente de novo.");
+        }
       }
     }
 
@@ -1117,10 +1130,10 @@ export function App() {
       return;
     }
 
-    updateState({
+    syncToCloud(updateState({
       ...state,
       bookmakers: state.bookmakers.filter((book) => book.id !== bookmakerId),
-    });
+    }));
     toast.success(`Casa ${currentBook.name} removida.`);
   }
 
@@ -1264,21 +1277,62 @@ export function App() {
   function updateRiskSettings(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    const riskSettings: RiskSettings = {
-      unitMode: (data.get("unitMode") as RiskSettings["unitMode"]) || state.riskSettings.unitMode,
-      unitFixed: data.get("unitFixed") != null ? Number(data.get("unitFixed")) : state.riskSettings.unitFixed,
-      unitPercent: data.get("unitPercent") != null ? Number(data.get("unitPercent")) : state.riskSettings.unitPercent,
-      maxStakeUnits: Number(data.get("maxStakeUnits")),
-      maxOpenExposurePercent: Number(data.get("maxOpenExposurePercent")),
-      lossStreakLimit: Number(data.get("lossStreakLimit")),
-      hardStopEnabled: data.get("hardStopEnabled") === "on",
-      dailyLossLimitPercent: Number(data.get("dailyLossLimitPercent")),
-      weeklyLossLimitPercent: Number(data.get("weeklyLossLimitPercent")),
-      monthlyDrawdownPercent: Number(data.get("monthlyDrawdownPercent")),
-      pausedUntil: state.riskSettings.pausedUntil,
+    const current = state.riskSettings;
+
+    const readNumber = (
+      field: string,
+      fallback: number,
+      options?: { min?: number; max?: number },
+    ): number | null => {
+      const raw = data.get(field);
+      if (raw == null) return fallback;
+      const text = String(raw).trim();
+      if (text === "") return fallback;
+      const value = Number(text);
+      if (!Number.isFinite(value)) return null;
+      if (options?.min != null && value < options.min) return null;
+      if (options?.max != null && value > options.max) return null;
+      return value;
     };
 
-    updateState({ ...state, riskSettings });
+    const unitFixed = readNumber("unitFixed", current.unitFixed, { min: 0 });
+    const unitPercent = readNumber("unitPercent", current.unitPercent, { min: 0, max: 100 });
+    const maxStakeUnits = readNumber("maxStakeUnits", current.maxStakeUnits, { min: 0 });
+    const maxOpenExposurePercent = readNumber("maxOpenExposurePercent", current.maxOpenExposurePercent, { min: 0, max: 100 });
+    const lossStreakLimit = readNumber("lossStreakLimit", current.lossStreakLimit, { min: 0 });
+    const dailyLossLimitPercent = readNumber("dailyLossLimitPercent", current.dailyLossLimitPercent, { min: 0, max: 100 });
+    const weeklyLossLimitPercent = readNumber("weeklyLossLimitPercent", current.weeklyLossLimitPercent, { min: 0, max: 100 });
+    const monthlyDrawdownPercent = readNumber("monthlyDrawdownPercent", current.monthlyDrawdownPercent, { min: 0, max: 100 });
+
+    if (
+      unitFixed == null ||
+      unitPercent == null ||
+      maxStakeUnits == null ||
+      maxOpenExposurePercent == null ||
+      lossStreakLimit == null ||
+      dailyLossLimitPercent == null ||
+      weeklyLossLimitPercent == null ||
+      monthlyDrawdownPercent == null
+    ) {
+      toast.error("Valores de risco inválidos. Confira os limites informados.");
+      return;
+    }
+
+    const riskSettings: RiskSettings = {
+      unitMode: (data.get("unitMode") as RiskSettings["unitMode"]) || current.unitMode,
+      unitFixed,
+      unitPercent,
+      maxStakeUnits,
+      maxOpenExposurePercent,
+      lossStreakLimit,
+      hardStopEnabled: data.get("hardStopEnabled") === "on",
+      dailyLossLimitPercent,
+      weeklyLossLimitPercent,
+      monthlyDrawdownPercent,
+      pausedUntil: current.pausedUntil,
+    };
+
+    syncToCloud(updateState({ ...state, riskSettings }));
     toast.success("Limites de risco atualizados.");
   }
 
@@ -1553,8 +1607,8 @@ export function App() {
                     <p className="notif-empty">Nenhum alerta ativo.</p>
                   ) : (
                     <ul className="notif-list">
-                      {notifications.map((n, i) => (
-                        <li key={i} className={`notif-item notif-item-${n.level}`}>
+                      {notifications.map((n) => (
+                        <li key={`${n.level}-${n.title}`} className={`notif-item notif-item-${n.level}`}>
                           <strong>{n.title}</strong>
                           <span>{n.detail}</span>
                         </li>

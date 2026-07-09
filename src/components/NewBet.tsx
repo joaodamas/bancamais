@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
+import toast from "react-hot-toast";
 import { CheckCircle2, Lock } from "lucide-react";
 import { auth } from "../lib/firebase";
 import {
@@ -614,7 +615,11 @@ export function NewBet({ state, addBet, onAddBookmaker, onClose, prefill, draft,
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     setShowSuggestions(false);
-    await addBet(event);
+    try {
+      await addBet(event);
+    } catch {
+      toast.error("Não foi possível salvar a aposta. Tente de novo.");
+    }
   }
 
   function handleCloseRequest() {

@@ -4,6 +4,7 @@ import {
   TrendingUp, LineChart, Target, CalendarDays, ListChecks, ShieldAlert,
   X, Clock,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 
 interface LandingProps {
@@ -54,11 +55,18 @@ const STEPS = [
   },
 ];
 
-const FEATURES = [
+type Feature = {
+  Icon: LucideIcon;
+  title: string;
+  body: string;
+  note?: string;
+};
+
+const FEATURES: Feature[] = [
   { Icon: ListChecks, title: "Apostas & Diário", body: "Histórico completo, busca, filtros e calendário das suas entradas." },
   { Icon: LineChart, title: "Dashboard & Performance", body: "ROI, yield, hit rate, lucro e a evolução da banca em tempo real." },
-  { Icon: ShieldAlert, title: "Risco & Hard stops", body: "Travas diárias, semanais e mensais que protegem a banca do tilt." },
-  { Icon: TrendingUp, title: "CLV, Edge & Odds", body: "Meça closing line value, valor esperado e compare linhas entre casas." },
+  { Icon: ShieldAlert, title: "Risco & Hard stops", body: "Travas diárias, semanais e mensais que protegem a banca do tilt.", note: "Hard stop é a trava que te impede de perder o mês numa noite." },
+  { Icon: TrendingUp, title: "CLV, Edge & Odds", body: "Meça closing line value, valor esperado e compare linhas entre casas.", note: "CLV é o teste de skill vs. sorte: você bateu a linha de fechamento?" },
   { Icon: CalendarDays, title: "Extrato & Estratégias", body: "Fluxo de caixa por casa e performance separada por estratégia." },
   { Icon: ScanLine, title: "OCR de bilhete", body: "Escaneie o print e preencha a aposta sem digitar nada." },
 ];
@@ -223,7 +231,10 @@ export function Landing({ onGetStarted, onSignIn, onDemo, onJoinWaitlist }: Land
             </button>
           </div>
           <div className="lp-ai-visual" aria-hidden="true">
-            <div className="lp-ai-chip"><Brain size={14} /> Análise de portfólio</div>
+            <div className="lp-ai-head">
+              <div className="lp-ai-chip"><Brain size={14} /> Análise de portfólio</div>
+              <span className="lp-ai-tag">exemplo ilustrativo</span>
+            </div>
             <div className="lp-ai-row"><span>Risco de tilt</span><strong className="warn">Atenção</strong></div>
             <div className="lp-ai-row"><span>CLV médio</span><strong className="pos">+2,3%</strong></div>
             <div className="lp-ai-row"><span>Estratégia mais eficiente</span><strong>Over 2.5 FT</strong></div>
@@ -245,6 +256,7 @@ export function Landing({ onGetStarted, onSignIn, onDemo, onJoinWaitlist }: Land
               <span className="lp-feat-icon"><f.Icon size={18} /></span>
               <h3>{f.title}</h3>
               <p>{f.body}</p>
+              {f.note && <p className="lp-feat-note">{f.note}</p>}
             </article>
           ))}
         </div>

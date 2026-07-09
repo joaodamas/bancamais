@@ -26,6 +26,7 @@
  * a Mercado Pago não reprocessar a notificação indefinidamente.
  */
 
+import { createHmac, timingSafeEqual } from "crypto";
 import { getApps, initializeApp } from "firebase-admin/app";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { logger } from "firebase-functions";
@@ -34,6 +35,7 @@ import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { onRequest } from "firebase-functions/v2/https";
 
 const MERCADOPAGO_ACCESS_TOKEN = defineSecret("MERCADOPAGO_ACCESS_TOKEN");
+const MERCADOPAGO_WEBHOOK_SECRET = defineSecret("MERCADOPAGO_WEBHOOK_SECRET");
 const DEFAULT_REGION = "southamerica-east1";
 
 const MP_PREAPPROVAL_URL = "https://api.mercadopago.com/preapproval";
@@ -170,12 +172,28 @@ export const mercadoPagoWebhook = onRequest(
     region: DEFAULT_REGION,
     timeoutSeconds: 30,
     memory: "256MiB",
-    secrets: [MERCADOPAGO_ACCESS_TOKEN],
+    secrets: [MERCADOPAGO_ACCESS_TOKEN, MERCADOPAGO_WEBHOOK_SECRET],
   },
   async (req, res) => {
     if (req.method !== "POST") {
       res.status(405).send("Method Not Allowed");
       return;
+    }
+
+    const webhookSecret = MERCADOPAGO_WEBHOOK_SECRET.value();
+    if (webhookSecret) {
+      if (!verifyWebhookSignature(req, webhookSecret)) {
+        logger.warn("Mercado Pago webhook signature validation failed");
+        res.status(401).send("invalid signature");
+        return;
+      }
+    } else {
+      // Sem o secret configurado não há como validar a assinatura. O re-fetch do
+      // preapproval na API da Mercado Pago (fetchPreapproval) permanece como
+      // defesa em profundidade, mas configure MERCADOPAGO_WEBHOOK_SECRET.
+      logger.warn(
+        "MERCADOPAGO_WEBHOOK_SECRET not configured; skipping x-signature validation.",
+      );
     }
 
     const notification = (req.body ?? {}) as MercadoPagoNotification;
@@ -245,6 +263,76 @@ export const mercadoPagoWebhook = onRequest(
     }
   },
 );
+
+function readHeaderValue(headers: Record<string, unknown>, name: string): string | undefined {
+  const value = headers[name];
+  if (typeof value === "string") {
+    return value;
+  }
+  if (Array.isArray(value) && typeof value[0] === "string") {
+    return value[0];
+  }
+  return undefined;
+}
+
+/**
+ * Valida a assinatura HMAC-SHA256 enviada pela Mercado Pago no header
+ * `x-signature` (formato `ts=<timestamp>,v1=<hash>`), usando o `x-request-id`
+ * e o `data.id` da query para montar o manifest, conforme a documentação da MP.
+ */
+function verifyWebhookSignature(
+  req: { headers: Record<string, unknown>; query: Record<string, unknown> },
+  secret: string,
+): boolean {
+  const signatureHeader = readHeaderValue(req.headers, "x-signature");
+  const requestId = readHeaderValue(req.headers, "x-request-id");
+
+  if (!signatureHeader) {
+    return false;
+  }
+
+  let ts: string | undefined;
+  let v1: string | undefined;
+  for (const part of signatureHeader.split(",")) {
+    const separatorIndex = part.indexOf("=");
+    if (separatorIndex === -1) {
+      continue;
+    }
+    const key = part.slice(0, separatorIndex).trim();
+    const value = part.slice(separatorIndex + 1).trim();
+    if (key === "ts") {
+      ts = value;
+    } else if (key === "v1") {
+      v1 = value;
+    }
+  }
+
+  if (!ts || !v1) {
+    return false;
+  }
+
+  const dataIdRaw = req.query["data.id"] ?? req.query["id"];
+  const dataId = typeof dataIdRaw === "string" ? dataIdRaw.toLowerCase() : "";
+
+  let manifest = "";
+  if (dataId) {
+    manifest += `id:${dataId};`;
+  }
+  if (requestId) {
+    manifest += `request-id:${requestId};`;
+  }
+  manifest += `ts:${ts};`;
+
+  const expected = createHmac("sha256", secret).update(manifest).digest("hex");
+  const expectedBuffer = Buffer.from(expected, "hex");
+  const providedBuffer = Buffer.from(v1, "hex");
+
+  if (expectedBuffer.length === 0 || expectedBuffer.length !== providedBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(expectedBuffer, providedBuffer);
+}
 
 async function fetchPreapproval(
   id: string,
