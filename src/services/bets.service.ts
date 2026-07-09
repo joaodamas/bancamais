@@ -14,7 +14,8 @@ import { parseOcrMetadata, isSuccessfulOcr, getOcrConfidenceScore } from "../lib
  * - half_won: metade no preço cheio + metade devolvida = stake×odd/2 + stake/2
  * - void: devolve o stake
  * - half_lost: devolve metade do stake
- * - cashout: valor informado (fallback = retorno potencial)
+ * - cashout: valor informado; sem valor válido (> 0) cai no break-even (stake),
+ *   nunca na vitória cheia — evita gravar payout inflado no ledger
  * - lost: 0
  *
  * Freebet (aposta grátis): o stake não é dinheiro próprio, então só os GANHOS
@@ -31,7 +32,8 @@ export function settledPayout(
     switch (status) {
       case "won": return stake * (odds - 1);
       case "half_won": return (stake * (odds - 1)) / 2;
-      case "cashout": return cashoutAmount != null && cashoutAmount > 0 ? cashoutAmount : stake * (odds - 1);
+      // Sem valor de cashout, freebet não gerou ganho algum → 0 (nunca stake×(odd−1)).
+      case "cashout": return cashoutAmount != null && cashoutAmount > 0 ? cashoutAmount : 0;
       default: return 0; // lost, void, half_lost: nada volta
     }
   }
@@ -40,7 +42,8 @@ export function settledPayout(
     case "half_won": return (stake * odds) / 2 + stake / 2;
     case "void": return stake;
     case "half_lost": return stake / 2;
-    case "cashout": return cashoutAmount != null && cashoutAmount > 0 ? cashoutAmount : stake * odds;
+    // Sem valor de cashout, break-even (stake) — nunca vitória cheia (stake×odd).
+    case "cashout": return cashoutAmount != null && cashoutAmount > 0 ? cashoutAmount : stake;
     default: return 0;
   }
 }
@@ -57,6 +60,18 @@ const SETTLEMENT_DESCRIPTION: Partial<Record<Bet["status"], string>> = {
   void: "Void",
   half_lost: "Estorno (meia)",
 };
+
+/**
+ * Normaliza um valor de `datetime-local` (ex.: "2026-07-09T15:30", sem fuso)
+ * para ISO/UTC, alinhado com `placedAt`. Vazio/ inválido → "" (não gera data
+ * inválida). Espelha a lógica de `toIsoDatetime` usada em NewBet.
+ */
+function toIsoDatetime(value: string): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString();
+}
 
 export type BetBuildResult =
   | { ok: true; bet: Bet; transaction: Transaction; settlementTransaction?: Transaction | null }
@@ -105,6 +120,12 @@ export function buildBetFromForm(
   const status = SETTLEABLE_STATUSES.includes(statusInput) ? statusInput : "pending";
   const cashoutAmount = Number(data.get("cashoutAmount"));
 
+  // Cashout precisa do valor recebido — sem ele o payout seria arbitrado e
+  // gravaria fluxo de caixa incorreto no ledger.
+  if (status === "cashout" && !(Number.isFinite(cashoutAmount) && cashoutAmount > 0)) {
+    return { ok: false, error: "Informe o valor do cashout." };
+  }
+
   const ocrMetadata = parseOcrMetadata(data.get("ocrMetadata"));
   const hasSuccessfulOcr = isSuccessfulOcr(ocrMetadata);
   const suggestionId = String(data.get("suggestionId") || "") || undefined;
@@ -116,7 +137,7 @@ export function buildBetFromForm(
   const bet: Bet = {
     id: createBetId(),
     placedAt: new Date().toISOString(),
-    eventAt: String(data.get("eventAt")),
+    eventAt: toIsoDatetime(String(data.get("eventAt") ?? "")),
     sport: String(data.get("sport")),
     league: String(data.get("league")),
     eventName: String(data.get("eventName")),
@@ -198,6 +219,11 @@ export function buildSettlement(
 ): SettlementResult | null {
   const bet = bets.find((b) => b.id === betId);
   if (!bet || bet.status !== "pending") return null;
+
+  // Cashout sem valor válido é rejeitado (null) — não arbitra payout.
+  if (status === "cashout" && !(cashoutAmount != null && Number.isFinite(cashoutAmount) && cashoutAmount > 0)) {
+    return null;
+  }
 
   const payout = settledPayout(status, bet.stake, bet.odds, cashoutAmount, bet.isFreebet);
 
@@ -301,7 +327,7 @@ export function buildBetEdit(data: FormData, state: AppState, betId: string): Be
 
   const updatedBet: Bet = {
     ...existing,
-    eventAt: String(data.get("eventAt")),
+    eventAt: toIsoDatetime(String(data.get("eventAt") ?? "")),
     sport: String(data.get("sport")),
     league: String(data.get("league")),
     eventName: String(data.get("eventName")),

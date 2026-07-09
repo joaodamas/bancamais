@@ -62,14 +62,20 @@ export function calculateMetrics(state: AppState): DashboardMetrics {
   const settledRisked = settled.filter(isRiskedBet);
   const riskedStake = settledRisked.reduce((sum, bet) => sum + bet.stake, 0);
   const riskedProfit = settledRisked.reduce((sum, bet) => sum + betProfit(bet), 0);
-  const clvs = state.bets.map(clvPercent).filter((value): value is number => value !== null);
+  // CLV médio alinhado com buildClvTimeSeries: só apostas liquidadas com odd de
+  // fechamento válida (> 1) entram. Nulos continuam de fora (não entram como zero).
+  const clvs = state.bets
+    .filter((bet) => bet.status !== "pending" && bet.closingOdds !== undefined && bet.closingOdds > 1)
+    .map(clvPercent)
+    .filter((value): value is number => value !== null);
   // Odd média ponderada pelo stake — a média simples distorce quando os stakes variam.
   const stakeTotal = state.bets.reduce((sum, bet) => sum + bet.stake, 0);
   const oddsStakeWeighted = state.bets.reduce((sum, bet) => sum + bet.odds * bet.stake, 0);
 
   return {
     totalBalance,
-    openExposure: pending.reduce((sum, bet) => sum + bet.stake, 0),
+    // Exposição = dinheiro próprio em risco; freebet pendente não é capital próprio.
+    openExposure: pending.filter(isRiskedBet).reduce((sum, bet) => sum + bet.stake, 0),
     profit,
     // ROI = retorno sobre o capital (lucro / capital depositado, base estável).
     // Yield = edge (lucro / turnover liquidado).

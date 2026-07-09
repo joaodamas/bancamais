@@ -1,4 +1,5 @@
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import toast from "react-hot-toast";
 import { Zap, ChevronRight, ScanLine, Loader2, Lock } from "lucide-react";
 import type { AppState, BetStatus } from "../lib/types";
 import { money } from "../lib/metrics";
@@ -158,6 +159,8 @@ export function QuickBet({ state, userId, canUseOcr = true, onSubmit, onAddBookm
     setSubmitting(true);
     try {
       await onSubmit(e);
+    } catch {
+      toast.error("Não foi possível salvar a aposta. Tente de novo.");
     } finally {
       setSubmitting(false);
     }

@@ -167,11 +167,11 @@ describe("buildBetFromForm — liquidação imediata (status)", () => {
     expect(result.settlementTransaction?.amount).toBe(150);
   });
 
-  it("status cashout sem valor cai para o retorno potencial", () => {
+  it("status cashout sem valor é rejeitado (nunca credita vitória cheia)", () => {
     const result = buildBetFromForm(fd({ ...VALID_FIELDS, status: "cashout" }), stateWithBalance());
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.bet.payout).toBe(200);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toBe("Informe o valor do cashout.");
   });
 
   it("status void reembolsa a stake", () => {
@@ -255,10 +255,10 @@ describe("buildSettlement — cashout", () => {
     expect(result?.newTransaction?.type).toBe("bet_payout");
   });
 
-  it("usa retorno potencial quando cashout sem valor", () => {
+  it("rejeita cashout sem valor (retorna null, nunca vitória cheia)", () => {
     const bet = makeBet({ stake: 100, odds: 2.0 });
     const result = buildSettlement([bet], bet.id, "cashout");
-    expect(result?.payout).toBe(200);
+    expect(result).toBeNull();
   });
 });
 

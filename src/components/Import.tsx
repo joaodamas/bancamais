@@ -69,8 +69,20 @@ export function Import({ state, importBets, onOpenBets }: ImportProps) {
     if (!csv.trim()) return;
     const existingIds = new Set(state.bets.map((b) => b.id));
     const result = parseBetsCsv(csv, state);
-    const duplicates = result.bets.filter((b) => existingIds.has(b.id)).length;
-    setPreview({ valid: result.bets, errors: result.errors, duplicates });
+    // Dedup por id deterministico: contra o estado atual (reimportar o mesmo CSV)
+    // e contra linhas repetidas dentro do proprio arquivo.
+    const seen = new Set<string>();
+    const valid: Bet[] = [];
+    let duplicates = 0;
+    for (const bet of result.bets) {
+      if (existingIds.has(bet.id) || seen.has(bet.id)) {
+        duplicates += 1;
+        continue;
+      }
+      seen.add(bet.id);
+      valid.push(bet);
+    }
+    setPreview({ valid, errors: result.errors, duplicates });
     setImported(false);
   }
 

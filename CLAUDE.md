@@ -112,6 +112,14 @@ Paleta definida em `:root` em styles.css. Fontes: JetBrains Mono (dados/números
 Todas as métricas derivam de `calculateMetrics(state)` em `src/lib/metrics.ts`:
 - ROI, yield, hit rate, CLV médio, exposição aberta, lucro total
 
+### Invariantes de cálculo (auditados — não regredir)
+- **ROI ≠ yield.** ROI global = `lucro / capital` (dinheiro depositado). Yield/turnover (estratégia, mensal) = `lucro arriscado / stake arriscado`. "Arriscado" = `isRiskedBet` (exclui freebet e void). Não rotule yield como "ROI" na UI.
+- **Freebet** não entra no numerador nem no denominador do yield, nem na exposição aberta; payout de vitória = `stake × (odds−1)`.
+- **Cashout** exige valor informado (`> 0`); sem valor, é rejeitado — nunca cair para `stake × odds` (vitória cheia).
+- **Payout na importação** é sempre reconciliado por `settledPayout`, ignorando payout do CSV que contradiga a regra.
+- **Import CSV** usa `id` determinístico por conteúdo quando a linha não traz `id` (para a dedup de re-importação funcionar).
+- **Datas** devem ser ISO válidas; nunca gravar string crua não validada (vira `NaN` nas métricas).
+
 ## IA
 
 `aiService.ts` analisa o portfólio localmente por regras ou via endpoint externo (`VITE_AI_ENDPOINT`). O hook `useAIAnalysis` expõe `{ analysis, loading, error, refresh }`.

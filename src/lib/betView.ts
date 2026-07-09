@@ -50,12 +50,18 @@ export function toBetRowView(
   now: number = Date.now(),
 ): BetRowView {
   const isPending = bet.status === "pending";
+  const isFreebet = bet.isFreebet ?? false;
+  // Freebet: o stake não volta, então o retorno potencial é só o ganho —
+  // stake × (odd − 1), não stake × odd. Aí retorno e lucro potencial coincidem.
+  const pendingReturn = isFreebet ? bet.stake * (bet.odds - 1) : potentialReturn(bet);
   const returnValue = isPending
-    ? potentialReturn(bet)
+    ? pendingReturn
     : bet.status === "void"
       ? bet.payout ?? bet.stake
       : bet.payout ?? 0;
-  const gainValue = isPending ? potentialReturn(bet) - bet.stake : betProfit(bet);
+  const gainValue = isPending
+    ? (isFreebet ? pendingReturn : potentialReturn(bet) - bet.stake)
+    : betProfit(bet);
 
   return {
     id: bet.id,

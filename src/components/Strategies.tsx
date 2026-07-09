@@ -28,7 +28,7 @@ export function Strategies({ state, addStrategy, toggleStrategy }: StrategiesPro
               <tr>
                 <th>Estrategia</th>
                 <th>Apostas</th>
-                <th>ROI</th>
+                <th>Yield</th>
                 <th>Acerto</th>
                 <th>CLV</th>
                 <th>Lucro</th>

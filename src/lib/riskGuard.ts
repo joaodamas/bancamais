@@ -1,6 +1,6 @@
 import type { AppState, Bet, RiskSettings } from "./types";
 import { monitoredBankroll } from "./ledger";
-import { betProfit, money } from "./metrics";
+import { betProfit, money, isRiskedBet, isLossResult } from "./metrics";
 import { resolveUnitValue } from "./unit";
 
 export interface RiskAlert {
@@ -42,6 +42,26 @@ function getSettledBetsInWindow(bets: Bet[], hours: number): Bet[] {
 function lossInWindow(bets: Bet[]): number {
   const net = bets.reduce((sum, b) => sum + betProfit(b), 0);
   return net < 0 ? -net : 0;
+}
+
+/**
+ * Comprimento da sequência ATUAL de derrotas: itera as apostas liquidadas em
+ * ordem cronológica e conta o trecho final de resultados perdidos (o streak é
+ * quebrado por qualquer resultado não-derrota). Pendentes ficam de fora — uma
+ * aposta ainda em aberto não é uma perda. Mesma lógica de bettingStreaks.
+ */
+function currentLossStreak(bets: Bet[]): number {
+  const settled = bets
+    .filter((b) => b.status !== "pending" && b.status !== "void")
+    .slice()
+    .sort((a, b) => new Date(a.placedAt).getTime() - new Date(b.placedAt).getTime());
+
+  let streak = 0;
+  for (const bet of settled) {
+    if (isLossResult(bet)) streak += 1;
+    else streak = 0;
+  }
+  return streak;
 }
 
 /** Pausa responsável ativa: devolve o ISO até quando está pausado, ou null. */
@@ -123,21 +143,21 @@ export function riskAlertsExtended(state: AppState): RiskAlert[] {
   const maxExposure = balance * (rs.maxOpenExposurePercent / 100);
 
   const pending = state.bets.filter((b) => b.status === "pending");
-  const openExposure = pending.reduce((s, b) => s + b.stake, 0);
+  // Só o stake arriscado (dinheiro próprio) conta como exposição — freebet pendente fica de fora.
+  const openExposure = pending.filter(isRiskedBet).reduce((s, b) => s + b.stake, 0);
 
   const settled = state.bets.filter((b) => b.status !== "pending" && b.status !== "void");
-  const sorted = [...state.bets].sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
-  const recentLosses = sorted.slice(0, rs.lossStreakLimit + 1).filter((b) => b.status === "lost").length;
+  const lossStreak = currentLossStreak(state.bets);
 
   const alerts: RiskAlert[] = [];
 
   // Sequência negativa
-  if (recentLosses >= rs.lossStreakLimit) {
+  if (lossStreak >= rs.lossStreakLimit) {
     alerts.push({
       level: "danger",
       title: "Sequência negativa",
-      detail: `${recentLosses} perdas consecutivas detectadas. Pause, revise o contexto e volte com disciplina.`,
-      metric: `${recentLosses} perdas`,
+      detail: `${lossStreak} perdas consecutivas detectadas. Pause, revise o contexto e volte com disciplina.`,
+      metric: `${lossStreak} perdas`,
     });
   }
 
@@ -217,7 +237,7 @@ export function checkBetRisk(state: AppState, stake: number, bookmakerId: string
   }
 
   const openExposure = state.bets
-    .filter((b) => b.status === "pending")
+    .filter((b) => b.status === "pending" && isRiskedBet(b))
     .reduce((s, b) => s + b.stake, 0);
   const maxExposure = balance * (rs.maxOpenExposurePercent / 100);
   if (openExposure + stake > maxExposure && maxExposure > 0) {
@@ -228,13 +248,12 @@ export function checkBetRisk(state: AppState, stake: number, bookmakerId: string
     });
   }
 
-  const sorted = [...state.bets].sort((a, b) => new Date(b.placedAt).getTime() - new Date(a.placedAt).getTime());
-  const recentLosses = sorted.slice(0, rs.lossStreakLimit).filter((b) => b.status === "lost").length;
-  if (recentLosses >= rs.lossStreakLimit) {
+  const lossStreak = currentLossStreak(state.bets);
+  if (lossStreak >= rs.lossStreakLimit) {
     warnings.push({
       level: "danger",
       title: "Sequência negativa ativa",
-      detail: `${recentLosses} perdas consecutivas. Avalie a entrada com cuidado.`,
+      detail: `${lossStreak} perdas consecutivas. Avalie a entrada com cuidado.`,
     });
   }
 
