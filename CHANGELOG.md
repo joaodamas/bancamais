@@ -16,6 +16,9 @@ Tipos de mudança: **Adicionado**, **Alterado**, **Corrigido**, **Removido**.
 - **Gating — fase 2 (backend)** — fonte de verdade do plano migra para o backend: doc `entitlements/{uid}` (regra: dono lê, só Admin escreve), hook `useEntitlement` em tempo real, e Cloud Functions de billing do **Mercado Pago** (`createSubscriptionCheckout` + `mercadoPagoWebhook`). Falta ativar: definir o secret `MERCADOPAGO_ACCESS_TOKEN`, deployar as functions e registrar a URL do webhook.
 
 ### Alterado
+- Landing (quick wins da auditoria): card de Inteligência agora exibe o rótulo "exemplo ilustrativo" nos dados fictícios, evitando que sejam lidos como promessa de performance (risco de compliance de anúncio).
+- Landing (quick wins da auditoria): cards de feature com jargão de sharp ganharam tradução em português para tráfego frio ("CLV é o teste de skill vs. sorte" e "Hard stop é a trava que te impede de perder o mês numa noite").
+- SEO: meta description trocada de "Terminal analítico de gestão de banca..." para copy com dor + benefício ("Saiba se você está no lucro de verdade. Controle de banca com stop loss, ROI real e disciplina. Grátis, sem cartão.").
 - Logo: o símbolo "+" da marca ficou maior e com traços mais grossos.
 - Copy da landing e do login: removidos os travessões das frases para um texto mais natural.
 - Landing: plano Edge marcado como "Em breve" (sem cobrança até existir billing); honestidade de pré-lançamento.

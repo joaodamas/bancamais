@@ -100,6 +100,8 @@ firebase deploy  # deploy no Firebase Hosting
 - **CSS por classes** — não usar style inline
 - **Handlers no App.tsx** — componentes recebem handlers como props, nunca acessam Firebase diretamente
 - **Toast para feedback** — todo handler de mutação deve chamar toast.success/error
+- **Copy sem travessão** — não usar `—` nas frases de UI/landing; preferir ponto ou parênteses
+- **Registro obrigatório** — toda alteração atualiza o `CHANGELOG.md` (seção `[Não lançado]`) e, quando mexer em convenção/arquitetura/estado do projeto, também este `CLAUDE.md`
 
 ## Design system
 
